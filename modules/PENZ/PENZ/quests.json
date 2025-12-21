@@ -1,0 +1,40 @@
+{
+  "quests": [
+    {
+      "id": "62bfc7ca-88aa-47f4-a85d-c6489e894f6d",
+      "name": "Win 3-5 Battles",
+      "type": 2,
+      "target_amount_range": [
+        3,
+        5
+      ],
+      "reward_type": 2,
+      "reward_value": "",
+      "reward_quantity": 100
+    },
+    {
+      "id": "5e46099e-7478-42e2-9787-166aef5a31c4",
+      "name": "Train 2-5 Times",
+      "type": 1,
+      "target_amount_range": [
+        2,
+        5
+      ],
+      "reward_type": 1,
+      "reward_value": "",
+      "reward_quantity": 2
+    },
+    {
+      "id": "5b3ebffd-e6e7-424b-861b-af02e0a9b41e",
+      "name": "Defeat 2 Bosses",
+      "type": 0,
+      "target_amount_range": [
+        2,
+        2
+      ],
+      "reward_type": 2,
+      "reward_value": "",
+      "reward_quantity": 150
+    }
+  ]
+}

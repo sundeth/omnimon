@@ -11,13 +11,13 @@ from core.utils.inventory_utils import add_to_inventory, get_item_by_name
 
 def get_all_available_quest_data() -> List[QuestData]:
     """
-    Get all available quest data from all loaded modules.
-    
-    Returns:
-        List of all available quest templates across all modules
+    Get all available quest data from modules that have pets in the party.
     """
+    party_modules = set(pet.module for pet in game_globals.pet_list)
     all_quest_data = []
     for module_name, module in runtime_globals.game_modules.items():
+        if module_name not in party_modules:
+            continue
         quest_data = module.load_quests_json()
         all_quest_data.extend(quest_data)
     return all_quest_data
@@ -214,27 +214,31 @@ def get_hourly_random_event() -> Optional[GameEvent]:
     if roll > xai_chance:
         return None  # No event this hour
     
-    # Step 2: Get all modules that have events
+    # Step 2: Get modules of pets currently in the party
+    party_modules = set(pet.module for pet in game_globals.pet_list)
+
+    # Step 3: Get all modules that have events, filtered to party modules
     modules_with_events = []
     for module_name, module in runtime_globals.game_modules.items():
+        if module_name not in party_modules:
+            continue
         event_data = module.load_events_json()
-        if event_data:  # Only include modules that have events
+        if event_data:
             modules_with_events.append((module_name, event_data))
     
     if not modules_with_events:
-        return None  # No modules have events
+        return None
     
-    # Step 3: Roll a random module from those that have events
+    # Step 4: Roll a random module from those that have events
     selected_module_name, event_list = random.choice(modules_with_events)
 
-    # Step 4: Roll an event from the selected module using chance_percent
+    # Step 5: Roll an event from the selected module using chance_percent
     total_chance = sum(event_data.chance_percent for event_data in event_list)
     if total_chance <= 0:
         return None
 
     event_roll = random.randint(1, min(100, total_chance))
 
-    # Find which event triggers
     cumulative_chance = 0
     selected_event_data = None
     for event_data in event_list:
@@ -245,13 +249,6 @@ def get_hourly_random_event() -> Optional[GameEvent]:
     
     if not selected_event_data:
         return None
-    
-    # Step 5: Final check - if event is not global, check if any pet has the module
-    if not selected_event_data.global_event:
-        # Check if any pet in pet_list has the same module as the event
-        has_module_pet = any(pet.module == selected_module_name for pet in game_globals.pet_list)
-        if not has_module_pet:
-            return None  # No pet with the required module
     
     # Event passes all checks, create and return the instance
     return create_event_instance_from_data(selected_event_data, selected_module_name)

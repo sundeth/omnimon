@@ -1,9 +1,0 @@
-{
-    "SCREEN_WIDTH": 480,
-    "SCREEN_HEIGHT": 480,
-    "FRAME_RATE": 60,
-    "MAX_PETS": 6,
-    "FULLSCREEN": false,
-    "AUTO_RESOLUTION": false,
-    "SHOW_FPS": false
-}

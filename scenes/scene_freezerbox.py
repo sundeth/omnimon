@@ -69,7 +69,7 @@ class SceneFreezerBox:
         self.ui_manager.add_component(self.background)
         
         # Title
-        self.title_scene = TitleScene(0, 5, "FREEZER")
+        self.title_scene = TitleScene(0, 9, "FREEZER")
         self.ui_manager.add_component(self.title_scene)
         
         # Box page indicator (only visible in box mode)
@@ -297,7 +297,7 @@ class SceneFreezerBox:
                     self.freezer_grid.refresh_from_freezer_page(self.freezer_pets[self.current_freezer_page])
                 else:
                     # Move from freezer to party
-                    if len(game_globals.pet_list) < constants.MAX_PETS:
+                    if len(game_globals.pet_list) < game_globals.configuration.max_pets:
                         if selected_pet in self.freezer_pets[self.current_freezer_page].pets:
                             self.freezer_pets[self.current_freezer_page].pets.remove(selected_pet)
                             selected_pet.patch()
@@ -362,49 +362,68 @@ class SceneFreezerBox:
 
 
     def load_freezer_data(self):
-        # Use Android-compatible path if running on Android
-        if runtime_globals.IS_ANDROID:
-            try:
-                from android.storage import app_storage_path # type: ignore
-                save_dir = os.path.join(app_storage_path(), "save")
-                os.makedirs(save_dir, exist_ok=True)
-                file_path = os.path.join(save_dir, "freezer.pkl")
-            except Exception as e:
-                print(f"[Freezer] Failed to get Android storage path: {e}")
-                file_path = "save/freezer.pkl"
-        else:
-            file_path = "save/freezer.pkl"
+        # Use game_globals.get_save_dir() which already handles Android and game mode subfolder
+        save_dir = game_globals.get_save_dir()
+        file_path = os.path.join(save_dir, "freezer.pkl")
         
         if os.path.exists(file_path):
-            with open(file_path, "rb") as f:
-                pets = pickle.load(f)
-                for page in pets:
-                    page.rebuild()
-                return pets
-        else:
-            pets = [GameFreezer([], i, "default_bg", "default_module") for i in range(10)]
-            self.save_freezer_data(pets)
-            return pets
+            try:
+                with open(file_path, "rb") as f:
+                    pets = pickle.load(f)
+                    
+                    # Validate game mode compatibility
+                    for page in pets:
+                        # Patch legacy freezer pages that lack game_mode
+                        if not hasattr(page, 'game_mode'):
+                            page.game_mode = -1  # Legacy = free
+                        
+                        page_mode = page.game_mode
+                        current_mode = game_globals.game_mode
+                        
+                        # Validate: legacy (-1) is compatible with free (0) only
+                        # A free freezer cannot be loaded in progress mode and vice versa
+                        if page_mode == -1:
+                            # Legacy freezer = treat as free mode
+                            if current_mode == game_globals.GAME_MODE_PROGRESS:
+                                # Incompatible: legacy freezer in progress mode
+                                # Clear all pets from this page
+                                has_pets = any(p is not None for p in page.pets) if page.pets else False
+                                if has_pets:
+                                    runtime_globals.game_console.log(
+                                        f"[Freezer] Warning: Legacy freezer page {page.page} has pets but game is in Progress mode. Pets hidden."
+                                    )
+                                    page.pets = []
+                        elif page_mode != current_mode:
+                            # Mode mismatch: clear pets from this page
+                            has_pets = any(p is not None for p in page.pets) if page.pets else False
+                            if has_pets:
+                                runtime_globals.game_console.log(
+                                    f"[Freezer] Warning: Freezer page {page.page} is mode {page_mode} but game is mode {current_mode}. Pets hidden."
+                                )
+                                page.pets = []
+                        
+                        page.rebuild()
+                    return pets
+            except Exception as e:
+                print(f"[Freezer] Failed to load freezer data: {e}")
+        
+        # Create new empty freezer with current game mode
+        pets = [GameFreezer([], i, "default_bg", "default_module", game_mode=game_globals.game_mode) for i in range(10)]
+        self.save_freezer_data(pets)
+        return pets
 
     def save_freezer_data(self, pets=None):
         pets = pets or self.freezer_pets
         
-        # Use Android-compatible path if running on Android
-        if runtime_globals.IS_ANDROID:
-            try:
-                from android.storage import app_storage_path # type: ignore
-                save_dir = os.path.join(app_storage_path(), "save")
-                os.makedirs(save_dir, exist_ok=True)
-                file_path = os.path.join(save_dir, "freezer.pkl")
-            except Exception as e:
-                print(f"[Freezer] Failed to get Android storage path: {e}")
-                save_dir = "save"
-                file_path = "save/freezer.pkl"
-                os.makedirs(save_dir, exist_ok=True)
-        else:
-            save_dir = "save"
-            file_path = "save/freezer.pkl"
-            os.makedirs(save_dir, exist_ok=True)
+        # Stamp each page with the current game mode
+        for page in pets:
+            if not hasattr(page, 'game_mode') or page.game_mode == -1:
+                page.game_mode = game_globals.game_mode
+        
+        # Use game_globals.get_save_dir() which already handles Android and game mode subfolder
+        save_dir = game_globals.get_save_dir()
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = os.path.join(save_dir, "freezer.pkl")
         
         with open(file_path, "wb") as f:
             pickle.dump(pets, f)

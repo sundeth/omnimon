@@ -1,0 +1,226 @@
+#=====================================================================
+# CountMatchClassicTraining (Shake-based Strength Bar Training)
+#=====================================================================
+
+import random
+import pygame
+
+from core import runtime_globals
+from core.animation import PetFrame
+from core.combat.training import Training
+from components.ui.ui_manager import UIManager
+from core.combat import combat_constants
+import core.constants as constants
+from core.game_module import sprite_load
+from core.utils.pygame_utils import blit_with_shadow
+from components.minigames.count_match_classic import CountMatchClassic
+from core.utils.scene_utils import change_scene
+
+
+class CountMatchClassicTraining(Training):
+    """
+    Count Match Classic training mode where players build up strength by shaking.
+    Uses the CountMatchClassic minigame (shake to charge 0-14).
+    """
+
+    def __init__(self, ui_manager: UIManager) -> None:
+        super().__init__(ui_manager)
+        # Don't create minigame yet - wait for charge phase
+        # The animated_sprite will show Ready during alert phase (handled by base Training)
+        self.minigame = None
+        # expose commonly accessed fields for compatibility
+        self.strength = 0
+        self.bar_level = 14
+        self.bar_timer = 0
+        self.attack_phase = 1
+        self.flash_frame = 0
+
+        # Restore attack/result assets/positions (training-specific)
+        SPRITE_SETS = [
+            (constants.BAG1_PATH, constants.BAG2_PATH),
+            (constants.ROCK1_PATH, constants.ROCK2_PATH),
+            (constants.TREE1_PATH, constants.TREE2_PATH),
+            (constants.BRICK1_PATH, constants.BRICK2_PATH),
+        ]
+
+        selected_sprites = random.choice(SPRITE_SETS)
+        self.bag1 = sprite_load(selected_sprites[0], size=(60 * runtime_globals.UI_SCALE, 120 * runtime_globals.UI_SCALE))
+        self.bag2 = sprite_load(selected_sprites[1], size=(60 * runtime_globals.UI_SCALE, 120 * runtime_globals.UI_SCALE))
+        self.attack_positions = []
+
+    def update_charge_phase(self):
+        # Create minigame on first entry to charge phase
+        if self.minigame is None:
+            self.minigame = CountMatchClassic(self.ui_manager, animated_sprite=self.animated_sprite)
+            self.bar_timer = pygame.time.get_ticks()
+        
+        # Ensure minigame is updated and synced before checking phase
+        self.minigame.update()
+        self.strength = self.minigame.strength
+
+        # Transition to wait_attack if hold time exceeded (double time for classic: 5000ms)
+        if pygame.time.get_ticks() - self.bar_timer > combat_constants.BAR_HOLD_TIME_MS * 2:
+            self.phase = "wait_attack"
+            self.frame_counter = 0
+            self.prepare_attacks()
+
+    def move_attacks(self):
+        """Handles the attack movement towards the bag."""
+        finished = False
+        new_positions = []
+
+        if self.attack_phase == 1:
+            for sprite, (x, y) in self.attack_positions:
+                x -= combat_constants.ATTACK_SPEED * (30 / constants.FRAME_RATE)
+                if x <= 0:
+                    finished = True
+                new_positions.append((sprite, (x, y)))
+
+            if finished:
+                new_positions = []
+                self.attack_phase = 2
+                for sprite, (x, y) in self.attack_positions:
+                    x += runtime_globals.SCREEN_WIDTH
+                    new_positions.append((sprite, (x, y)))
+
+            self.attack_positions = new_positions
+
+        elif self.attack_phase == 2:
+            bag_x = 50 * runtime_globals.UI_SCALE
+            for sprite, (x, y) in self.attack_positions:
+                x -= combat_constants.ATTACK_SPEED * (30 / constants.FRAME_RATE)
+
+                if x <= bag_x + (48 * runtime_globals.UI_SCALE):
+                    finished = True
+                new_positions.append((sprite, (x, y)))
+
+            if finished:
+                runtime_globals.game_sound.play("attack_hit")
+                self.phase = "impact"
+                self.flash_frame = 0
+
+            self.attack_positions = new_positions
+
+    def check_victory(self):
+        """Apply training results and return to game."""
+        if self.minigame:
+            self.strength = self.minigame.strength
+        return self.strength > 10
+
+    def check_and_award_trophies(self):
+        """Award trophy if strength reaches maximum (14)"""
+        if self.minigame:
+            self.strength = self.minigame.strength
+
+        if self.strength == 14:
+            for pet in self.pets:
+                pet.trophies += 1
+            runtime_globals.game_console.log(f"[TROPHY] Count Match Classic training perfect score achieved! Trophy awarded.")
+
+    def draw_charge(self, surface):
+        # Draw pets first, then minigame overlay on top
+        self.draw_pets(surface)
+        if self.minigame:
+            self.minigame.draw(surface)
+
+    def handle_event(self, event):
+        """Forward input events to the minigame."""
+        event_type, event_data = event
+        
+        if self.phase == "charge" and self.minigame and self.minigame.handle_event(event):
+            return
+        
+        if event_type == "B" and self.phase == "alert":
+            runtime_globals.game_sound.play("cancel")
+            change_scene("game")
+        elif self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
+            # Skip to result phase
+            runtime_globals.game_sound.play("cancel")
+            self.animated_sprite.stop()
+            self.phase = "result"
+            self.frame_counter = 0
+        elif self.phase == "result" and event_type in ["B", "START"]:
+            self.finish_training()
+
+    def draw_attack_move(self, surface):
+        if self.attack_phase == 1:
+            if self.frame_counter < int(10 * (constants.FRAME_RATE / 30)):
+                self.draw_pets(surface, PetFrame.ATK2)
+            else:
+                self.draw_pets(surface, PetFrame.ATK1)
+        else:
+            blit_with_shadow(surface, self.bag1, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - self.bag1.get_height() // 2))
+
+        for sprite, (x, y) in self.attack_positions:
+            blit_with_shadow(surface, sprite, (int(x), int(y)))
+
+    def draw_result(self, surface):
+        if self.minigame:
+            self.strength = self.minigame.strength
+
+        result_img = None
+        if 10 <= self.strength < 14:
+            result_img = self.bag2
+        elif self.strength < 10:
+            result_img = self.bag1
+
+        if self.frame_counter < 30:
+            if result_img:
+                x = int(50 * runtime_globals.UI_SCALE)
+                y = runtime_globals.SCREEN_HEIGHT // 2 - result_img.get_height() // 2
+                blit_with_shadow(surface, result_img, (x, y))
+        else:
+            # Use AnimatedSprite component with predefined result animations
+            if not self.animated_sprite.is_animation_playing():
+                duration = combat_constants.RESULT_SCREEN_FRAMES / constants.FRAME_RATE
+                
+                # Choose which result animation to play
+                if self.strength < 10:
+                    self.animated_sprite.play_bad(duration)
+                elif self.strength < 14:
+                    self.animated_sprite.play_great(duration)
+                else:
+                    self.animated_sprite.play_excellent(duration)
+            
+            # Draw the animated sprite
+            self.animated_sprite.draw(surface)
+
+            # Trophy notification on max (draw on top of animated sprite)
+            if self.strength >= 14:
+                self.draw_trophy_notification(surface)
+
+    def prepare_attacks(self):
+        attack_count = self.get_attack_count()
+        targets = self.pets
+        total_pets = len(targets)
+        if total_pets == 0:
+            return
+
+        available_height = runtime_globals.SCREEN_HEIGHT
+        spacing = min(available_height // total_pets, int(48 * runtime_globals.UI_SCALE) + int(20 * runtime_globals.UI_SCALE))
+        start_y = (runtime_globals.SCREEN_HEIGHT - (spacing * total_pets)) // 2
+
+        for i, pet in enumerate(targets):
+            atk_sprite = self.get_attack_sprite(pet, pet.atk_main)
+            x = runtime_globals.SCREEN_WIDTH - int(48 * runtime_globals.UI_SCALE) - int(70 * runtime_globals.UI_SCALE)
+            y = start_y + i * spacing
+
+            if attack_count == 1:
+                self.attack_positions.append((atk_sprite, (x, y)))
+            elif attack_count == 2:
+                self.attack_positions.append((atk_sprite, (x, y)))
+                self.attack_positions.append((atk_sprite, (x + int(20 * runtime_globals.UI_SCALE), y + int(10 * runtime_globals.UI_SCALE))))
+            elif attack_count == 3:
+                scaled_sprite = pygame.transform.scale2x(atk_sprite)
+                self.attack_positions.append((scaled_sprite, (x, y)))
+
+    def get_attack_count(self):
+        """Returns the number of attacks based on strength."""
+        if self.minigame:
+            self.strength = self.minigame.strength
+        if self.strength < 10:
+            return 1
+        elif self.strength < 14:
+            return 2
+        else:
+            return 3

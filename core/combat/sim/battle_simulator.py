@@ -1,23 +1,76 @@
 import struct
 import random
+import os
+import sys
+
+# Add project root to path for imports when running directly
+if __name__ == "__main__":
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
 try:
     from battle_utils import get_attack_pattern
-    from battle_utils import get_dm20_attack_pattern
+    from battle_utils import get_dm20_attack_pattern, get_dm20_single_battle_attack_pattern
     from models import *
 except ImportError:
     # Absolute imports for direct testing
     from core.combat.sim.battle_utils import get_attack_pattern
-    from core.combat.sim.battle_utils import get_dm20_attack_pattern
+    from core.combat.sim.battle_utils import get_dm20_attack_pattern, get_dm20_single_battle_attack_pattern
     from core.combat.sim.models import *
+
+# Import protocol handler
+try:
+    from core.combat.protocols import ProtocolHandler
+except ImportError:
+    # Add path and retry
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+    from core.combat.protocols import ProtocolHandler
 
 
 class BattleSimulator:
-    def __init__(self, protocol: BattleProtocol):
+    def __init__(self, protocol: BattleProtocol, protocol_name: str = None):
+        """
+        Initialize BattleSimulator with protocol.
+        
+        Args:
+            protocol: BattleProtocol enum value (for backwards compatibility)
+            protocol_name: Optional protocol name to load from JSON (e.g., 'DM20', 'DMC')
+        """
         self.protocol = protocol
+        self.protocol_name = protocol_name or self._get_protocol_name_from_enum(protocol)
+        
+        # Load protocol definition from JSON
+        self.protocol_handler = ProtocolHandler()
+        self.protocol_def = self.protocol_handler.load_protocol(self.protocol_name, 'battle')
+        
+        if not self.protocol_def:
+            print(f"[BattleSimulator] Warning: Could not load protocol definition for {self.protocol_name}")
+    
+    def _get_protocol_name_from_enum(self, protocol: BattleProtocol) -> str:
+        """Map BattleProtocol enum to protocol name."""
+        mapping = {
+            BattleProtocol.DM_BS: 'DM',
+            BattleProtocol.DMC_BS: 'DMC',
+            BattleProtocol.DM20_BS: 'DM20',
+            BattleProtocol.DMX_BS: 'DMX',
+            BattleProtocol.PEN20_BS: 'PEN20'
+        }
+        return mapping.get(protocol, 'DM20')
 
     def simulate(self, device1: Digimon, device2: Digimon) -> BattleResult:
-        if self.protocol == BattleProtocol.DMC_BS:
+        """
+        Simulate a battle using the loaded protocol definition.
+        """
+        if self.protocol_def:
+            print(f"[BattleSimulator] Using protocol: {self.protocol_def.display_name}")
+            print(f"  - Packet count: {self.protocol_def.packet_count}")
+            print(f"  - Fixed HP: {self.protocol_def.fixed_hp}")
+            print(f"  - Uses minigame: {self.protocol_def.uses_minigame}")
+        
+        if self.protocol == BattleProtocol.DM_BS:
+            result = self._simulate_dm_bs(device1, device2)
+        elif self.protocol == BattleProtocol.DMC_BS:
             result = self._simulate_dmc_bs(device1, device2)
         elif self.protocol == BattleProtocol.DM20_BS:
             result = self._simulate_dm20_bs(device1, device2)
@@ -29,6 +82,7 @@ class BattleSimulator:
             raise NotImplementedError("Protocol not implemented")
         
         self.print_battle_log(result)
+        self.print_dcom_code(result)
         return result
     
     def print_battle_log(self, result):
@@ -105,15 +159,272 @@ class BattleSimulator:
             # Handle invalid packet types
             print(f"  Packet {index + 1}: Invalid packet type: {type(packet)}")
 
+    def print_dcom_code(self, result: BattleResult):
+        """
+        Prints the battle packets in DCom validator format:
+        r:XXXX s:XXXX r:XXXX s:XXXX ... t
+        
+        Alternates between device1 (r:) and device2 (s:) packets.
+        """
+        parts = []
+        
+        # Determine the maximum number of packets
+        max_packets = max(len(result.device1_packets), len(result.device2_packets))
+        
+        for i in range(max_packets):
+            # Add device1 packet (r:)
+            if i < len(result.device1_packets):
+                packet = result.device1_packets[i]
+                if isinstance(packet, bytes):
+                    hex_str = packet.hex().upper()
+                elif isinstance(packet, list):
+                    hex_str = b"".join(packet).hex().upper()
+                else:
+                    hex_str = "0000"
+                parts.append(f"r:{hex_str}")
+            
+            # Add device2 packet (s:)
+            if i < len(result.device2_packets):
+                packet = result.device2_packets[i]
+                if isinstance(packet, bytes):
+                    hex_str = packet.hex().upper()
+                elif isinstance(packet, list):
+                    hex_str = b"".join(packet).hex().upper()
+                else:
+                    hex_str = "0000"
+                parts.append(f"s:{hex_str}")
+        
+        # Join all parts and add terminator
+        dcom_code = " ".join(parts) + " t"
+        print(f"\n[DCom Validator Format]")
+        print(dcom_code)
+        print()
+
+    def _get_dm_slot_from_power(self, power: int) -> tuple:
+        """
+        Map power level to DM slot (A-L).
+        Based on original Digital Monster slot system.
+        
+        Returns:
+            Tuple of (slot_letter, slot_index) where slot_index is 0-11 (A=0, L=11)
+        """
+        # Power to slot mapping based on documentation
+        if power <= 10:
+            return ('A', 0)
+        elif power <= 15:
+            return ('B', 1)
+        elif power <= 20:
+            return ('C', 2)
+        elif power <= 25:
+            return ('D', 3)
+        elif power <= 30:
+            return ('E', 4)
+        elif power <= 35:
+            return ('F', 5)
+        elif power <= 40:
+            return ('G', 6)
+        elif power <= 45:
+            return ('H', 7)
+        elif power <= 50:
+            return ('I', 8)
+        elif power <= 55:
+            return ('J', 9)
+        elif power <= 59:
+            return ('K', 10)
+        else:  # 60+
+            return ('L', 11)
+
+    def _get_dm_win_probability(self, my_slot_index: int, opponent_slot_index: int, my_boost: int = 0, opponent_boost: int = 0) -> int:
+        """
+        Get win probability out of 16 for DM slot matchup.
+        Based on original Digital Monster matchup table.
+        
+        Args:
+            my_slot_index: My slot index (0-11 for A-L)
+            opponent_slot_index: Opponent slot index (0-11 for A-L)
+            my_boost: My boost value (0-4)
+            opponent_boost: Opponent boost value (0-4)
+            
+        Returns:
+            Win probability out of 16
+        """
+        # DM matchup table: chance out of 16 to win
+        # Rows are my slot (A-L), columns are opponent slot (A-L)
+        matchup_table = [
+            # A   B   C   D   E   F   G   H   I   J   K   L
+            [ 8,  8,  2,  3,  2,  3,  2,  3,  7,  1,  1,  1],  # A
+            [ 8,  8,  2,  3,  2,  3,  2,  3,  7,  1,  1,  1],  # B
+            [15, 15,  8, 11,  9, 11,  7, 11, 13,  3,  3,  3],  # C
+            [13, 13,  5,  8,  5,  9,  5,  7, 11,  2,  2,  2],  # D
+            [15, 15,  7, 11,  8, 11,  9, 11, 13,  3,  3,  3],  # E
+            [13, 13,  5,  7,  5,  8,  5,  9, 11,  2,  2,  2],  # F
+            [15, 15,  9, 11,  7, 11,  8, 11, 13,  3,  3,  3],  # G
+            [13, 13,  5,  9,  5,  7,  5,  8, 11,  2,  2,  2],  # H
+            [ 9,  9,  3,  5,  3,  5,  3,  5,  8,  1,  1,  1],  # I
+            [15, 15, 13, 14, 13, 14, 13, 14, 15,  8,  5,  5],  # J
+            [15, 15, 13, 14, 13, 14, 13, 14, 15, 11,  8,  5],  # K
+            [15, 15, 13, 14, 13, 14, 13, 14, 15, 11, 11,  8],  # L
+        ]
+        
+        base_probability = matchup_table[my_slot_index][opponent_slot_index]
+        
+        # Apply boost advantage (each boost level adds to chance, capped at 15)
+        boost_diff = my_boost - opponent_boost
+        adjusted_probability = min(15, max(1, base_probability + boost_diff))
+        
+        return adjusted_probability
+
+    def _simulate_dm_bs(self, attacker: Digimon, defender: Digimon) -> BattleResult:
+        """
+        Simulates a battle using the original Digital Monster (DM) protocol.
+        Uses slot-based system where winner is determined by slot matchup table.
+        
+        DM Protocol:
+        - 2 packets (Digimon Data + Battle Result)
+        - Fixed 5 HP
+        - Winner determined by slot matchup with boost modifier
+        - Attack pattern: Winner 1,1,1,2 / Loser 1,1,1,1
+        - 4 turns, all attacks hit
+        """
+        import random
+        
+        # Get slots from power
+        attacker_slot, attacker_slot_idx = self._get_dm_slot_from_power(attacker.power)
+        defender_slot, defender_slot_idx = self._get_dm_slot_from_power(defender.power)
+        
+        print(f"[DM] {attacker.name} slot: {attacker_slot} (power {attacker.power})")
+        print(f"[DM] {defender.name} slot: {defender_slot} (power {defender.power})")
+        
+        # Calculate win probability for attacker
+        # In DM, boost comes from pills (0-4), here we'll use effort/16 as proxy
+        attacker_boost = min(4, attacker.mini_game)
+        defender_boost = min(4, defender.mini_game)
+        
+        win_probability = self._get_dm_win_probability(
+            attacker_slot_idx, defender_slot_idx, 
+            attacker_boost, defender_boost
+        )
+        
+        print(f"[DM] Attacker win probability: {win_probability}/16")
+        
+        # Roll for outcome
+        roll = random.randint(1, 16)
+        attacker_wins = roll <= win_probability
+        
+        print(f"[DM] Roll: {roll}, Attacker wins: {attacker_wins}")
+        
+        # Generate packets (DM format)
+        device1_packets = []
+        device2_packets = []
+        
+        # Packet 1: Boost(4) | Slot(4) with mirrored values
+        def make_dm_packet1(boost, slot_hex):
+            boost_mirror = (~boost) & 0x0F
+            slot_mirror = (~slot_hex) & 0x0F
+            byte0 = (boost_mirror << 4) | slot_mirror
+            byte1 = (boost << 4) | slot_hex
+            return struct.pack(">BB", byte0, byte1)
+        
+        attacker_slot_hex = 0x3 + attacker_slot_idx  # A=0x3, L=0xE
+        defender_slot_hex = 0x3 + defender_slot_idx
+        
+        device1_packets.append(make_dm_packet1(attacker_boost, attacker_slot_hex))
+        device2_packets.append(make_dm_packet1(defender_boost, defender_slot_hex))
+        
+        # Packet 2: Version(4) | Outcome(4) with mirrored values
+        def make_dm_packet2(version, outcome):
+            version_mirror = (~version) & 0x0F
+            outcome_mirror = (~outcome) & 0x0F
+            byte0 = (version_mirror << 4) | outcome_mirror
+            byte1 = (version << 4) | outcome
+            return struct.pack(">BB", byte0, byte1)
+        
+        version = 1
+        device1_packets.append(make_dm_packet2(version, 1 if attacker_wins else 2))
+        device2_packets.append(make_dm_packet2(version, 2 if attacker_wins else 1))
+        
+        # Battle simulation with fixed HP and patterns
+        attacker_hp = 5  # DM fixed HP
+        defender_hp = 5
+        battle_log = []
+        
+        # Attack patterns: Winner 1,1,1,2 / Loser 1,1,1,1
+        winner_pattern = [1, 1, 1, 2]
+        loser_pattern = [1, 1, 1, 1]
+        
+        if attacker_wins:
+            attacker_pattern = winner_pattern
+            defender_pattern = loser_pattern
+        else:
+            attacker_pattern = loser_pattern
+            defender_pattern = winner_pattern
+        
+        # 4 turns, all attacks hit
+        for turn in range(4):
+            # Attacker attacks
+            attacker_damage = attacker_pattern[turn]
+            defender_hp = max(0, defender_hp - attacker_damage)
+            
+            # Defender attacks
+            defender_damage = defender_pattern[turn]
+            attacker_hp = max(0, attacker_hp - defender_damage)
+            
+            turn_log = TurnLog(
+                turn=turn + 1,
+                device1_status=[
+                    DigimonStatus(name=attacker.name, hp=attacker_hp, alive=attacker_hp > 0)
+                ],
+                device2_status=[
+                    DigimonStatus(name=defender.name, hp=defender_hp, alive=defender_hp > 0)
+                ],
+                attacks=[
+                    AttackLog(
+                        turn=turn + 1,
+                        device="device1",
+                        attacker=0,
+                        defender=0,
+                        hit=True,
+                        damage=attacker_damage
+                    ),
+                    AttackLog(
+                        turn=turn + 1,
+                        device="device2",
+                        attacker=0,
+                        defender=0,
+                        hit=True,
+                        damage=defender_damage
+                    )
+                ]
+            )
+            battle_log.append(turn_log)
+        
+        winner = "device1" if attacker_wins else "device2"
+        
+        result = BattleResult(
+            winner=winner,
+            device1_final=[
+                DigimonStatus(name=attacker.name, hp=attacker_hp, alive=attacker_hp > 0)
+            ],
+            device2_final=[
+                DigimonStatus(name=defender.name, hp=defender_hp, alive=defender_hp > 0)
+            ],
+            battle_log=battle_log,
+            device1_packets=device1_packets,
+            device2_packets=device2_packets
+        )
+        
+        return result
+
     def _simulate_dmc_bs(self, attacker: Digimon, defender: Digimon) -> BattleResult:
         """
         Simulates a battle using the DMC protocol.
-        :param attacker: The attacking Digimon (device1).
-        :param defender: The defending Digimon (device2).
-        :return: A BattleResult object.
+        Uses protocol definition from JSON for constants and configuration.
         """
-        dev_att = DMCDevice(attacker)
-        dev_def = DMCDevice(defender)
+        # Get protocol constants
+        turns = self.protocol_def.get_constant('TURNS') if self.protocol_def else 5
+        
+        dev_att = DMCDevice(attacker, self.protocol_def)
+        dev_def = DMCDevice(defender, self.protocol_def)
 
         # Initialize packet storage
         device1_packets = []
@@ -164,8 +475,8 @@ class BattleSimulator:
             winner_name = defender.name
             loser_name = attacker.name
 
-        # Simulate 5 turns
-        for turn in range(5):
+        # Simulate battle turns using protocol definition
+        for turn in range(turns):
             # Winner attacks
             winner_damage = winner_pattern[turn]
             loser_hp = max(0, loser_device.hp - winner_damage)
@@ -228,15 +539,19 @@ class BattleSimulator:
     def _simulate_dm20_bs(self, attacker: Digimon, defender: Digimon) -> BattleResult:
         """
         Simulates a battle using the Digital Monster Ver.20th protocol.
+        Uses protocol definition from JSON for constants and configuration.
         """
-        # Initialize DM20Device instances
-        device1 = DM20Device(attacker)
-        device2 = DM20Device(defender)
+        # Get protocol constants
+        EOL = self.protocol_def.get_constant('EOL') if self.protocol_def else 0b1110
+        VERSION = self.protocol_def.get_constant('VERSION') if self.protocol_def else 0b0001
+        fixed_hp = self.protocol_def.fixed_hp if self.protocol_def else 4
+        
+        # Initialize DM20Device instances with protocol
+        device1 = DM20Device(attacker, self.protocol_def)
+        device2 = DM20Device(defender, self.protocol_def)
 
         # Constants
-        EOL = 0b1110  # End of Line
         COU = 0b00    # Constant Or Unknown
-        VERSION = 0b0001
 
         # Generate and exchange packets
         packets_device1 = []
@@ -314,41 +629,56 @@ class BattleSimulator:
         packets_device1.append(packetA_device1)
         packets_device2.append(packetA_device2)
 
-        # Simulate the battle
-        attacker_hp = 4
-        defender_hp = 4
+        # Simulate the battle with fixed HP from protocol
+        # DM20 uses 5 HP (not 4 as previously thought)
+        attacker_hp = 5  # DM20 fixed HP
+        defender_hp = 5  # DM20 fixed HP
         battle_log = []
 
-        # Retrieve attack patterns
-        attack_pattern_device1 = get_dm20_attack_pattern(device1.digimon.tag_meter, device1.digimon.mini_game)
-        attack_pattern_device2 = get_dm20_attack_pattern(device2.digimon.tag_meter, device2.digimon.mini_game)
+        # Retrieve attack patterns using DM20 single battle pattern table
+        # Pattern index comes from minigame taps (stored in mini_game field)
+        attack_pattern_device1 = get_dm20_single_battle_attack_pattern(device1.digimon.mini_game)
+        attack_pattern_device2 = get_dm20_single_battle_attack_pattern(device2.digimon.mini_game)
 
-        # Extract hits for both devices
-        device1_hits = [(packetA_device1[1] >> (4 + i)) & 1 for i in range(4)]  # Extract MSB 4 bits from Packet A (Device 1)
-        device2_hits = [(packetA_device2[1] >> (4 + i)) & 1 for i in range(4)]  # Extract MSB 4 bits from Packet A (Device 2)
+        # Extract hits for both devices from Packet A
+        # Packet A format: [Check(4)|Dodges(4), Hits(4)|EOL(4)]
+        # Byte 0: CCCC DDDD (Check | Dodges)
+        # Byte 1: HHHH EEEE (Hits | EOL)
+        # Hits nibble: bit0 = turn 1, bit1 = turn 2, etc (read right to left)
+        # Each device's Hits field = which of their attacks HIT the opponent
+        device1_hits_nibble = (packetA_device1[1] >> 4) & 0x0F
+        device2_hits_nibble = (packetA_device2[1] >> 4) & 0x0F
+        
+        # Extract individual hit bits (bit 0 = turn 1, bit 1 = turn 2, etc)
+        device1_hits = [(device1_hits_nibble >> i) & 1 for i in range(4)]
+        device2_hits = [(device2_hits_nibble >> i) & 1 for i in range(4)]
 
-        # Reverse the order of bits to match the turn order (MSB -> Turn 1, LSB -> Turn 4)
-        device1_hits.reverse()
-        device2_hits.reverse()
-
-        # Simulate up to 6 turns
-        for turn in range(6):
-            # Determine the attack index (repeat 1st and 2nd attacks for turns 5 and 6)
+        # DM20 has 5 turns (attacks) but only tracks 4 hits in Packet A
+        # Turn 5 uses turn 1's pattern value and turn 1's hit result
+        # Both devices attack each turn simultaneously
+        for turn in range(5):
+            # Attack pattern index (0-3 for turns 1-4, wraps to 0 for turn 5)
             attack_index = turn % 4
+            
+            # Hit index for Packet A lookup (0-3, turn 5 uses turn 1's hit)
+            hit_index = turn if turn < 4 else 0
 
             # Device 1 attacks Device 2
             device1_attack = attack_pattern_device1[attack_index]
-            device1_hit = device1_hits[turn] if turn < 4 else device1_hits[turn % 4]
+            device1_hit = device1_hits[hit_index]
             defender_damage = device1_attack if device1_hit else 0
             defender_hp = max(0, defender_hp - defender_damage)
 
             # Device 2 attacks Device 1
             device2_attack = attack_pattern_device2[attack_index]
-            device2_hit = device2_hits[turn] if turn < 4 else device2_hits[turn % 4]
+            device2_hit = device2_hits[hit_index]
             attacker_damage = device2_attack if device2_hit else 0
             attacker_hp = max(0, attacker_hp - attacker_damage)
 
             # Log the turn
+            # IMPORTANT: Store the ATTACK PATTERN VALUE (what attack was attempted), not dealt damage
+            # The battle scene needs to know the attack type (1=weak, 2=strong) even on misses
+            # The 'hit' field indicates whether the attack connected
             turn_log = TurnLog(
                 turn=turn + 1,
                 device1_status=[
@@ -364,7 +694,7 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device1_hit),
-                        damage=defender_damage
+                        damage=device1_attack  # Pattern value, not dealt damage
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -372,7 +702,7 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device2_hit),
-                        damage=attacker_damage
+                        damage=device2_attack  # Pattern value, not dealt damage
                     )
                 ]
             )
@@ -392,7 +722,7 @@ class BattleSimulator:
                 winner = "device1"
                 break
         else:
-            # If both are alive after 6 turns, winner is the one with highest HP
+            # If both are alive after 5 turns, winner is the one with highest HP
             if attacker_hp > defender_hp:
                 winner = "device1"
             elif defender_hp > attacker_hp:
@@ -418,19 +748,26 @@ class BattleSimulator:
     
     def _simulate_pen20_bs(self, attacker: Digimon, defender: Digimon) -> BattleResult:
         """
-        Simulates a battle using the Digital Monster Pen20th protocol.
-        :param attacker: The attacking Digimon (device1).
-        :param defender: The defending Digimon (device2).
-        :return: A BattleResult object.
+        Simulates a battle using the Pendulum 20th protocol.
+        Uses protocol definition from JSON for constants and configuration.
+        
+        PEN20 is similar to DM20:
+        - Fixed 5 HP
+        - 5 turns (turn 5 uses turn 1's pattern and hit)
+        - Uses Dummy minigame (0-14 taps)
+        - Traited and egg_shake provide power bonuses
         """
-        # Initialize Pen20Device instances
-        device1 = Pen20Device(attacker)
-        device2 = Pen20Device(defender)
+        # Get protocol constants
+        EOL = self.protocol_def.get_constant('EOL') if self.protocol_def else 0b1110
+        VERSION = self.protocol_def.get_constant('VERSION') if self.protocol_def else 0b0001
+        fixed_hp = self.protocol_def.fixed_hp if self.protocol_def else 5  # PEN20 uses 5 HP like DM20
+        
+        # Initialize PEN20Device instances with protocol
+        device1 = Pen20Device(attacker, self.protocol_def)
+        device2 = Pen20Device(defender, self.protocol_def)
 
         # Constants
-        EOL = 0b1110  # End of Line
         COU = 0b00    # Constant Or Unknown
-        VERSION = 0b0001
 
         # Generate and exchange packets
         packets_device1 = []
@@ -508,41 +845,49 @@ class BattleSimulator:
         packets_device1.append(packetA_device1)
         packets_device2.append(packetA_device2)
 
-        # Simulate the battle
-        attacker_hp = 3
-        defender_hp = 3
+        # Simulate the battle with fixed HP from protocol (PEN20 uses 5 HP like DM20)
+        attacker_hp = 5  # Fixed HP
+        defender_hp = 5  # Fixed HP
         battle_log = []
 
-        # Retrieve attack patterns
-        attack_pattern_device1 = get_attack_pattern(0, 0, protocol="PEN20")
-        attack_pattern_device2 = get_attack_pattern(0, 0, protocol="PEN20")
+        # Retrieve attack patterns using DM20 single battle pattern table
+        # Pattern index comes from minigame taps (stored in mini_game field)
+        attack_pattern_device1 = get_dm20_single_battle_attack_pattern(device1.digimon.mini_game)
+        attack_pattern_device2 = get_dm20_single_battle_attack_pattern(device2.digimon.mini_game)
 
-        # Extract hits for both devices
-        device1_hits = [(packetA_device1[1] >> (4 + i)) & 1 for i in range(4)]  # Extract MSB 4 bits from Packet A (Device 1)
-        device2_hits = [(packetA_device2[1] >> (4 + i)) & 1 for i in range(4)]  # Extract MSB 4 bits from Packet A (Device 2)
+        # Extract hits for both devices from Packet A
+        # Packet A format: [Check(4)|hit_me(4), hit_you(4)|EOL(4)]
+        # hit_me nibble: which of MY attacks HIT the opponent
+        device1_hits_nibble = (packetA_device1[0]) & 0x0F  # Lower nibble of byte 0
+        device2_hits_nibble = (packetA_device2[0]) & 0x0F
+        
+        # Extract individual hit bits (bit 0 = turn 1, bit 1 = turn 2, etc)
+        device1_hits = [(device1_hits_nibble >> i) & 1 for i in range(4)]
+        device2_hits = [(device2_hits_nibble >> i) & 1 for i in range(4)]
 
-        # Reverse the order of bits to match the turn order (MSB -> Turn 1, LSB -> Turn 4)
-        device1_hits.reverse()
-        device2_hits.reverse()
-
-        # Simulate up to 6 turns
-        for turn in range(6):
-            # Determine the attack index (repeat 1st and 2nd attacks for turns 5 and 6)
+        # PEN20 has 5 turns (attacks) but only 4 hit bits in Packet A
+        # Turn 5 uses turn 1's pattern value and turn 1's hit result
+        for turn in range(5):
+            # Attack pattern index (0-3 for turns 1-4, wraps to 0 for turn 5)
             attack_index = turn % 4
+            
+            # Hit index for Packet A lookup (0-3, turn 5 uses turn 1's hit)
+            hit_index = turn if turn < 4 else 0
 
             # Device 1 attacks Device 2
             device1_attack = attack_pattern_device1[attack_index]
-            device1_hit = device1_hits[turn] if turn < 4 else device1_hits[turn % 4]
+            device1_hit = device1_hits[hit_index]
             defender_damage = device1_attack if device1_hit else 0
             defender_hp = max(0, defender_hp - defender_damage)
 
             # Device 2 attacks Device 1
             device2_attack = attack_pattern_device2[attack_index]
-            device2_hit = device2_hits[turn] if turn < 4 else device2_hits[turn % 4]
+            device2_hit = device2_hits[hit_index]
             attacker_damage = device2_attack if device2_hit else 0
             attacker_hp = max(0, attacker_hp - attacker_damage)
 
             # Log the turn
+            # IMPORTANT: Store the ATTACK PATTERN VALUE (what attack was attempted), not dealt damage
             turn_log = TurnLog(
                 turn=turn + 1,
                 device1_status=[
@@ -558,7 +903,7 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device1_hit),
-                        damage=defender_damage
+                        damage=device1_attack  # Pattern value, not dealt damage
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -566,23 +911,32 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device2_hit),
-                        damage=attacker_damage
+                        damage=device2_attack  # Pattern value, not dealt damage
                     )
                 ]
             )
             battle_log.append(turn_log)
 
-            # End battle if one Digimon is defeated
-            if attacker_hp == 0 or defender_hp == 0:
+            # End battle if both Digimon are defeated
+            if attacker_hp == 0 and defender_hp == 0:
+                winner = "device1"  # Device 1 attacks first, wins ties
                 break
 
-        # Determine the winner
-        if attacker_hp > defender_hp:
-            winner = "device1"
-        elif defender_hp > attacker_hp:
-            winner = "device2"
+            # End battle if one Digimon is defeated
+            if attacker_hp == 0:
+                winner = "device2"
+                break
+            elif defender_hp == 0:
+                winner = "device1"
+                break
         else:
-            winner = "draw"
+            # If both are alive after 5 turns, winner is the one with highest HP
+            if attacker_hp > defender_hp:
+                winner = "device1"
+            elif defender_hp > attacker_hp:
+                winner = "device2"
+            else:
+                winner = "draw"
 
         # Prepare the final result
         result = BattleResult(
@@ -603,10 +957,14 @@ class BattleSimulator:
     def _simulate_dmx_bs(self, attacker: Digimon, defender: Digimon) -> BattleResult:
         """
         Simulates a battle using the DMX protocol.
+        Uses protocol definition from JSON for constants and configuration.
         """
-        # Initialize DMXDevice instances
-        device1 = DMXDevice(attacker)
-        device2 = DMXDevice(defender)
+        # Get protocol constants
+        turns = self.protocol_def.get_constant('TURNS') if self.protocol_def else 5
+        
+        # Initialize DMXDevice instances with protocol
+        device1 = DMXDevice(attacker, self.protocol_def)
+        device2 = DMXDevice(defender, self.protocol_def)
 
         # Initialize packet storage
         packets_device1 = []
@@ -673,13 +1031,13 @@ class BattleSimulator:
         attack_pattern_device1 = get_attack_pattern(device1.level, device1.digimon.mini_game, protocol="DMX")
         attack_pattern_device2 = get_attack_pattern(device2.level, device2.digimon.mini_game, protocol="DMX")
 
-        # Simulate the battle
+        # Simulate the battle using protocol configuration
         attacker_hp = device1.hp
         defender_hp = device2.hp
         battle_log = []
 
-        # Simulate up to 5 turns
-        for turn in range(5):
+        # Simulate turns from protocol
+        for turn in range(turns):
             # Determine the attack index (repeat 1st and 2nd attacks for turns 5 and 6)
             attack_index = turn % 4
 
@@ -756,9 +1114,11 @@ class BattleSimulator:
 class DMCDevice:
     """
     Represents a Digimon device in a battle, able to generate and parse packets.
+    Uses protocol definition for constants.
     """
-    def __init__(self, data: Digimon):
+    def __init__(self, data: Digimon, protocol_def=None):
         self.data = data
+        self.protocol_def = protocol_def
         self.hp = self.data.hp
         self.power = self.data.power
         self.attribute = self.data.attribute
@@ -810,14 +1170,113 @@ class DMCDevice:
         # Simulate attack roll
         attack_roll = random.randint(0, 99)
         return 1 if attack_roll < hitrate else 0  # 1 = win, 0 = lose
+
+
+class DMDevice:
+    """
+    Represents a Digimon device in the original DM (Digital Monster) protocol.
+    Uses slot-based battle system with 2 packets containing mirrored bits.
+    """
+    
+    # Slot mapping: power -> slot hex value
+    POWER_TO_SLOT = [
+        (10, 0x3),   # A: power <= 10
+        (15, 0x4),   # B: 11-15
+        (20, 0x5),   # C: 16-20
+        (25, 0x6),   # D: 21-25
+        (30, 0x7),   # E: 26-30
+        (35, 0x8),   # F: 31-35
+        (40, 0x9),   # G: 36-40
+        (45, 0xA),   # H: 41-45
+        (50, 0xB),   # I: 46-50
+        (55, 0xC),   # J: 51-55
+        (59, 0xD),   # K: 56-59
+    ]
+    
+    def __init__(self, digimon: Digimon):
+        self.digimon = digimon
+        self.power = digimon.power
+        self.boost = min(4, max(0, digimon.mini_game if digimon.mini_game else 0))  # 0-4 from pills
+        self.slot = self._get_slot_from_power(self.power)
+        self.version = 1
+        
+    def _get_slot_from_power(self, power: int) -> int:
+        """Convert power to slot hex value (3-E)."""
+        for max_power, slot_hex in self.POWER_TO_SLOT:
+            if power <= max_power:
+                return slot_hex
+        return 0xE  # L: power >= 60
+    
+    def _mirror_bits(self, value: int, bits: int = 4) -> int:
+        """Mirror/invert bits of a value."""
+        return (~value) & ((1 << bits) - 1)
+    
+    def generate_packet1(self) -> bytes:
+        """
+        Generate Packet 1: Digimon Data
+        Format: [boost_mirror(4) | slot_mirror(4)] [boost(4) | slot(4)]
+        """
+        boost_mirror = self._mirror_bits(self.boost)
+        slot_mirror = self._mirror_bits(self.slot)
+        
+        byte1 = (boost_mirror << 4) | slot_mirror
+        byte2 = (self.boost << 4) | self.slot
+        
+        return struct.pack(">BB", byte1, byte2)
+    
+    def generate_packet2(self, outcome: int = 0) -> bytes:
+        """
+        Generate Packet 2: Battle Result
+        Format: [version_mirror(4) | outcome_mirror(4)] [version(4) | outcome(4)]
+        
+        Args:
+            outcome: 0 = not yet determined, 1 = victory, 2 = defeat
+        """
+        version_mirror = self._mirror_bits(self.version)
+        outcome_mirror = self._mirror_bits(outcome)
+        
+        byte1 = (version_mirror << 4) | outcome_mirror
+        byte2 = (self.version << 4) | outcome
+        
+        return struct.pack(">BB", byte1, byte2)
+    
+    def generate_all_packets(self) -> list:
+        """Generate both packets for DM protocol."""
+        return [
+            self.generate_packet1(),
+            self.generate_packet2()
+        ]
+    
+    @staticmethod
+    def parse_packet1(data: bytes) -> dict:
+        """Parse opponent's Packet 1."""
+        if len(data) < 2:
+            return None
+        byte1, byte2 = struct.unpack(">BB", data[:2])
+        boost = (byte2 >> 4) & 0x0F
+        slot = byte2 & 0x0F
+        return {'boost': boost, 'slot': slot}
+    
+    @staticmethod
+    def parse_packet2(data: bytes) -> dict:
+        """Parse opponent's Packet 2."""
+        if len(data) < 2:
+            return None
+        byte1, byte2 = struct.unpack(">BB", data[:2])
+        version = (byte2 >> 4) & 0x0F
+        outcome = byte2 & 0x0F
+        return {'version': version, 'outcome': outcome}
+
     
 class DM20Device:
     """
     Represents a Digimon device in the DM20_BS protocol.
     Handles packet generation, processing, and state management.
+    Uses protocol definition for constants.
     """
-    def __init__(self, digimon: Digimon):
+    def __init__(self, digimon: Digimon, protocol_def=None):
         self.digimon = digimon
+        self.protocol_def = protocol_def
         self.hp = digimon.hp
         self.power = digimon.power
         self.attribute = digimon.attribute
@@ -827,70 +1286,122 @@ class DM20Device:
         self.tag_meter = digimon.tag_meter  # Use the tag_meter attribute from the Digimon class
         self.packets = []  # Stores packets received from the opponent
         self.opponent_data = []  # Store opponent's data
+        self.own_packets = []  # Track our own sent packets for checksum calculation
 
     def generate_packet1(self):
         """
         Generates Packet 1: Name 2, Name 1.
         """
         tamer_name = ["O", "M", "N", "I"]
-        return struct.pack(">BB", ord(tamer_name[1]), ord(tamer_name[0]))
+        packet = struct.pack(">BB", ord(tamer_name[1]), ord(tamer_name[0]))
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet2(self):
         """
         Generates Packet 2: Name 4, Name 3.
         """
         tamer_name = ["O", "M", "N", "I"]
-        return struct.pack(">BB", ord(tamer_name[3]), ord(tamer_name[2]))
+        packet = struct.pack(">BB", ord(tamer_name[3]), ord(tamer_name[2]))
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet3(self, order, version, eol):
         """
-        Generates Packet 3: Order, Attack (Mini-Game Taps), Operation, Version, EOL.
+        Generates Packet 3: Order | Attack (pattern index) | Operation | Version | EOL
+        Packet 3: 1 bit Order, 5 bits Attack, 2 bits Operation, 4 bits Version, 4 bits EOL
+        Binary: O AAAAA OO VVVV EEEE
         """
-        attack = self.digimon.mini_game  # Use the mini-game taps value
-        operation = 0b00  # Single Battle
-        return struct.pack(">B", (order << 7) | (attack << 2) | operation) + struct.pack(">B", (version << 4) | eol)
+        # Convert minigame taps to pattern index
+        from core.combat.sim.battle_utils import get_dm20_pattern_index_from_taps
+        pattern_index = get_dm20_pattern_index_from_taps(self.digimon.mini_game)
+        
+        operation = 0b00  # Single Battle (2 bits)
+        # Pack across bytes: O AAAAA OO VVVV EEEE
+        byte1 = (order << 7) | (pattern_index << 2) | operation
+        byte2 = (version << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet4(self, cou, eol):
         """
-        Generates Packet 4: COU, Index L, Attribute L, EOL.
+        Generates Packet 4: COU | Index L | Attribute L | EOL
+        Packet 4: 2 bits COU, 8 bits Index, 2 bits Attribute, 4 bits EOL
+        Binary: CC IIIIIIII AA EEEE
         """
-        return struct.pack(">B", (cou << 6) | self.index) + struct.pack(">B", (self.attribute << 4) | eol)
+        # Pack across bytes: CC IIIIII II AA EEEE = CCIIIIIII IAAEEEEE -> CCIIIIII IIAAEEEE
+        byte1 = (cou << 6) | (self.index >> 2)
+        byte2 = ((self.index & 0x03) << 6) | (self.attribute << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet5(self, eol):
         """
-        Generates Packet 5: Shot S L, Shot W L, EOL.
+        Generates Packet 5: Shot S L | Shot W L | EOL
+        Packet 5: 6 bits Shot S, 6 bits Shot W, 4 bits EOL
+        Binary: SSSSSS WWWWWW EEEE
         """
-        return struct.pack(">BBB", self.shot1, self.shot2, eol)
+        # Pack across bytes: SSSSSS WW WWWW EEEE = SSSSSSW W WWWWEEEE -> SSSSSSWW WWWWEEEE
+        byte1 = (self.shot1 << 2) | (self.shot2 >> 4)
+        byte2 = ((self.shot2 & 0x0F) << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet6(self, cou, eol):
         """
-        Generates Packet 6: COU, Power L, EOL.
+        Generates Packet 6: COU | Power L | EOL
+        Packet 6: 4 bits COU, 8 bits Power, 4 bits EOL
+        Binary: CCCC PPPPPPPP EEEE
         """
-        return struct.pack(">B", (cou << 6) | (self.power & 0b111111)) + struct.pack(">B", eol)
+        # Pack across bytes: CCCC PPPP PPPP EEEE = CCCCPPPP PPPPEEEE
+        byte1 = (cou << 4) | (self.power >> 4)
+        byte2 = ((self.power & 0x0F) << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet7(self, cou, eol):
         """
-        Generates Packet 7: COU, Index R, Attribute R, EOL.
+        Generates Packet 7: COU | Index R | Attribute R | EOL
+        For single battles, R values are 0
         """
-        index_r = 0  # For single battles, R values are 0
-        attribute_r = 0  # For single battles, R values are 0
-        return struct.pack(">B", (cou << 6) | index_r) + struct.pack(">B", (attribute_r << 4) | eol)
+        index_r = 0
+        attribute_r = 0
+        byte1 = (cou << 6) | (index_r >> 2)
+        byte2 = ((index_r & 0x03) << 6) | (attribute_r << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet8(self, eol):
         """
-        Generates Packet 8: Shot S R, Shot W R, EOL.
+        Generates Packet 8: Shot S R | Shot W R | EOL
+        For single battles, R values are 0
         """
-        shot_s_r = 0  # For single battles, R values are 0
-        shot_w_r = 0  # For single battles, R values are 0
-        return struct.pack(">B", (shot_s_r << 2) | (shot_w_r >> 4)) + struct.pack(">B", ((shot_w_r & 0b1111) << 4) | eol)
+        shot_s_r = 0
+        shot_w_r = 0
+        byte1 = (shot_s_r << 2) | (shot_w_r >> 4)
+        byte2 = ((shot_w_r & 0x0F) << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def generate_packet9(self, eol):
         """
-        Generates Packet 9: Tag Meter, Power R, EOL.
+        Generates Packet 9: Tag Meter | Power R | EOL
+        Packet 9: 4 bits Tag Meter, 8 bits Power R, 4 bits EOL
+        For single battles, Power R is 0
         """
-        tag_meter = self.digimon.tag_meter  # Use the tag_meter attribute from the Digimon class
-        power_r = 0  # For single battles, Power R is 0
-        return struct.pack(">B", (tag_meter << 4) | (power_r >> 4)) + struct.pack(">B", ((power_r & 0b1111) << 4) | eol)
+        tag_meter = self.digimon.tag_meter
+        power_r = 0
+        byte1 = (tag_meter << 4) | (power_r >> 4)
+        byte2 = ((power_r & 0x0F) << 4) | eol
+        packet = struct.pack(">BB", byte1, byte2)
+        self.own_packets.append(packet)
+        return packet
 
     def process_packet(self, packet):
         """
@@ -950,17 +1461,79 @@ class DM20Device:
     def _calculate_check(self, hits, dodges, eol):
         """
         Calculates the Check value for Packet A.
-        Ensures the intended remainder when the sum of all 4-bit groups is divided by 16.
+        Sums all nibbles from THIS device's own packets 1-9 plus hits, dodges, EOL, 
+        and finds check value that makes total % 16 == 0.
         """
-        # Sum all 4-bit groups
-        total_sum = (hits & 0b1111) + (dodges & 0b1111) + (eol & 0b1111)
-
-        # Intended remainder (example: 11)
-        intended_remainder = 11
-
-        # Calculate the Check value
-        check = (intended_remainder - (total_sum % 16)) % 16
+        # Sum all nibbles from OUR OWN packets 1-9 (not opponent's)
+        checksum = 0
+        for pkt in self.own_packets[:9]:  # First 9 packets we sent
+            for byte in pkt:
+                checksum += (byte >> 4) & 0xF  # Upper nibble
+                checksum += byte & 0xF          # Lower nibble
+        
+        # Add dodges, hits, and EOL nibbles
+        checksum += dodges & 0xF
+        checksum += hits & 0xF
+        checksum += eol & 0xF
+        
+        # Find check value that makes (checksum + check) % 16 == 0
+        check = (16 - (checksum % 16)) % 16
         return check
+    
+    def generate_all_packets_for_dcom(self, order=0, cou=0b00, version=None, eol=0b1110):
+        """
+        Generate all 10 DM20 packets for DCom battle communication.
+        Uses proper checksum calculation matching the test implementation.
+        Returns list of 10 packets (bytes objects).
+        """
+        packets = []
+        
+        # Generate packets 1-9
+        packets.append(self.generate_packet1())
+        packets.append(self.generate_packet2())
+        # Determine version from digimon.version if not explicitly provided
+        if version is None:
+            try:
+                v = int(getattr(self.digimon, 'version', 1))
+            except Exception:
+                v = 1
+            # Clamp DM20 version to range 1..5
+            v = max(1, min(5, v))
+            version = v
+
+        packets.append(self.generate_packet3(order, version, eol))
+        packets.append(self.generate_packet4(cou, eol))
+        packets.append(self.generate_packet5(eol))
+        packets.append(self.generate_packet6(cou, eol))
+        packets.append(self.generate_packet7(cou, eol))
+        packets.append(self.generate_packet8(eol))
+        packets.append(self.generate_packet9(eol))
+        
+        # Calculate proper checksum by summing all nibbles
+        checksum = 0
+        for pkt in packets:
+            for byte in pkt:
+                checksum += (byte >> 4) & 0x0F  # Upper nibble
+                checksum += byte & 0x0F          # Lower nibble
+        
+        # Generate Packet A with proper checksum
+        dodges = 0x0  # All dodge (0000)
+        hits = 0xF    # All hit (1111)
+        
+        # Add dodges, hits, and EOL nibbles to checksum
+        checksum += dodges
+        checksum += hits
+        checksum += eol
+        
+        # Find check value that makes (checksum + check) % 16 == 0
+        check = (16 - (checksum % 16)) % 16
+        
+        byte1 = (check << 4) | dodges
+        byte2 = (hits << 4) | eol
+        packetA = struct.pack(">BB", byte1, byte2)
+        packets.append(packetA)
+        
+        return packets
 
 class DMCBSPacket:
     """
@@ -1042,90 +1615,147 @@ class DMCBSPacket:
 
 class Pen20Device:
     """
-    Represents a Digimon device in the Pen20_BS protocol.
+    Represents a Digimon device in the PEN20_BS protocol.
     Handles packet generation, processing, and state management.
+    Uses protocol definition for constants.
+    
+    PEN20 uses Dummy minigame (0-14 taps) similar to DM20.
+    Power bonuses:
+    - Egg shake (shook): +10 power
+    - Traited: Stage 3: +5, Stage 4: +8, Stage 5: +15, Stage 6+: +20
     """
-    def __init__(self, digimon: Digimon):
+    
+    # Traited power bonuses by stage
+    TRAITED_BONUSES = {
+        3: 5,
+        4: 8,
+        5: 15,
+        # Stage 6+ uses 20
+    }
+    EGG_SHAKE_BONUS = 10
+    
+    def __init__(self, digimon: Digimon, protocol_def=None):
         self.digimon = digimon
+        self.protocol_def = protocol_def
         self.hp = digimon.hp
-        self.power = digimon.power
         self.attribute = digimon.attribute
         self.index = digimon.index
-        self.shot1 = digimon.shot1
-        self.shot2 = digimon.shot2
-        self.traited = digimon.traited  # Trait status of the Digimon
-        self.egg_shake = digimon.egg_shake  # Egg shake status of
-        self.sick = digimon.sick  # Sick status of the Digimon
-        self.tag_meter = digimon.tag_meter  # Use the tag_meter attribute from the Digimon class
+        self.shot1 = digimon.shot1  # Strong shot
+        self.shot2 = digimon.shot2  # Weak shot
+        self.traited = digimon.traited  # Trait status (0 or 1)
+        self.egg_shake = digimon.egg_shake  # Egg shake status (0 or 1)
+        self.sick = digimon.sick  # Sick status
+        self.stage = digimon.stage  # Evolution stage for traited bonus calculation
+        self.tag_meter = digimon.tag_meter
         self.packets = []  # Stores packets received from the opponent
         self.opponent_data = []  # Store opponent's data
+        
+        # Calculate final power with bonuses
+        self.power = self._calculate_power_with_bonuses(digimon.power)
+    
+    def _calculate_power_with_bonuses(self, base_power):
+        """Calculate final power including traited and egg_shake bonuses."""
+        power = base_power
+        
+        # Add egg shake bonus (+10)
+        if self.egg_shake:
+            power += self.EGG_SHAKE_BONUS
+        
+        # Add traited bonus based on stage
+        if self.traited:
+            if self.stage >= 6:
+                power += 20
+            else:
+                power += self.TRAITED_BONUSES.get(self.stage, 0)
+        
+        # Cap at 255
+        return min(255, power)
 
     def generate_packet1(self, order, version, eol):
         """
-        Generates Packet 1: Order, COU, Attack, Operation, Version, EOL.
+        Generates Packet 1: Order(1) COU(1) Attack(4) Operation(2) Version(4) EOL(4)
+        
+        Bit layout (16 bits total):
+        Byte 1: Order(1) | COU(1) | Attack(4) | Operation(2) = 8 bits
+        Byte 2: Version(4) | EOL(4) = 8 bits
         """
-        attack = self.digimon.mini_game  # Use the mini-game taps value
+        attack = min(14, self.digimon.mini_game)  # Dummy minigame: 0-14 taps
         operation = 0b00  # Single Battle
-        cou = 0b0  # Constant or unknown (always 0)
+        cou = 0b0  # Constant (1 bit)
 
-        # Pack the data into two bytes
-        return struct.pack(
-            ">B", (order << 7) | (cou << 6) | (attack << 2) | operation
-        ) + struct.pack(
-            ">B", (version << 4) | eol
-        )
+        # Byte 1: Order(1) + COU(1) + Attack(4) + Operation(2)
+        byte1 = (order << 7) | (cou << 6) | ((attack & 0xF) << 2) | (operation & 0x3)
+        
+        # Byte 2: Version(4) + EOL(4)
+        byte2 = ((version & 0xF) << 4) | (eol & 0xF)
+        
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet2(self, cou, eol):
         """
-        Generates Packet 2: COU, Index L, Attribute L, EOL.
+        Generates Packet 2: COU(2) Index(8) Attribute(2) EOL(4)
+        
+        Bit layout (16 bits total):
+        Byte 1: COU(2) | Index high 6 bits = 8 bits
+        Byte 2: Index low 2 bits | Attribute(2) | EOL(4) = 8 bits
         """
-        return struct.pack(
-            ">B", (cou << 6) | self.index
-        ) + struct.pack(
-            ">B", (self.attribute << 4) | eol
-        )
+        index = self.index & 0xFF  # 8 bits
+        # Byte 1: COU(2) + Index high 6 bits
+        byte1 = ((cou & 0x3) << 6) | ((index >> 2) & 0x3F)
+        # Byte 2: Index low 2 bits + Attribute(2) + EOL(4)
+        byte2 = ((index & 0x3) << 6) | ((self.attribute & 0x3) << 4) | (eol & 0xF)
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet3(self, cou, eol):
         """
-        Generates Packet 3: COU, Shot W L, EOL.
+        Generates Packet 3: COU(4) Shot_W(8) EOL(4)
+        
+        Bit layout (16 bits total):
+        Byte 1: COU(4) | Shot_W high 4 bits = 8 bits
+        Byte 2: Shot_W low 4 bits | EOL(4) = 8 bits
         """
-        return struct.pack(
-            ">B", (cou << 4) | (self.shot2 >> 4)
-        ) + struct.pack(
-            ">B", ((self.shot2 & 0b1111) << 4) | eol
-        )
+        shot_w = self.shot2 & 0xFF  # 8 bits
+        byte1 = ((cou & 0xF) << 4) | ((shot_w >> 4) & 0xF)
+        byte2 = ((shot_w & 0xF) << 4) | (eol & 0xF)
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet4(self, cou, eol):
         """
-        Generates Packet 4: Sick, COU, Shot S L, EOL.
+        Generates Packet 4: Sick(1) COU(3) Shot_S(8) EOL(4)
+        
+        Bit layout (16 bits total):
+        Byte 1: Sick(1) | COU(3) | Shot_S high 4 bits = 8 bits
+        Byte 2: Shot_S low 4 bits | EOL(4) = 8 bits
         """
-        return struct.pack(
-            ">B", (self.sick << 7) | (cou << 4) | (self.shot1 >> 4)
-        ) + struct.pack(
-            ">B", ((self.shot1 & 0b1111) << 4) | eol
-        )
+        shot_s = self.shot1 & 0xFF  # 8 bits
+        byte1 = ((self.sick & 0x1) << 7) | ((cou & 0x7) << 4) | ((shot_s >> 4) & 0xF)
+        byte2 = ((shot_s & 0xF) << 4) | (eol & 0xF)
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet5(self, cou, eol):
         """
-        Generates Packet 5: COU, Traited, Egg Shake, Power L, EOL.
+        Generates Packet 5: COU(2) Traited(1) Egg_Shake(1) Power(8) EOL(4)
+        
+        Bit layout (16 bits total):
+        Byte 1: COU(2) | Traited(1) | Egg_Shake(1) | Power high 4 bits = 8 bits
+        Byte 2: Power low 4 bits | EOL(4) = 8 bits
         """
-        return struct.pack(
-            ">B", (cou << 6) | (self.traited << 5) | (self.egg_shake << 4) | (self.power & 0b1111_1111)
-        ) + struct.pack(
-            ">B", eol
-        )
+        power = self.power & 0xFF  # Already includes bonuses
+        byte1 = ((cou & 0x3) << 6) | ((self.traited & 0x1) << 5) | ((self.egg_shake & 0x1) << 4) | ((power >> 4) & 0xF)
+        byte2 = ((power & 0xF) << 4) | (eol & 0xF)
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet6(self, eol):
         """
-        Generates Packet 6: Copy, Index R, Attribute R, EOL.
+        Generates Packet 6: Copy(2) Index_R(8) Attribute_R(2) EOL(4)
+        For single battles, all R values are 0.
         """
-        index_r = 0  # For single battles, Index R is 0
-        attribute_r = 0  # For single battles, Attribute R is 0
-        return struct.pack(
-            ">B", (0 << 6) | index_r
-        ) + struct.pack(
-            ">B", (attribute_r << 4) | eol
-        )
+        copy = 0
+        index_r = 0
+        attribute_r = 0
+        byte1 = ((copy & 0x3) << 6) | ((index_r >> 2) & 0x3F)
+        byte2 = ((index_r & 0x3) << 6) | ((attribute_r & 0x3) << 4) | (eol & 0xF)
+        return struct.pack(">BB", byte1, byte2)
 
     def generate_packet7(self, cou, eol):
         """
@@ -1218,27 +1848,46 @@ class Pen20Device:
     def _calculate_check(self, hits, dodges, eol):
         """
         Calculates the Check value for Packet A.
-        Ensures the intended remainder when the sum of all 4-bit groups is divided by 16.
+        Sums all nibbles from packets 1-9 plus hits, dodges, EOL, and finds check value
+        that makes total % 16 == 0.
         """
-        # Sum all 4-bit groups
-        total_sum = (hits & 0b1111) + (dodges & 0b1111) + (eol & 0b1111)
-
-        # Intended remainder (example: 11)
-        intended_remainder = 11
-
-        # Calculate the Check value
-        check = (intended_remainder - (total_sum % 16)) % 16
+        # Sum all nibbles from packets 1-9
+        checksum = 0
+        for pkt in self.opponent_data[:9]:  # First 9 packets (not including packet A)
+            for byte in pkt:
+                checksum += (byte >> 4) & 0xF  # Upper nibble
+                checksum += byte & 0xF          # Lower nibble
+        
+        # Add dodges, hits, and EOL nibbles
+        checksum += dodges & 0xF
+        checksum += hits & 0xF
+        checksum += eol & 0xF
+        
+        # Find check value that makes (checksum + check) % 16 == 0
+        check = (16 - (checksum % 16)) % 16
         return check
 
 class DMXDevice:
     """
-    Represents a Digimon device in the DMX protocol.
+    Represents a Digimon device in the DMX/PENZ protocol.
     Handles packet generation, processing, and state management.
+    
+    DMX uses XAI Roll + XAI Bar minigame (0-3).
+    PENZ uses Count Match minigame (rotation index 1-3, maps to 0-3).
+    
+    Attack quality is determined by level + minigame result:
+    - Bad (0), Good (1), Great (2), Excellent (3)
+    
+    Power is capped at 255 to prevent overflow bugs from original Version 1 devices.
     """
-    def __init__(self, digimon: Digimon):
+    MAX_POWER = 255
+    
+    def __init__(self, digimon: Digimon, protocol_def=None):
         self.digimon = digimon
+        self.protocol_def = protocol_def
         self.hp = digimon.hp
-        self.power = digimon.power
+        # Cap power at 255 to prevent Version 1 overflow bug
+        self.power = min(self.MAX_POWER, digimon.power)
         self.attribute = digimon.attribute
         self.level = digimon.level
         self.sick = digimon.sick
@@ -1246,45 +1895,63 @@ class DMXDevice:
         self.index = digimon.index
         self.shot_s = digimon.shot1
         self.shot_w = digimon.shot2
-        self.shot_m = digimon.shot1
-        self.buff = digimon.buff
+        self.shot_m = digimon.shot1  # Medium shot
+        self.buff = min(2, digimon.buff)  # Max buff is 2
         self.order = digimon.order
-        self.version = 0b0000 #Version 1 - Black
-        self.hits = 0  # Hit pattern
+        self.version = 0b0000  # Version 1 - Black
+        self.hits = 0  # Hit pattern (5 bits for 5 turns)
         self.check = 0  # Check value
         self.received_packets = []  # Store received packets
 
     def generate_packet1(self):
         """
-        Generates Packet 1: Order, Level, Sick, Attack, Version, EOL.
+        Generates Packet 1: Order(1) Level(4) Sick(1) Attack(2) Version(4) EOL(4).
+        Total: 16 bits = 2 bytes
+        
+        Attack is only 2 bits (0-3): Bad(0), Good(1), Great(2), Excellent(3)
         """
-        attack = self.digimon.mini_game
+        attack = self.digimon.mini_game & 0x03  # Only 2 bits (0-3)
+        eol = 0xE  # 1110
+        
+        # Byte 1: Order(1) Level(4) Sick(1) Attack(2)
+        # Byte 2: Version(4) EOL(4)
         return struct.pack(
-            ">B", (self.order << 7) | (self.level << 3) | (self.sick << 1) | (attack >> 5)
+            ">B", (self.order << 7) | (self.level << 3) | (self.sick << 2) | (attack & 0x03)
         ) + struct.pack(
-            ">B", ((attack & 0b11111) << 3) | self.version
+            ">B", ((self.version & 0x0F) << 4) | eol
         )
 
     def generate_packet2(self):
         """
-        Generates Packet 2: Stage, Index, Attribute, EOL.
+        Generates Packet 2: Stage(3) Index(7) Attribute(2) EOL(4).
+        Total: 16 bits = 2 bytes
+        
+        Index is 7 bits (0-127), not 8 bits
+        Attribute is 2 bits (0-3), not 3 bits
         """
+        eol = 0xE  # 1110
+        index = self.index & 0x7F  # 7 bits
+        attribute = self.attribute & 0x03  # 2 bits
+        
+        # Byte 1: Stage(3) + Index high 5 bits
+        # Byte 2: Index low 2 bits + Attribute(2) + EOL(4)
         return struct.pack(
-            ">B", (self.stage << 5) | (self.index >> 3)
+            ">B", (self.stage << 5) | (index >> 2)
         ) + struct.pack(
-            ">B", ((self.index & 0b111) << 5) | (self.attribute << 3) | 0b1110
+            ">B", ((index & 0x03) << 6) | (attribute << 4) | eol
         )
 
     def generate_packet3(self):
         """
-        Generates Packet 3: Shot S, Shot W, EOL.
+        Generates Packet 3: Shot S(6), Shot W(6), EOL(4).
+        Total: 16 bits = 2 bytes
         """
+        # Byte 1: Shot S (6 bits) + Shot W high 2 bits
+        # Byte 2: Shot W low 4 bits + EOL (4 bits)
         return struct.pack(
-            ">B", self.shot_s
+            ">B", ((self.shot_s & 0x3F) << 2) | ((self.shot_w >> 4) & 0x03)
         ) + struct.pack(
-            ">B", self.shot_w
-        ) + struct.pack(
-            ">B", 0b1110  # EOL
+            ">B", ((self.shot_w & 0x0F) << 4) | 0b1110
         )
 
     def generate_packet4(self):
@@ -1299,68 +1966,97 @@ class DMXDevice:
 
     def generate_packet5(self):
         """
-        Generates Packet 5: COU, Buff, Power, EOL.
+        Generates Packet 5: COU(2), Buff(2), Power(8), EOL(4).
+        Total: 16 bits = 2 bytes
         """
+        # Byte 1: COU(2) + Buff(2) + Power high 4 bits
+        # Byte 2: Power low 4 bits + EOL(4)
         return struct.pack(
-            ">B", (0b00 << 6) | (self.buff << 4)
+            ">B", (0b00 << 6) | ((self.buff & 0x03) << 4) | ((self.power >> 4) & 0x0F)
         ) + struct.pack(
-            ">B", self.power
-        ) + struct.pack(
-            ">B", 0b1110  # EOL
+            ">B", ((self.power & 0x0F) << 4) | 0b1110
         )
 
     def generate_packet6(self, eol=0b1110):
         """
-        Generates Packet 6: Check, COU, Hits, EOL.
-        Extracts opponent's power and attribute from received packets.
+        Generates Packet 6: Check(4) COU(3) Hits(5) EOL(4).
+        Calculates checksum from all previous packets and hits pattern.
         """
-        if len(self.received_packets) < 2:
-            raise ValueError("Not enough packets received to calculate opponent's power and attribute.")
+        if len(self.received_packets) < 5:
+            raise ValueError("Not enough packets received to calculate checksum.")
 
-        # Extract opponent's power from Packet 5 (second byte of the packet)
-        opponent_power = self.received_packets[4][1]  # Assuming Packet 5 is at index 4
+        # Extract opponent's power from Packet 5
+        opponent_power_byte = self.received_packets[4][0]
+        opponent_power = ((opponent_power_byte & 0x0F) << 4) | ((self.received_packets[4][1] >> 4) & 0x0F)
 
-        # Extract opponent's attribute from Packet 2 (second byte of the packet, upper 4 bits)
-        opponent_attribute = (self.received_packets[1][1] >> 4) & 0b1111  # Assuming Packet 2 is at index 1
+        # Extract opponent's attribute from Packet 2
+        opponent_attribute = (self.received_packets[1][1] >> 4) & 0x03
 
         # Apply attribute advantage
         player_power = self.power
         if (self.attribute == 0 and opponent_attribute == 2) or \
            (self.attribute == 1 and opponent_attribute == 0) or \
            (self.attribute == 2 and opponent_attribute == 1):
-            player_power += 32  # Attribute advantage
+            player_power += 32
 
         if (opponent_attribute == 0 and self.attribute == 2) or \
            (opponent_attribute == 1 and self.attribute == 0) or \
            (opponent_attribute == 2 and self.attribute == 1):
-            opponent_power += 32  # Opponent's attribute advantage
+            opponent_power += 32
 
-        # Calculate hits
+        # Calculate hits for 5 rounds
         hits = 0
-        for i in range(4):  # Simulate 4 attacks
+        for i in range(5):  # DMX uses 5 rounds
             hitrate = ((player_power * 100) / (player_power + opponent_power))
-            hitrate = max(0, min(hitrate, 100))  # Clamp hitrate between 0 and 100
+            hitrate = max(0, min(hitrate, 100))
 
-            # Simulate hit
             attack_roll = random.randint(0, 99)
             hit = 1 if attack_roll < hitrate else 0
-
-            # Update hits bit pattern (right to left)
             hits |= (hit << i)
 
         self.hits = hits
+        cou3 = 0  # 3-bit COU value
 
-        # Calculate Check value
-        total_sum = (self.hits & 0b1111) + (0b000 & 0b1111) + (eol & 0b1111)
-        intended_remainder = 11  # Example remainder
-        self.check = (intended_remainder - (total_sum % 16)) % 16
-
-        # Pack the data into bytes
-        return struct.pack(
-            ">B", (self.check << 4) | (0b000 << 1) | (self.hits >> 4)
-        ) + struct.pack(
-            ">B", ((self.hits & 0b1111) << 4) | eol
-        )
+        # Calculate checksum - sum all nibbles from packets 1-5 (sent by this device)
+        checksum = 0
+        # We need to sum our OWN packets that were sent, not received packets
+        # For simulation, we need to recalculate what we sent
+        # This is tricky - we should track sent packets properly
+        # For now, use a simplified approach
+        
+        # Generate the first 5 packets again to get nibble sums
+        from io import BytesIO
+        temp_packets = [
+            self.generate_packet1(),
+            self.generate_packet2(),
+            self.generate_packet3(),
+            self.generate_packet4(),
+            self.generate_packet5()
+        ]
+        
+        for pkt in temp_packets:
+            for byte in pkt:
+                checksum += (byte >> 4) & 0x0F  # Upper nibble
+                checksum += byte & 0x0F  # Lower nibble
+        
+        # Build packet 6 structure without check
+        byte1_without_check = (cou3 << 1) | (hits >> 4)
+        byte2 = ((hits & 0x0F) << 4) | eol
+        
+        # Add nibbles from packet 6 (without check nibble)
+        checksum += byte1_without_check & 0x0F
+        checksum += (byte2 >> 4) & 0x0F
+        checksum += byte2 & 0x0F
+        
+        # Find check value that makes (checksum + check) % 16 == 8
+        intended_remainder = 8
+        check = (intended_remainder - (checksum % 16)) % 16
+        self.check = check
+        
+        # Build final packet
+        byte1 = (check << 4) | byte1_without_check
+        
+        return struct.pack(">BB", byte1, byte2)
 
     def process_packet(self, packet):
         """
@@ -1378,7 +2074,7 @@ class DMXDevice:
 
 # --- Test code ---
 if __name__ == "__main__":
-    # Test Digimon data using the Digimon model
+    # Test Digimon data
     device1 = Digimon(
         name="Agumon",
         order=0,
@@ -1390,13 +2086,13 @@ if __name__ == "__main__":
         power=50,
         handicap=0,
         buff=0,
-        mini_game=0,
+        mini_game=5,
         level=5,
         stage=0,
         sick=0,
-        shot1=80,  # Stronger attack sprite ID
-        shot2=85,   # Weaker attack sprite ID
-        tag_meter=2  # Example value for Tag Meter
+        shot1=10,
+        shot2=15,
+        tag_meter=2
     )
 
     device2 = Digimon(
@@ -1410,14 +2106,113 @@ if __name__ == "__main__":
         power=45,
         handicap=0,
         buff=0,
-        mini_game=3,
+        mini_game=8,
         level=5,
         stage=0,
         sick=0,
-        shot1=70,  # Stronger attack sprite ID
-        shot2=75,   # Weaker attack sprite ID
-        tag_meter=2  # Example value for Tag Meter
+        shot1=12,
+        shot2=17,
+        tag_meter=2
     )
 
-    simulator = BattleSimulator(protocol=BattleProtocol.DM20_BS)
-    result = simulator.simulate(device1, device2)
+    print("=" * 70)
+    print("TESTING ALL BATTLE PROTOCOLS")
+    print("=" * 70)
+    print()
+    
+    # Get list of all protocols to test
+    from core.combat.protocols import ProtocolHandler
+    handler = ProtocolHandler()
+    protocols = handler.get_protocol_list('battle')
+    
+    # Map protocol names to BattleProtocol enum
+    protocol_map = {
+        'DM20': BattleProtocol.DM20_BS,
+        #'DMC': BattleProtocol.DMC_BS,
+        #'DMX': BattleProtocol.DMX_BS,
+        #'PEN20': BattleProtocol.PEN20_BS
+    }
+    
+    test_results = []
+    
+    for protocol_info in protocols:
+        protocol_name = protocol_info['name']
+        
+        # Skip protocols not yet implemented in BattleProtocol enum
+        if protocol_name not in protocol_map:
+            print(f"[!] Skipping {protocol_name} - not yet mapped to BattleProtocol enum")
+            print()
+            continue
+        
+        print(f"{'='*70}")
+        print(f"TESTING: {protocol_info['display_name']}")
+        print(f"{'='*70}")
+        
+        try:
+            # Create simulator with protocol
+            simulator = BattleSimulator(protocol=protocol_map[protocol_name])
+            
+            # Run battle
+            result = simulator.simulate(device1, device2)
+            
+            # Print packet data
+            if hasattr(result, 'device1_packets') and result.device1_packets:
+                print("\nDevice 1 Packets:")
+                for i, packet in enumerate(result.device1_packets, 1):
+                    hex_str = ' '.join(f'{b:02X}' for b in packet)
+                    bin_str = ' '.join(f'{b:08b}' for b in packet)
+                    print(f"  Packet {i}: {hex_str}")
+                    print(f"            {bin_str}")
+            
+            if hasattr(result, 'device2_packets') and result.device2_packets:
+                print("\nDevice 2 Packets:")
+                for i, packet in enumerate(result.device2_packets, 1):
+                    hex_str = ' '.join(f'{b:02X}' for b in packet)
+                    bin_str = ' '.join(f'{b:08b}' for b in packet)
+                    print(f"  Packet {i}: {hex_str}")
+                    print(f"            {bin_str}")
+            
+            # Print DCom code format (alternating r: and s:)
+            if hasattr(result, 'device1_packets') and hasattr(result, 'device2_packets') and result.device1_packets and result.device2_packets:
+                # Format: r:packet s:packet r:packet s:packet ... t
+                # r: = receive (from device 2), s: = send (from device 1)
+                # Packets are already in correct byte order from Device classes
+                dcom_parts = []
+                max_packets = max(len(result.device1_packets), len(result.device2_packets))
+                
+                for i in range(max_packets):
+                    # Receive from device 2 - direct hex representation
+                    if i < len(result.device2_packets):
+                        packet = result.device2_packets[i]
+                        packet_hex = ''.join(f'{b:02X}' for b in packet)
+                        dcom_parts.append(f"r:{packet_hex}")
+                    
+                    # Send from device 1 - direct hex representation
+                    if i < len(result.device1_packets):
+                        packet = result.device1_packets[i]
+                        packet_hex = ''.join(f'{b:02X}' for b in packet)
+                        dcom_parts.append(f"s:{packet_hex}")
+                
+                dcom_parts.append("t")  # Terminator
+                dcom_code = ' '.join(dcom_parts)
+                print(f"\nDCom Code: {dcom_code}")
+            
+            test_results.append((protocol_name, "[OK] SUCCESS"))
+            print(f"\n[OK] {protocol_name} test completed successfully!")
+            
+        except Exception as e:
+            test_results.append((protocol_name, f"[FAIL] {str(e)}"))
+            print(f"\n[FAIL] {protocol_name} test failed: {str(e)}")
+        
+        print()
+    
+    # Summary
+    print("=" * 70)
+    print("TEST SUMMARY")
+    print("=" * 70)
+    for protocol, status in test_results:
+        print(f"{protocol:15s} - {status}")
+    print()
+    print("=" * 70)
+    print("ALL PROTOCOL TESTS COMPLETED!")
+    print("=" * 70)

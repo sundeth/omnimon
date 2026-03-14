@@ -15,12 +15,6 @@ def load_modules():
         module_json_path = os.path.join(folder_path, "module.json")
         if os.path.isdir(folder_path) and os.path.exists(module_json_path):
             module = GameModule(folder_path)
-            if module.ruleset == "dmc":
-                runtime_globals.dmc_enabled = True
-            if module.ruleset == "penc":
-                runtime_globals.penc_enabled = True
-            if module.ruleset == "dmx":
-                runtime_globals.dmx_enabled = True
             if module.adventure_mode and game_globals.battle_area.get(module.name) is None:
                 game_globals.battle_area[module.name] = 1
                 game_globals.battle_round[module.name] = 1

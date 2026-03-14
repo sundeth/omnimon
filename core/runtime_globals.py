@@ -19,6 +19,7 @@ IS_ANDROID = False  # Set to True when running on Android
 KEYBOARD_MODE = 1
 MOUSE_MODE = 2
 TOUCH_MODE = 3
+GPIO_MODE = 4
 INPUT_MODE = KEYBOARD_MODE
 INPUT_MODE_FORCED = False  # If True, INPUT_MODE won't auto-switch based on input device
 
@@ -117,15 +118,28 @@ last_input_frame = 0
 #=====================================================================
 # Resolution Update Helper
 #=====================================================================
-def update_resolution_constants(width: int, height: int) -> None:
+def update_resolution_constants(width: int = None, height: int = None) -> None:
     """
     Update resolution-dependent runtime values.
     Call this after display setup to scale UI elements.
+    
+    If width/height not provided, uses values from game_globals.configuration.
     """
     global SCREEN_WIDTH, SCREEN_HEIGHT, UI_SCALE
     global MENU_ICON_SIZE, OPTION_ICON_SIZE, OPTION_FRAME_WIDTH, OPTION_FRAME_HEIGHT, PET_ICON_SIZE
     global FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_MEDIUM_LARGE, FONT_SIZE_LARGE
     global PET_WIDTH, PET_HEIGHT
+
+    # Get resolution from configuration if not provided
+    if width is None or height is None:
+        try:
+            from core import game_globals
+            config = game_globals.configuration
+            width = config.screen_width
+            height = config.screen_height
+        except (ImportError, AttributeError):
+            width = width or 240
+            height = height or 240
 
     SCREEN_WIDTH = width
     SCREEN_HEIGHT = height
@@ -144,8 +158,9 @@ def update_resolution_constants(width: int, height: int) -> None:
 
     # Prevent oversized sprites when MAX_PETS == 1
     try:
-        from core.constants import MAX_PETS
-        PET_WIDTH = PET_HEIGHT = height // max(MAX_PETS, 4)
+        from core import game_globals
+        max_pets = game_globals.configuration.max_pets
+        PET_WIDTH = PET_HEIGHT = height // max(max_pets, 4)
     except Exception:
         PET_WIDTH = PET_HEIGHT = height // 2
 

@@ -68,7 +68,7 @@ class SceneLibrary:
         self.ui_manager.add_component(self.background)
         
         # Title
-        self.title_scene = TitleScene(0, 5, "LIBRARY")
+        self.title_scene = TitleScene(0, 9, "LIBRARY")
         self.ui_manager.add_component(self.title_scene)
         
         # Quest panels (3 panels stacked vertically)

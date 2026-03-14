@@ -327,8 +327,13 @@ class BaseList(UIComponent):
         """Called when an item is activated via keyboard - override in subclasses"""
         pass
         
-    def _on_item_clicked(self, index):
-        """Called when an item is clicked with mouse - override in subclasses"""
+    def _on_item_clicked(self, index, was_already_selected=False):
+        """Called when an item is clicked with mouse - override in subclasses
+        
+        Args:
+            index: The index of the clicked item
+            was_already_selected: Whether the item was already selected before the click
+        """
         # Default behavior: do nothing, just select the item
         pass
         

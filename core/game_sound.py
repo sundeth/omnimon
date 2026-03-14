@@ -46,10 +46,15 @@ class GameSound:
             19: "evolution_2020",
         }
 
-        # Initialize pygame mixer
-        pygame.mixer.init()
+        # Initialize pygame mixer with a small buffer to minimise playback latency.
+        # 512 samples @ 44100 Hz ≈ 12 ms latency; safe on both desktop and Pi Zero 2W.
+        if not pygame.mixer.get_init():
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
 
-        # Sounds will be loaded on first play() call
+        # On Pi, pre-load all sounds immediately so the first press has no stutter.
+        import platform
+        if platform.system() == "Linux":
+            self.load_sounds()
     
     def load_sounds(self) -> None:
         """
@@ -84,7 +89,7 @@ class GameSound:
         Args:
             name (str): The sound label to play (e.g., 'menu', 'fail', 'evolution').
         """
-        if not game_globals.sound:
+        if not game_globals.configuration.sound_volume:
             return
         
         # Lazy load sounds on first access (ensures Android environment is set)
@@ -93,12 +98,11 @@ class GameSound:
 
         if name in self.sounds:
             if isinstance(self.sounds[name], pygame.mixer.Sound):
-                self.stop_all()
-                self.sounds[name].set_volume(game_globals.sound / 10)
+                self.sounds[name].set_volume(game_globals.configuration.sound_volume / 10)
                 self.sounds[name].play()
             else:
                 pygame.mixer.music.load(self.sounds[name])
-                pygame.mixer.music.set_volume(game_globals.sound / 10)
+                pygame.mixer.music.set_volume(game_globals.configuration.sound_volume / 10)
                 pygame.mixer.music.play()
         else:
             print(f"[!] Sound '{name}' not found.")

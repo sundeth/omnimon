@@ -1,8 +1,10 @@
 
 """
 Scene Settings Menu
-Settings menu with options and navigation to Background and Secrets views.
-Refactored to use the new UI system with gray theme.
+Hierarchical settings menu with sections and sub-options.
+Sections: Gameplay, Display, Audio, Input, Backgrounds, Secrets.
+B button returns to parent section or exits to game from top level.
+Uses OptionRow components that support keyboard LEFT/RIGHT and clickable arrows.
 """
 
 # Standard library imports
@@ -20,693 +22,626 @@ from components.ui.ui_manager import UIManager
 from components.ui.background import Background
 from components.ui.title_scene import TitleScene
 from components.ui.button import Button
+from components.ui.option_row import OptionRow
 from components.ui.ui_constants import BASE_RESOLUTION, YELLOW_BRIGHT
 from components.window_background import WindowBackground
 from components.ui.label import Label
 
 
+# ---------------------------------------------------------------------------
+# Section / option definitions
+# ---------------------------------------------------------------------------
+
+def _get_sections():
+    """Return ordered section definitions (built at scene init time)."""
+    cfg = game_globals.configuration
+
+    _SCREEN_TIMEOUT_CHOICES = [0, 10, 20, 30, 60, 120]
+    _SPRITE_LABELS = {0: "Default", 1: "Dot", 2: "HiDef"}
+
+    def _cycle_timeout(increase):
+        cur = cfg.screen_timeout
+        try:
+            idx = _SCREEN_TIMEOUT_CHOICES.index(cur)
+        except ValueError:
+            idx = 0
+        idx = (idx + (1 if increase else -1)) % len(_SCREEN_TIMEOUT_CHOICES)
+        cfg.screen_timeout = _SCREEN_TIMEOUT_CHOICES[idx]
+
+    def _cycle_volume(increase):
+        v = cfg.sound_volume + (1 if increase else -1)
+        cfg.sound_volume = v % 11
+
+    def _cycle_max_pets(increase):
+        v = cfg.max_pets + (1 if increase else -1)
+        cfg.max_pets = max(1, min(10, v))
+
+    def _cycle_resolution(increase):
+        cur = cfg.resolution_multiplyer
+        choices = [1, 2, 3, 4]
+        best = min(choices, key=lambda c: abs(c - cur))
+        idx = choices.index(best)
+        idx = (idx + (1 if increase else -1)) % len(choices)
+        new_mult = choices[idx]
+        cfg.resolution_multiplyer = new_mult
+        cfg.screen_width = cfg.base_resolution_width * new_mult
+        cfg.screen_height = cfg.base_resolution_height * new_mult
+        try:
+            pygame.display.set_mode(
+                (cfg.screen_width, cfg.screen_height),
+                pygame.FULLSCREEN if cfg.fullscreen else 0,
+            )
+        except Exception:
+            pass
+
+    def _cycle_sprite_pref(increase):
+        v = cfg.sprite_resolution_preference + (1 if increase else -1)
+        cfg.sprite_resolution_preference = v % 3
+
+    def _fmt_time(t):
+        if t is None:
+            return "Off"
+        return t.strftime("%H:%M")
+
+    def _change_time(current, increase, start_hour, end_hour, is_sleep=False):
+        time_slots = []
+        if is_sleep:
+            time_slots.append(datetime.time(12, 30))
+            for hour in range(13, 24):
+                time_slots.append(datetime.time(hour, 0))
+                time_slots.append(datetime.time(hour, 30))
+            time_slots.append(datetime.time(0, 0))
+        else:
+            time_slots.append(datetime.time(0, 30))
+            for hour in range(1, end_hour + 1):
+                time_slots.append(datetime.time(hour, 0))
+                if hour < end_hour:
+                    time_slots.append(datetime.time(hour, 30))
+        if not time_slots:
+            return None
+        if current is None:
+            return time_slots[0] if increase else None
+        try:
+            current_idx = time_slots.index(current)
+        except ValueError:
+            cur_dt = datetime.datetime(2000, 1, 1, current.hour, current.minute)
+            current_idx = min(range(len(time_slots)),
+                              key=lambda i: abs((datetime.datetime(2000, 1, 1, time_slots[i].hour, time_slots[i].minute) - cur_dt).total_seconds()))
+        new_idx = current_idx + (1 if increase else -1)
+        if new_idx < 0 or new_idx >= len(time_slots):
+            return None
+        return time_slots[new_idx]
+
+    def _cycle_wake(increase):
+        cfg.wake_time = _change_time(cfg.wake_time, increase, 0, 12, is_sleep=False)
+
+    def _cycle_sleep(increase):
+        cfg.sleep_time = _change_time(cfg.sleep_time, increase, 12, 0, is_sleep=True)
+
+    sections = [
+        {
+            "key": "main",
+            "title": "SETTINGS",
+            "options": [
+                {"key": "gameplay",     "label": "Gameplay",     "type": "action"},
+                {"key": "display",      "label": "Display",      "type": "action"},
+                {"key": "audio",        "label": "Audio",        "type": "action"},
+                {"key": "input",        "label": "Input",        "type": "action"},
+                {"key": "background",   "label": "Backgrounds",  "type": "action"},
+                {"key": "unlockables",  "label": "Secrets",      "type": "action"},
+            ],
+        },
+        {
+            "key": "gameplay",
+            "title": "GAMEPLAY",
+            "options": [
+                {"key": "max_pets",      "label": "Max Pets",      "type": "cycle",
+                 "get": lambda: str(cfg.max_pets),
+                 "set": _cycle_max_pets},
+                {"key": "global_wake",   "label": "Wake",          "type": "cycle",
+                 "get": lambda: _fmt_time(cfg.wake_time),
+                 "set": _cycle_wake},
+                {"key": "global_sleep",  "label": "Sleep",         "type": "cycle",
+                 "get": lambda: _fmt_time(cfg.sleep_time),
+                 "set": _cycle_sleep},
+                {"key": "game_mode",     "label": "Change Mode",   "type": "action"},
+                {"key": "replay_tutorial", "label": "Replay Tutorial", "type": "action"},
+            ],
+        },
+        {
+            "key": "display",
+            "title": "DISPLAY",
+            "options": [
+                {"key": "resolution",   "label": "Resolution",    "type": "cycle",
+                 "get": lambda: f"{int(cfg.resolution_multiplyer)}x",
+                 "set": _cycle_resolution},
+                {"key": "show_clock",    "label": "Show Clock",    "type": "toggle",
+                 "get": lambda: "ON" if game_globals.showClock else "OFF",
+                 "set": lambda inc: setattr(game_globals, 'showClock', not game_globals.showClock)},
+                {"key": "show_fps",      "label": "Show FPS",      "type": "toggle",
+                 "get": lambda: "ON" if cfg.show_fps else "OFF",
+                 "set": lambda inc: setattr(cfg, 'show_fps', not cfg.show_fps)},
+                {"key": "screen_timeout","label": "Timeout",       "type": "cycle",
+                 "get": lambda: "OFF" if cfg.screen_timeout == 0 else f"{cfg.screen_timeout}s",
+                 "set": _cycle_timeout},
+                {"key": "sprite_pref",   "label": "Sprites",       "type": "cycle",
+                 "get": lambda: _SPRITE_LABELS.get(cfg.sprite_resolution_preference, "Default"),
+                 "set": _cycle_sprite_pref},
+            ],
+        },
+        {
+            "key": "audio",
+            "title": "AUDIO",
+            "options": [
+                {"key": "volume",  "label": "Volume",  "type": "cycle",
+                 "get": lambda: f"{cfg.sound_volume * 10}%",
+                 "set": _cycle_volume},
+            ],
+        },
+        {
+            "key": "input",
+            "title": "INPUT",
+            "options": [
+                {"key": "remap_input",    "label": "Remap Input",    "type": "action"},
+                {"key": "test_graphics",  "label": "Test Graphics",  "type": "action"},
+            ],
+        },
+    ]
+    return {s["key"]: s for s in sections}
+
+
 class SceneSettingsMenu:
-    """
-    Scene for navigating game settings, including background selection.
-    Refactored to use the new UI system.
-    """
+    """Hierarchical settings menu with section-based navigation."""
 
     def __init__(self) -> None:
-        """Initializes the settings menu with UI components."""
-        # Global background
         self.window_background = WindowBackground(False)
-        
-        # UI Manager with gray theme
+
         self.ui_manager = UIManager(theme="GRAY")
-        
-        # Connect input manager to UI manager for mouse handling
         self.ui_manager.set_input_manager(runtime_globals.game_input)
-        
-        # Current view mode: "main", "background", "unlockables"
-        self.mode = "main"
-        
-        # Screen timeout choices in seconds (0 = off). Cycle: 0,10,20,30,60,120
-        self._SCREEN_TIMEOUT_CHOICES = [0, 10, 20, 30, 60, 120]
-        
-        # Unlockables data
+
+        self.sections = _get_sections()
+        self.nav_stack = ["main"]
+
+        # Unlockables / background state
         self.unlockables_data = []
         self.current_unlock_module_index = 0
         self.current_unlock_item_index = 0
-        
-        # Background selection data
+
         self.unlocked_backgrounds = []
         for module in runtime_globals.game_modules.values():
             for bg in get_unlocked_backgrounds(module.name, getattr(module, "backgrounds", [])):
                 self.unlocked_backgrounds.append((module.name, bg["name"], bg.get("label", bg["name"])))
-        self.current_bg_index = self.get_current_background_index()
-        
-        # UI Components
-        self.background = None
-        self.title_scene = None
-        self.option_buttons = []  # 5 setting option buttons
-        self.background_button = None
-        self.secrets_button = None
-        self.exit_button = None
-        
-        # Background mode components
-        self.bg_name_label = None
-        self.bg_highres_label = None
-        self.bg_left_button = None  # Mouse navigation
-        self.bg_right_button = None  # Mouse navigation
-        self.bg_select_button = None  # Toggle high-res
-        self.bg_back_button = None  # Return to main
-        
-        # Unlockables mode components
-        self.unlockables_header_label = None
-        self.unlockables_item_labels = []  # Up to 5 item labels
-        self.unlockables_back_button = None  # Return to main
-        self.unlockables_left_button = None  # Mouse navigation for modules
-        self.unlockables_right_button = None  # Mouse navigation for modules
-        
-        # Instruction panels for keyboard mode (when mouse disabled)
-        self.bg_instructions_labels = []
-        self.unlockables_instructions_labels = []
-        
-        self._setup_ui()
-        self.load_unlockables()
-        
-        runtime_globals.game_console.log("[SceneSettingsMenu] Settings menu initialized with UI system (GRAY theme).")
-    
-    def _setup_ui(self):
-        """Setup UI components for the settings menu."""
-        ui_width = ui_height = BASE_RESOLUTION
-        
-        # Background
-        self.background = Background(ui_width, ui_height)
-        self.background.set_regions([(0, ui_height, "black")])
-        self.ui_manager.add_component(self.background)
-        
-        # Title
-        self.title_scene = TitleScene(0, 5, "SETTINGS")
+        self.current_bg_index = self._get_current_background_index()
+
+        # Persistent components
+        self.ui_background = Background(BASE_RESOLUTION, BASE_RESOLUTION)
+        self.ui_background.set_regions([(0, BASE_RESOLUTION, "black")])
+        self.ui_manager.add_component(self.ui_background)
+
+        self.title_scene = TitleScene(0, 9, "SETTINGS")
         self.ui_manager.add_component(self.title_scene)
-        
-        # Setting option buttons (5 options stacked vertically)
-        option_names = ["Show Clock", "Sound", "Global Wake", "Global Sleep", "Screen Timeout"]
-        button_width = 224
-        button_height = 24
-        button_spacing = 2
+
+        # Dynamic components for the current view
+        self._dynamic_components = []
+        self._option_rows = []  # OptionRow references for the current section
+
+        # Background-mode components
+        self._bg_name_label = None
+        self._bg_highres_label = None
+        self._bg_left_button = None
+        self._bg_right_button = None
+        self._bg_select_button = None
+        self._bg_back_button = None
+        self._bg_instruction_labels = []
+
+        # Unlockables-mode components
+        self._unlock_header_label = None
+        self._unlock_item_labels = []
+        self._unlock_left_button = None
+        self._unlock_right_button = None
+        self._unlock_back_button = None
+        self._unlock_instruction_labels = []
+
+        self._load_unlockables()
+        self._build_section_view()
+
+        runtime_globals.game_console.log("[SceneSettingsMenu] Initialized (GRAY theme, OptionRow).")
+
+    # ------------------------------------------------------------------
+    # View builders
+    # ------------------------------------------------------------------
+
+    def _clear_dynamic(self):
+        for comp in self._dynamic_components:
+            self.ui_manager.remove_component(comp)
+        self._dynamic_components.clear()
+        self._option_rows = []
+        self._bg_name_label = None
+        self._bg_highres_label = None
+        self._bg_left_button = None
+        self._bg_right_button = None
+        self._bg_select_button = None
+        self._bg_back_button = None
+        self._bg_instruction_labels = []
+        self._unlock_header_label = None
+        self._unlock_item_labels = []
+        self._unlock_left_button = None
+        self._unlock_right_button = None
+        self._unlock_back_button = None
+        self._unlock_instruction_labels = []
+
+    def _add_dynamic(self, comp):
+        self._dynamic_components.append(comp)
+        self.ui_manager.add_component(comp)
+
+    def _current_section_key(self):
+        return self.nav_stack[-1]
+
+    def _build_section_view(self):
+        self._clear_dynamic()
+        key = self._current_section_key()
+        if key == "background":
+            self._build_background_view()
+        elif key == "unlockables":
+            self._build_unlockables_view()
+        else:
+            self._build_option_list_view(key)
+
+    # ------------------------------------------------------------------
+    # Generic option list (uses OptionRow)
+    # ------------------------------------------------------------------
+
+    def _build_option_list_view(self, section_key):
+        section = self.sections.get(section_key)
+        if not section:
+            return
+        self.title_scene.set_text(section["title"])
+
+        row_width = 224
+        row_height = 24
+        row_spacing = 2
         start_x = 8
         start_y = 40
-        
-        for i, name in enumerate(option_names):
-            button_y = start_y + (i * (button_height + button_spacing))
-            button = Button(
-                start_x, button_y, button_width, button_height,
-                self._get_setting_display_text(name),
-                lambda n=name: self._on_setting_change(n, increase=True),  # LEFT/RIGHT handled in handle_event
-                draw_background=True,
-                cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+        self._option_rows = []
+        self._option_defs = section["options"]
+
+        for i, opt in enumerate(self._option_defs):
+            y = start_y + i * (row_height + row_spacing)
+            row = OptionRow(
+                start_x, y, row_width, row_height,
+                label=opt["label"],
+                option_type=opt["type"],
+                get_value=opt.get("get"),
+                set_value=opt.get("set"),
+                on_activate=lambda o=opt: self._on_option_activate(o),
+                cut_corners={"tl": True, "tr": False, "bl": False, "br": True},
             )
-            self.option_buttons.append(button)
-            self.ui_manager.add_component(button)
-        
-        # Bottom buttons (3 buttons side by side)
-        button_y = 180
-        button_width = 75
-        button_height = 52
-        button_spacing = 5
-        total_width = (button_width * 3) + (button_spacing * 2)
-        start_x = (ui_width - total_width) // 2
-        
-        # Background button
-        self.background_button = Button(
-            start_x, button_y, button_width, button_height,
-            "", self._on_background,
-            decorators=["Settings_Background"]
+            self._option_rows.append(row)
+            self._add_dynamic(row)
+
+        if self._option_rows:
+            self.ui_manager.set_focused_component(self._option_rows[0])
+
+        # Back button (mouse/touch only; keyboard/gamepad users use the B button)
+        back_btn = Button(
+            BASE_RESOLUTION - 68, BASE_RESOLUTION - 38, 60, 28,
+            "BACK", self._go_back,
         )
-        self.ui_manager.add_component(self.background_button)
-        
-        # Secrets button
-        secrets_x = start_x + button_width + button_spacing
-        self.secrets_button = Button(
-            secrets_x, button_y, button_width, button_height,
-            "", self._on_secrets,
-            decorators=["Settings_Secrets"]
-        )
-        self.ui_manager.add_component(self.secrets_button)
-        
-        # EXIT button
-        exit_x = secrets_x + button_width + button_spacing
-        self.exit_button = Button(
-            exit_x, button_y, button_width, button_height,
-            "EXIT", self._on_exit
-        )
-        self.ui_manager.add_component(self.exit_button)
-        
-        # Background mode components (initially hidden)
-        self.bg_name_label = Label(6, 80, "", shadow_mode="full", is_title=True, color_override=YELLOW_BRIGHT)
-        self.bg_name_label.visible = False
-        self.ui_manager.add_component(self.bg_name_label)
-        
-        self.bg_highres_label = Label(6, 110, "", shadow_mode="full")
-        self.bg_highres_label.visible = False
-        self.ui_manager.add_component(self.bg_highres_label)
-        
-        # Mouse navigation buttons for background mode (side by side at bottom)
-        nav_button_y = 200
-        nav_button_width = 52
-        nav_button_height = 32
-        nav_button_spacing = 6
-        
-        # Left arrow button
-        left_x = 6
-        self.bg_left_button = Button(
-            left_x, nav_button_y, nav_button_width, nav_button_height,
-            "", lambda: self.change_background(increase=False),
-            icon_name="Left", icon_prefix="Settings"
-        )
-        self.bg_left_button.visible = False
-        self.ui_manager.add_component(self.bg_left_button)
-        
-        # Right arrow button
-        right_x = left_x + nav_button_width + nav_button_spacing
-        self.bg_right_button = Button(
-            right_x, nav_button_y, nav_button_width, nav_button_height,
-            "", lambda: self.change_background(increase=True),
-            icon_name="Right", icon_prefix="Settings"
-        )
-        self.bg_right_button.visible = False
-        self.ui_manager.add_component(self.bg_right_button)
-        
-        # SELECT button (toggle high-res)
-        select_x = right_x + nav_button_width + nav_button_spacing
-        self.bg_select_button = Button(
-            select_x, nav_button_y, nav_button_width, nav_button_height,
-            "SEL", self._on_toggle_highres
-        )
-        self.bg_select_button.visible = False
-        self.ui_manager.add_component(self.bg_select_button)
-        
-        # BACK button
-        back_x = select_x + nav_button_width + nav_button_spacing
-        self.bg_back_button = Button(
-            back_x, nav_button_y, nav_button_width, nav_button_height,
-            "BACK", self._on_exit
-        )
-        self.bg_back_button.visible = False
-        self.ui_manager.add_component(self.bg_back_button)
-        
-        # Unlockables mode components (initially hidden)
-        self.unlockables_header_label = Label(0, 40, "", shadow_mode="full", color_override=YELLOW_BRIGHT)
-        self.unlockables_header_label.visible = False
-        self.ui_manager.add_component(self.unlockables_header_label)
-        
-        # Create 5 item labels for unlockables list
-        for i in range(5):
-            item_label = Label(20, 70 + i*25, "", shadow_mode="full")
-            item_label.visible = False
-            self.unlockables_item_labels.append(item_label)
-            self.ui_manager.add_component(item_label)
-        
-        # Navigation buttons for unlockables mode (left/right module navigation)
-        unlockables_left_x = 6
-        self.unlockables_left_button = Button(
-            unlockables_left_x, nav_button_y, nav_button_width, nav_button_height,
-            "", self._on_unlockables_prev_module,
-            icon_name="Left", icon_prefix="Settings"
-        )
-        self.unlockables_left_button.visible = False
-        self.ui_manager.add_component(self.unlockables_left_button)
-        
-        unlockables_right_x = unlockables_left_x + nav_button_width + nav_button_spacing
-        self.unlockables_right_button = Button(
-            unlockables_right_x, nav_button_y, nav_button_width, nav_button_height,
-            "", self._on_unlockables_next_module,
-            icon_name="Right", icon_prefix="Settings"
-        )
-        self.unlockables_right_button.visible = False
-        self.ui_manager.add_component(self.unlockables_right_button)
-        
-        # BACK button for unlockables mode
-        unlockables_back_x = ui_width - nav_button_width - 6
-        self.unlockables_back_button = Button(
-            unlockables_back_x, nav_button_y, nav_button_width, nav_button_height,
-            "BACK", self._on_exit
-        )
-        self.unlockables_back_button.visible = False
-        self.ui_manager.add_component(self.unlockables_back_button)
-        
-        # Instruction panels for keyboard mode (shown when mouse disabled)
-        # Background mode instructions (3 lines)
-        instructions_y = nav_button_y + 2
-        line_spacing = 10
-        self.bg_instructions_labels = []
-        bg_instructions = ["L/R: Change", "SELECT: Hi-Res", "B: Back"]
-        for i, text in enumerate(bg_instructions):
-            label = Label(6, instructions_y + i * line_spacing, text, shadow_mode="full")
-            label.visible = False
-            self.bg_instructions_labels.append(label)
-            self.ui_manager.add_component(label)
-        
-        # Unlockables mode instructions (4 lines)
-        self.unlockables_instructions_labels = []
-        unlockables_instructions = ["L/R: Module", "UP/DOWN: Scroll", "B: Back"]
-        for i, text in enumerate(unlockables_instructions):
-            label = Label(6, instructions_y + i * line_spacing, text, shadow_mode="full")
-            label.visible = False
-            self.unlockables_instructions_labels.append(label)
-            self.ui_manager.add_component(label)
-        
-        # Set mouse mode and initial focus
-        if self.option_buttons:
-            self.ui_manager.set_focused_component(self.option_buttons[0])
-    
-    def _get_setting_display_text(self, name):
-        """Get the display text for a setting option."""
-        if name == "Show Clock":
-            return f"Show Clock: {'ON' if game_globals.showClock else 'OFF'}"
-        elif name == "Sound":
-            return f"Sound: {game_globals.sound * 10}%"
-        elif name == "Global Wake":
-            wake_str = self._format_time(game_globals.wake_time)
-            return f"Wake: {wake_str}"
-        elif name == "Global Sleep":
-            sleep_str = self._format_time(game_globals.sleep_time)
-            return f"Sleep: {sleep_str}"
-        elif name == "Screen Timeout":
-            timeout = getattr(game_globals, 'screen_timeout', 0)
-            timeout_str = "OFF" if timeout == 0 else f"{timeout}s"
-            return f"Timeout: {timeout_str}"
-        return name
-    
-    def _update_button_texts(self):
-        """Update all option button texts."""
-        option_names = ["Show Clock", "Sound", "Global Wake", "Global Sleep", "Screen Timeout"]
-        for i, button in enumerate(self.option_buttons):
-            if i < len(option_names):
-                button.text = self._get_setting_display_text(option_names[i])
-                button.needs_redraw = True
-    
-    def _on_setting_change(self, name, increase=True):
-        """Handle setting option change."""
-        if name == "Show Clock":
-            game_globals.showClock = not game_globals.showClock
-            runtime_globals.game_sound.play("menu")
-        elif name == "Sound":
-            # Cycle sound from 0-10 (wraps around)
-            new_sound = game_globals.sound + (1 if increase else -1)
-            game_globals.sound = new_sound % 11  # 0-10 inclusive
-            runtime_globals.game_sound.play("menu")
-        elif name == "Global Wake":
-            game_globals.wake_time = self._change_time(game_globals.wake_time, increase, 0, 12, is_sleep=False)
-            runtime_globals.game_sound.play("menu")
-        elif name == "Global Sleep":
-            game_globals.sleep_time = self._change_time(game_globals.sleep_time, increase, 12, 0, is_sleep=True)
-            runtime_globals.game_sound.play("menu")
-        elif name == "Screen Timeout":
-            current = getattr(game_globals, 'screen_timeout', 0)
-            new_val = self._cycle_screen_timeout(current, increase)
-            game_globals.screen_timeout = new_val
-            runtime_globals.game_sound.play("menu")
-        
-        self._update_button_texts()
-    
-    def _on_background(self):
-        """Handle Background button press."""
-        runtime_globals.game_sound.play("menu")
-        self.mode = "background"
+        back_btn.visible = self._mouse_enabled()
+        self._add_dynamic(back_btn)
+
+    def _refresh_option_texts(self):
+        for row in self._option_rows:
+            row.needs_redraw = True
+
+    # ------------------------------------------------------------------
+    # Background view
+    # ------------------------------------------------------------------
+
+    def _build_background_view(self):
         self.title_scene.set_text("BACKGROUND")
-        # Update current background index to reflect currently selected background
-        self.current_bg_index = self.get_current_background_index()
-        self._update_view_visibility()
-    
-    def _on_secrets(self):
-        """Handle Secrets button press."""
-        runtime_globals.game_sound.play("menu")
-        self.mode = "unlockables"
-        self.title_scene.set_text("SECRETS")
-        self._update_view_visibility()
-    
-    def _on_toggle_highres(self):
-        """Toggle high-resolution backgrounds."""
+        self.ui_background.visible = False
+        self.current_bg_index = self._get_current_background_index()
+
+        self._bg_name_label = Label(6, 80, "", shadow_mode="full", is_title=True, color_override=YELLOW_BRIGHT)
+        self._add_dynamic(self._bg_name_label)
+
+        self._bg_highres_label = Label(6, 110, "", shadow_mode="full")
+        self._add_dynamic(self._bg_highres_label)
+
+        mouse = self._mouse_enabled()
+        nav_y = 200
+        nw, nh, ns = 52, 32, 6
+        lx = 6
+
+        self._bg_left_button = Button(lx, nav_y, nw, nh, "", lambda: self._change_background(False), icon_name="Left", icon_prefix="Settings")
+        self._bg_left_button.visible = mouse
+        self._add_dynamic(self._bg_left_button)
+
+        rx = lx + nw + ns
+        self._bg_right_button = Button(rx, nav_y, nw, nh, "", lambda: self._change_background(True), icon_name="Right", icon_prefix="Settings")
+        self._bg_right_button.visible = mouse
+        self._add_dynamic(self._bg_right_button)
+
+        sx = rx + nw + ns
+        self._bg_select_button = Button(sx, nav_y, nw, nh, "SEL", self._toggle_highres)
+        self._bg_select_button.visible = mouse
+        self._add_dynamic(self._bg_select_button)
+
+        bx = sx + nw + ns
+        self._bg_back_button = Button(bx, nav_y, nw, nh, "BACK", self._go_back)
+        self._bg_back_button.visible = mouse
+        self._add_dynamic(self._bg_back_button)
+
+        self._bg_instruction_labels = []
+        instr_y = nav_y + 2
+        for i, txt in enumerate(["L/R: Change", "SELECT: Hi-Res", "B: Back"]):
+            lbl = Label(6, instr_y + i * 10, txt, shadow_mode="full")
+            lbl.visible = not mouse
+            self._bg_instruction_labels.append(lbl)
+            self._add_dynamic(lbl)
+
+        self._update_background_labels()
+
+    def _update_background_labels(self):
+        if self.unlocked_backgrounds and self._bg_name_label:
+            _, name, label = self.unlocked_backgrounds[self.current_bg_index]
+            self._bg_name_label.set_text(label)
+            self._bg_highres_label.set_text(f"High-Res: {'ON' if game_globals.background_high_res else 'OFF'}")
+
+    def _change_background(self, increase):
+        if not self.unlocked_backgrounds:
+            return
+        self.current_bg_index = (self.current_bg_index + (1 if increase else -1)) % len(self.unlocked_backgrounds)
+        mod, name, label = self.unlocked_backgrounds[self.current_bg_index]
+        game_globals.game_background = name
+        game_globals.background_module_name = mod
+        self.window_background.load_sprite(False)
+        self._update_background_labels()
+
+    def _toggle_highres(self):
         game_globals.background_high_res = not game_globals.background_high_res
-        runtime_globals.game_console.log(f"[SceneSettingsMenu] High-Res Backgrounds: {game_globals.background_high_res}")
         self.window_background.load_sprite(False)
         runtime_globals.game_sound.play("menu")
         self._update_background_labels()
-    
-    def _on_exit(self):
-        """Handle EXIT/BACK button press."""
-        if self.mode != "main":
-            # Return to main settings view
-            runtime_globals.game_sound.play("cancel")
-            self.mode = "main"
-            self.title_scene.set_text("SETTINGS")
-            self._update_view_visibility()
-        else:
-            # Exit to game (only when in main mode)
-            runtime_globals.game_sound.play("cancel")
-            change_scene("game")
-    
-    def _on_unlockables_prev_module(self):
-        """Handle previous module button in unlockables view."""
-        module_count = len(self.unlockables_data)
-        if module_count > 0:
-            self.current_unlock_module_index = (self.current_unlock_module_index - 1) % module_count
+
+    def _get_current_background_index(self):
+        if not game_globals.game_background:
+            return 0
+        for i, (mod, name, _) in enumerate(self.unlocked_backgrounds):
+            if name == game_globals.game_background and mod == game_globals.background_module_name:
+                return i
+        return 0
+
+    # ------------------------------------------------------------------
+    # Unlockables / Secrets view
+    # ------------------------------------------------------------------
+
+    def _build_unlockables_view(self):
+        self.title_scene.set_text("SECRETS")
+
+        self._unlock_header_label = Label(0, 40, "", shadow_mode="full", color_override=YELLOW_BRIGHT)
+        self._add_dynamic(self._unlock_header_label)
+
+        self._unlock_item_labels = []
+        for i in range(5):
+            lbl = Label(20, 70 + i * 25, "", shadow_mode="full")
+            self._unlock_item_labels.append(lbl)
+            self._add_dynamic(lbl)
+
+        mouse = self._mouse_enabled()
+        nav_y = 200
+        nw, nh, ns = 52, 32, 6
+
+        self._unlock_left_button = Button(6, nav_y, nw, nh, "", self._unlockables_prev_module, icon_name="Left", icon_prefix="Settings")
+        self._unlock_left_button.visible = mouse
+        self._add_dynamic(self._unlock_left_button)
+
+        self._unlock_right_button = Button(6 + nw + ns, nav_y, nw, nh, "", self._unlockables_next_module, icon_name="Right", icon_prefix="Settings")
+        self._unlock_right_button.visible = mouse
+        self._add_dynamic(self._unlock_right_button)
+
+        self._unlock_back_button = Button(BASE_RESOLUTION - nw - 6, nav_y, nw, nh, "BACK", self._go_back)
+        self._unlock_back_button.visible = mouse
+        self._add_dynamic(self._unlock_back_button)
+
+        self._unlock_instruction_labels = []
+        instr_y = nav_y + 2
+        for i, txt in enumerate(["L/R: Module", "UP/DOWN: Scroll", "B: Back"]):
+            lbl = Label(6, instr_y + i * 10, txt, shadow_mode="full")
+            lbl.visible = not mouse
+            self._unlock_instruction_labels.append(lbl)
+            self._add_dynamic(lbl)
+
+        self._update_unlockables_labels()
+
+    def _update_unlockables_labels(self):
+        if not self.unlockables_data:
+            if self._unlock_header_label:
+                self._unlock_header_label.set_text("No modules found")
+            for lbl in self._unlock_item_labels:
+                lbl.set_text("")
+            return
+        mod_data = self.unlockables_data[self.current_unlock_module_index]
+        unlocked = mod_data["unlocked"]
+        if not unlocked:
+            self._unlock_header_label.set_text(f"No items unlocked for {mod_data['name']}")
+            for lbl in self._unlock_item_labels:
+                lbl.set_text("")
+            return
+        self._unlock_header_label.set_text(f"{mod_data['name']}: {len(unlocked)} of {len(mod_data['all'])} unlocked")
+        vis_start = max(0, self.current_unlock_item_index - 2)
+        vis_items = unlocked[vis_start:vis_start + 5]
+        for i in range(5):
+            if i < len(vis_items):
+                self._unlock_item_labels[i].set_text(vis_items[i].get("label", vis_items[i].get("name", "???")))
+            else:
+                self._unlock_item_labels[i].set_text("")
+
+    def _unlockables_prev_module(self):
+        n = len(self.unlockables_data)
+        if n:
+            self.current_unlock_module_index = (self.current_unlock_module_index - 1) % n
             self.current_unlock_item_index = 0
             runtime_globals.game_sound.play("menu")
-            self._update_unlockables_labels()
-    
-    def _on_unlockables_next_module(self):
-        """Handle next module button in unlockables view."""
-        module_count = len(self.unlockables_data)
-        if module_count > 0:
-            self.current_unlock_module_index = (self.current_unlock_module_index + 1) % module_count
-            self.current_unlock_item_index = 0
-            runtime_globals.game_sound.play("menu")
-            self._update_unlockables_labels()
-    
-    def _update_view_visibility(self):
-        """Update visibility of components based on current mode."""
-        # Check if mouse is enabled
-        mouse_enabled = (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE or runtime_globals.INPUT_MODE == runtime_globals.TOUCH_MODE)
-        
-        # Main settings components (visible in main mode only)
-        for button in self.option_buttons:
-            button.visible = (self.mode == "main")
-        self.background_button.visible = (self.mode == "main")
-        self.secrets_button.visible = (self.mode == "main")
-        self.exit_button.visible = (self.mode == "main")
-        
-        # Hide UI background when not in main mode (show only global background)
-        self.background.visible = (self.mode != "background")
-        
-        # Background mode components
-        is_bg_mode = (self.mode == "background")
-        self.bg_name_label.visible = is_bg_mode
-        self.bg_highres_label.visible = is_bg_mode
-        # Show buttons only if mouse is enabled, otherwise show instructions
-        self.bg_left_button.visible = is_bg_mode and mouse_enabled
-        self.bg_right_button.visible = is_bg_mode and mouse_enabled
-        self.bg_select_button.visible = is_bg_mode and mouse_enabled
-        self.bg_back_button.visible = is_bg_mode and mouse_enabled
-        # Show instruction labels when mouse disabled
-        for label in self.bg_instructions_labels:
-            label.visible = is_bg_mode and not mouse_enabled
-        if is_bg_mode:
-            self._update_background_labels()
-        
-        # Unlockables mode components
-        is_unlockables_mode = (self.mode == "unlockables")
-        self.unlockables_header_label.visible = is_unlockables_mode
-        for label in self.unlockables_item_labels:
-            label.visible = is_unlockables_mode
-        # Show buttons only if mouse is enabled, otherwise show instructions
-        self.unlockables_left_button.visible = is_unlockables_mode and mouse_enabled
-        self.unlockables_right_button.visible = is_unlockables_mode and mouse_enabled
-        self.unlockables_back_button.visible = is_unlockables_mode and mouse_enabled
-        # Show instruction labels when mouse disabled
-        for label in self.unlockables_instructions_labels:
-            label.visible = is_unlockables_mode and not mouse_enabled
-        if is_unlockables_mode:
             self._update_unlockables_labels()
 
-    def load_unlockables(self):
-        """Loads unlockable progress for all game modules."""
+    def _unlockables_next_module(self):
+        n = len(self.unlockables_data)
+        if n:
+            self.current_unlock_module_index = (self.current_unlock_module_index + 1) % n
+            self.current_unlock_item_index = 0
+            runtime_globals.game_sound.play("menu")
+            self._update_unlockables_labels()
+
+    def _load_unlockables(self):
         self.unlockables_data = []
         for module in runtime_globals.game_modules.values():
             unlocks = getattr(module, "unlocks", [])
-            # Get all unlocked items (any type) for this module
             unlocked_items = [u for u in unlocks if is_unlocked(module.name, u.get("type", ""), u.get("name", ""))]
             self.unlockables_data.append({
                 "name": module.name,
                 "icon": runtime_globals.game_module_flag.get(module.name, None),
                 "unlocked": unlocked_items,
-                "all": unlocks
+                "all": unlocks,
             })
         self.current_unlock_module_index = 0
         self.current_unlock_item_index = 0
 
-    def get_current_background_index(self) -> int:
-        """Gets index of current background in the unlocked list."""
-        if not game_globals.game_background:
-            return 0
-        for i, (mod, name, label) in enumerate(self.unlocked_backgrounds):
-            if name == game_globals.game_background and mod == game_globals.background_module_name:
-                return i
-        return 0
+    # ------------------------------------------------------------------
+    # Navigation helpers
+    # ------------------------------------------------------------------
+
+    def _mouse_enabled(self):
+        return runtime_globals.INPUT_MODE in (
+            runtime_globals.MOUSE_MODE, runtime_globals.TOUCH_MODE)
+
+    def _navigate_to(self, section_key):
+        runtime_globals.game_sound.play("menu")
+        self.nav_stack.append(section_key)
+        self._build_section_view()
+
+    def _go_back(self):
+        runtime_globals.game_sound.play("cancel")
+        if self._current_section_key() == "background":
+            self.ui_background.visible = True
+        if len(self.nav_stack) > 1:
+            self.nav_stack.pop()
+            self._build_section_view()
+        else:
+            change_scene("game")
+
+    # ------------------------------------------------------------------
+    # Option activation (A / click on action rows)
+    # ------------------------------------------------------------------
+
+    def _on_option_activate(self, opt):
+        key = opt["key"]
+
+        # Sub-sections
+        if key in self.sections:
+            self._navigate_to(key)
+            return
+        if key == "background":
+            self._navigate_to("background")
+            return
+        if key == "unlockables":
+            self._navigate_to("unlockables")
+            return
+
+        # Actions that leave the scene
+        if key == "game_mode":
+            runtime_globals.game_sound.play("menu")
+            game_globals.setup_input = False
+            game_globals.setup_graphics = False
+            change_scene("setup")
+            return
+        if key == "remap_input":
+            runtime_globals.game_sound.play("menu")
+            game_globals.setup_input = True
+            game_globals.setup_graphics = False
+            change_scene("setup")
+            return
+        if key == "test_graphics":
+            runtime_globals.game_sound.play("menu")
+            game_globals.setup_input = False
+            game_globals.setup_graphics = True
+            change_scene("setup")
+            return
+        if key == "replay_tutorial":
+            runtime_globals.game_sound.play("menu")
+            game_globals.show_tutorial = True
+            change_scene("tutorial")
+            return
+
+    # ------------------------------------------------------------------
+    # Core scene interface
+    # ------------------------------------------------------------------
 
     def update(self) -> None:
-        """Updates the settings menu."""
-        # Check if mouse mode changed and update visibility accordingly
-        mouse_enabled = (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE or runtime_globals.INPUT_MODE == runtime_globals.TOUCH_MODE)
-        if not hasattr(self, '_last_mouse_enabled'):
-            self._last_mouse_enabled = mouse_enabled
-        
-        if self._last_mouse_enabled != mouse_enabled:
-            self._last_mouse_enabled = mouse_enabled
-            self._update_view_visibility()
-        
         self.ui_manager.update()
 
     def draw(self, surface: pygame.Surface) -> None:
-        """Draws the settings menu."""
-        # Draw global background layer
         self.window_background.draw(surface)
-        
-        # Draw UI components (visibility is controlled by mode)
         self.ui_manager.draw(surface)
-    
+
     def handle_event(self, event) -> None:
-        """Handle input events."""
         if not isinstance(event, tuple) or len(event) != 2:
             return
-        
         event_type, event_data = event
-        
-        # Check if mouse is enabled
-        mouse_enabled = (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE or runtime_globals.INPUT_MODE == runtime_globals.TOUCH_MODE)
-        
-        # Handle mode-specific inputs
-        if self.mode == "background":
-            # B always works to go back
+        section = self._current_section_key()
+
+        # ---- Background mode ----
+        if section == "background":
             if event_type == "B":
-                self._on_exit()
+                self._go_back()
                 return
-            # Block keyboard shortcuts if mouse is enabled (force button usage)
-            if not mouse_enabled:
+            if not self._mouse_enabled():
                 if event_type in ("LEFT", "RIGHT"):
-                    self.change_background(increase=(event_type == "RIGHT"))
+                    self._change_background(event_type == "RIGHT")
                     return
-                elif event_type == "SELECT":
-                    # Toggle high-resolution via method
-                    self._on_toggle_highres()
+                if event_type == "SELECT":
+                    self._toggle_highres()
                     return
-        
-        elif self.mode == "unlockables":
-            module_count = len(self.unlockables_data)
-            if module_count == 0:
-                if event_type == "B":
-                    self._on_exit()
-                return
-            
-            # B always works to go back
+
+        # ---- Unlockables mode ----
+        elif section == "unlockables":
             if event_type == "B":
-                self._on_exit()
+                self._go_back()
                 return
-            
-            # Block keyboard shortcuts if mouse is enabled (force button usage)
-            if not mouse_enabled:
-                module_idx = self.current_unlock_module_index
-                item_idx = self.current_unlock_item_index
-                unlocked = self.unlockables_data[module_idx]["unlocked"]
-                
-                if event_type == "LEFT":
-                    self.current_unlock_module_index = (module_idx - 1) % module_count
+            if not self._mouse_enabled():
+                n = len(self.unlockables_data)
+                if event_type == "LEFT" and n:
+                    self.current_unlock_module_index = (self.current_unlock_module_index - 1) % n
                     self.current_unlock_item_index = 0
                     runtime_globals.game_sound.play("menu")
                     self._update_unlockables_labels()
                     return
-                elif event_type == "RIGHT":
-                    self.current_unlock_module_index = (module_idx + 1) % module_count
+                if event_type == "RIGHT" and n:
+                    self.current_unlock_module_index = (self.current_unlock_module_index + 1) % n
                     self.current_unlock_item_index = 0
                     runtime_globals.game_sound.play("menu")
                     self._update_unlockables_labels()
                     return
-                elif event_type == "UP":
-                    if unlocked:
-                        self.current_unlock_item_index = (item_idx - 1) % len(unlocked)
+                if n and self.unlockables_data[self.current_unlock_module_index]["unlocked"]:
+                    unlocked = self.unlockables_data[self.current_unlock_module_index]["unlocked"]
+                    if event_type == "UP":
+                        self.current_unlock_item_index = (self.current_unlock_item_index - 1) % len(unlocked)
                         runtime_globals.game_sound.play("menu")
                         self._update_unlockables_labels()
                         return
-                elif event_type == "DOWN":
-                    if unlocked:
-                        self.current_unlock_item_index = (item_idx + 1) % len(unlocked)
+                    if event_type == "DOWN":
+                        self.current_unlock_item_index = (self.current_unlock_item_index + 1) % len(unlocked)
                         runtime_globals.game_sound.play("menu")
                         self._update_unlockables_labels()
-                    return
-            elif event_type == "B":
-                runtime_globals.game_sound.play("cancel")
-                change_scene("game")
-                return
-            # Main settings mode - handle LEFT/RIGHT for focused option button
-            elif self.mode == "main" and event_type in ("LEFT", "RIGHT"):
-                if self.ui_manager.focused_index >= 0 and self.ui_manager.focused_index < len(self.ui_manager.focusable_components):
-                    focused = self.ui_manager.focusable_components[self.ui_manager.focused_index]
-                else:
-                    focused = None
-                if focused and focused in self.option_buttons:
-                    option_idx = self.option_buttons.index(focused)
-                    option_names = ["Show Clock", "Sound", "Global Wake", "Global Sleep", "Screen Timeout"]
-                    if option_idx < len(option_names):
-                        if event_type in ("LEFT", "RIGHT"):
-                            self._on_setting_change(option_names[option_idx], increase=(event_type == "RIGHT"))
-                return
-        
-        # Handle pygame events (mouse clicks, etc.)
-        if self.ui_manager.handle_event(event):
-            return
-    
-    def _update_background_labels(self):
-        """Update background selection labels."""
-        if self.unlocked_backgrounds:
-            mod, name, label = self.unlocked_backgrounds[self.current_bg_index]
-            self.bg_name_label.set_text(label)
-            
-            high_res_text = f"High-Res: {'ON' if game_globals.background_high_res else 'OFF'}"
-            self.bg_highres_label.set_text(high_res_text)
-    
-    def _update_unlockables_labels(self):
-        """Update unlockables/secrets labels."""
-        if not self.unlockables_data:
-            self.unlockables_header_label.set_text("No modules found")
-            for label in self.unlockables_item_labels:
-                label.set_text("")
-            return
-        
-        module_data = self.unlockables_data[self.current_unlock_module_index]
-        unlocked = module_data["unlocked"]
-        
-        if not unlocked:
-            self.unlockables_header_label.set_text(f"No items unlocked for module {module_data['name']}")
-            for label in self.unlockables_item_labels:
-                label.set_text("")
-            return
-        
-        # Update header
-        header_text = f"{module_data['name']}: {len(unlocked)} of {len(module_data['all'])} unlocked"
-        self.unlockables_header_label.set_text(header_text)
-        
-        # Update item list (5 visible)
-        visible_start = max(0, self.current_unlock_item_index - 2)
-        visible_items = unlocked[visible_start:visible_start + 5]
-        
-        for i in range(5):
-            if i < len(visible_items):
-                item = visible_items[i]
-                label_text = item.get("label", item.get("name", "???"))
-                self.unlockables_item_labels[i].set_text(label_text)
-                
-                # Highlight selected item (using color override)
-                actual_index = visible_start + i
-                self.unlockables_item_labels[i].color_override = None
-            else:
-                self.unlockables_item_labels[i].set_text("")
+                        return
 
-    def change_background(self, increase: bool) -> None:
-        """Changes background index while keeping it cyclic."""
-        if not self.unlocked_backgrounds:
-            return  
-
-        self.current_bg_index = (self.current_bg_index + 1) % len(self.unlocked_backgrounds) if increase else (self.current_bg_index - 1) % len(self.unlocked_backgrounds)
-
-        mod, name, label = self.unlocked_backgrounds[self.current_bg_index]
-        game_globals.game_background = name
-        game_globals.background_module_name = mod
-
-        self.window_background.load_sprite(False)  # Force reload
-        runtime_globals.game_console.log(f"[SceneSettingsMenu] Background changed to {label} ({mod})")
-        
-        # Update labels
-        self._update_background_labels()
-
-    def _format_time(self, t):
-        if t is None:
-            return "Off"
-        return t.strftime("%H:%M")
-
-    def _cycle_screen_timeout(self, current, increase: bool):
-        # Find index in choices and move forward/back with wrap
-        try:
-            idx = self._SCREEN_TIMEOUT_CHOICES.index(current)
-        except ValueError:
-            idx = 0
-        idx = (idx + (1 if increase else -1)) % len(self._SCREEN_TIMEOUT_CHOICES)
-        # Ensure minimum of 10 for non-zero values is already enforced by choices
-        return self._SCREEN_TIMEOUT_CHOICES[idx]
-
-    def _change_time(self, current, increase, start_hour, end_hour, is_sleep=False):
-        """
-        Cycle through time slots with 30-minute increments.
-        Wake: Off -> 00:30 -> 01:00 -> ... -> 12:00 -> Off
-        Sleep: Off -> 12:30 -> 13:00 -> ... -> 23:30 -> 00:00 -> Off
-        
-        The cycle includes None (Off) as the first/last position.
-        """
-        # Generate time slots in 30-minute increments
-        time_slots = []
-        
-        if is_sleep:
-            # Sleep: 12:30 -> 13:00 -> ... -> 23:30 -> 00:00
-            # Start at 12:30, go through 23:30, end with 00:00
-            time_slots.append(datetime.time(12, 30))
-            for hour in range(13, 24):
-                time_slots.append(datetime.time(hour, 0))
-                time_slots.append(datetime.time(hour, 30))
-            # Add 00:00 as the final slot for sleep
-            time_slots.append(datetime.time(0, 0))
+        # ---- Normal section: B goes back ----
         else:
-            # Wake: 00:30 -> 01:00 -> 01:30 -> ... -> 11:30 -> 12:00
-            # Start at 00:30, end at 12:00
-            time_slots.append(datetime.time(0, 30))
-            for hour in range(1, end_hour + 1):
-                time_slots.append(datetime.time(hour, 0))
-                if hour < end_hour:  # Don't add 12:30 for wake
-                    time_slots.append(datetime.time(hour, 30))
-        
-        if not time_slots:
-            # Fallback if something went wrong
-            return None
-        
-        # Find current position in cycle (or closest match)
-        if current is None:
-            # Off state - move to first or last time slot
-            if increase:
-                return time_slots[0]  # Off -> first time
-            else:
-                return None  # Already Off, stay Off (or could return last time)
-        
-        # Find closest matching slot
-        try:
-            current_idx = time_slots.index(current)
-        except ValueError:
-            # Current time not in slots, find closest
-            cur_dt = datetime.datetime(2000, 1, 1, current.hour, current.minute)
-            best_idx = 0
-            best_diff = None
-            for i, slot in enumerate(time_slots):
-                slot_dt = datetime.datetime(2000, 1, 1, slot.hour, slot.minute)
-                diff = abs((slot_dt - cur_dt).total_seconds())
-                if best_diff is None or diff < best_diff:
-                    best_diff = diff
-                    best_idx = i
-            current_idx = best_idx
-        
-        # Move to next/previous
-        if increase:
-            new_idx = current_idx + 1
-            if new_idx >= len(time_slots):
-                # Wrap to Off
-                return None
-            return time_slots[new_idx]
-        else:
-            new_idx = current_idx - 1
-            if new_idx < 0:
-                # Wrap to Off
-                return None
-            return time_slots[new_idx]
+            if event_type == "B":
+                self._go_back()
+                return
+
+        # Delegate everything else to UI manager
+        # (OptionRow handles LEFT/RIGHT/A/LCLICK internally)
+        self.ui_manager.handle_event(event)

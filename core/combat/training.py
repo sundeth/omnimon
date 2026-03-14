@@ -212,11 +212,14 @@ class Training:
         """
         Pre-scales all pet sprites for each frame_enum and caches them.
         """
+        runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] Initializing cache for {len(self.pets)} pets")
         self._pet_sprite_cache = {}
         for pet in self.pets:
             self._pet_sprite_cache[pet] = {}
+            runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] Pet {pet.name}: pet_sprites has {len(runtime_globals.pet_sprites.get(pet, []))} frames")
             for frame_enum in PetFrame:
                 sprite = runtime_globals.pet_sprites[pet][frame_enum.value]
+                runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] {pet.name} {frame_enum.name}: sprite id={id(sprite)}, size={sprite.get_size()}")
                 scaled_sprite = pygame.transform.scale(sprite, (runtime_globals.OPTION_ICON_SIZE, runtime_globals.OPTION_ICON_SIZE))
                 self._pet_sprite_cache[pet][frame_enum] = scaled_sprite
 

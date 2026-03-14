@@ -7,7 +7,7 @@ from core import runtime_globals
 from core.utils.pygame_utils import blit_with_cache, blit_with_shadow
 
 class Label(UIComponent):
-    def __init__(self, x, y, text, is_title=False, color_override=None, align_right=False, fixed_width=None, tooltip_text=None, scroll_text=False, shadow_mode="disabled", custom_size=None):
+    def __init__(self, x, y, text, is_title=False, color_override=None, align_right=False, fixed_width=None, tooltip_text=None, scroll_text=False, shadow_mode="disabled", custom_size=None, word_wrap=False, max_width=None, center=False):
         super().__init__(x, y, 1, 1)  # Width/height will be set after rendering
         self.text = text
         self.is_title = is_title
@@ -20,6 +20,10 @@ class Label(UIComponent):
         self.focusable = bool(tooltip_text)  # Only focusable if it has a tooltip
         self.needs_redraw = True
         self.custom_size = custom_size
+        self.word_wrap = word_wrap
+        self.max_width = max_width
+        self.center = center  # If True, x position will be treated as center point
+        self._center_adjusted = False  # Track if center adjustment has been applied
         
         # Scrolling animation variables
         self.scroll_offset = 0
@@ -28,6 +32,24 @@ class Label(UIComponent):
         self.scroll_pause_timer = 0
         self.scroll_pause_duration = 60  # frames to pause at each end
         self.last_update_time = 0
+        
+    def on_manager_set(self):
+        """Called when component is added to a UIManager"""
+        if self.center and not self._center_adjusted:
+            # Need to render first to get text width
+            temp_surface = self.render()
+            if temp_surface and self.base_rect:
+                # Calculate the actual text width in base coordinates
+                text_width = temp_surface.get_width()
+                if self.manager:
+                    # Convert scaled width back to base coordinates
+                    base_text_width = text_width // self.manager.ui_scale
+                    # Adjust base_rect.x to center the text
+                    self.base_rect.x = self.base_rect.x - base_text_width // 2
+                    # Rescale the rect
+                    self.rect = self.manager.scale_rect(self.base_rect)
+                    self._center_adjusted = True
+                    self.needs_redraw = True
         
     def set_text(self, text):
         """Update the label text"""
@@ -132,9 +154,76 @@ class Label(UIComponent):
         else:
             colors = self.get_colors()
             color = colors["fg"]
+        
+        # Handle word wrapping
+        if self.word_wrap and (self.max_width or self.fixed_width):
+            wrap_width = self.max_width or self.fixed_width
+            scaled_width = self.manager.scale_value(wrap_width) if self.manager else wrap_width
+            
+            # Split text into lines that fit within max_width
+            words = self.text.split(' ')
+            lines = []
+            current_line = ""
+            
+            for word in words:
+                # Add space before word if current_line is not empty
+                test_line = (current_line + " " + word) if current_line else word
+                test_surface = font.render(test_line, True, color)
+                
+                if test_surface.get_width() <= scaled_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                        current_line = word
+                    else:
+                        # Single word is too long, add it anyway
+                        lines.append(word)
+                        current_line = ""
+            
+            if current_line:
+                lines.append(current_line)
+            
+            # Render each line
+            line_height = font.get_height()
+            total_height = line_height * len(lines)
+            wrapped_surface = pygame.Surface((scaled_width, total_height), pygame.SRCALPHA)
+            
+            for i, line in enumerate(lines):
+                line_surface = font.render(line, True, color)
+                y_pos = i * line_height
+                
+                if self.manager and self.manager.should_render_shadow(self, "text"):
+                    blit_with_shadow(wrapped_surface, line_surface, (0, y_pos))
+                else:
+                    blit_with_cache(wrapped_surface, line_surface, (0, y_pos))
+            
+            # Update component screen size
+            self.rect.width = scaled_width
+            self.rect.height = total_height
+            return wrapped_surface
             
         # Render text at proper scale
         text_surface = font.render(self.text, True, color)
+        
+        # Auto-shrink: if max_width is set and text overflows (no word_wrap, no scroll),
+        # reduce font size until the text fits.
+        if self.max_width and not self.word_wrap and not self.scroll_text:
+            scaled_max = self.manager.scale_value(self.max_width) if self.manager else self.max_width
+            if text_surface.get_width() > scaled_max:
+                # Use font height as a proxy for the current point size
+                current_size = font.get_height()
+                min_size = max(6, current_size - 20)
+                shrunk_surface = text_surface
+                for shrunk_size in range(current_size - 1, min_size - 1, -1):
+                    if self.is_title:
+                        shrunk_font = self.get_font("title", custom_size=shrunk_size)
+                    else:
+                        shrunk_font = self.get_font("text", custom_size=shrunk_size)
+                    shrunk_surface = shrunk_font.render(self.text, True, color)
+                    if shrunk_surface.get_width() <= scaled_max:
+                        break
+                text_surface = shrunk_surface
         
         # Handle scrolling text
         if self.scroll_text and self.fixed_width:

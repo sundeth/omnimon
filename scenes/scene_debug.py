@@ -5,6 +5,7 @@ Refactored to use the new UI system with button components.
 """
 import pygame
 import random
+import time
 
 from components.ui.ui_manager import UIManager
 from components.ui.background import Background
@@ -14,7 +15,6 @@ from components.ui.pet_selector import PetSelector
 from components.ui.ui_constants import BASE_RESOLUTION
 from components.window_background import WindowBackground
 from core import game_globals, runtime_globals
-import core.constants as constants
 from core.utils.scene_utils import change_scene
 from core.utils.pet_utils import get_selected_pets
 from core.utils.module_utils import get_module
@@ -112,7 +112,7 @@ class SceneDebug:
         
         # Title
         title_text = f"DEBUG ({self.current_page + 1}/{self.total_pages})"
-        self.title_scene = TitleScene(0, 5, title_text)
+        self.title_scene = TitleScene(0, 9, title_text)
         self.ui_manager.add_component(self.title_scene)
         
         # Grid layout for 2x3 option buttons
@@ -290,10 +290,9 @@ class SceneDebug:
         selected_pets = get_selected_pets()
         if not selected_pets:
             return False
-            
+
         for pet in selected_pets:
-            pet.timer += constants.FRAME_RATE * 60 * 60  # 60 minutes
-            pet.age_timer += constants.FRAME_RATE * 60 * 60
+            pet._rt_origin -= 60 * 60  # shift origin 60 minutes into the past
             pet.edited = True
         return True
 

@@ -275,11 +275,7 @@ class StatusCarousel(UIComponent):
         if not self.manager:
             return None
             
-        # Get sprite scale (1, 2, or 3) based on UI scale
-        sprite_scale = self.manager.get_sprite_scale()
-        base_sprite_scale = 1  # Always available fallback
-        
-        # Map status names to icon file names (without Status_ prefix and scale)
+        # NEW SYSTEM: Always load _1 sprites and scale them
         icon_mapping = {
             "Trophies": "Trophies",
             "Vital Values": "Vital Values", 
@@ -297,8 +293,19 @@ class StatusCarousel(UIComponent):
         
         icon_filename = icon_mapping.get(status_name, status_name)
         
-        # Try to load with preferred scale first using Status_ prefix
-        icon = image_load(f"assets/ui/Status_{icon_filename}_{sprite_scale}.png").convert_alpha()
+        # Load _1 sprite and scale it
+        icon_path = f"assets/ui/Status_{icon_filename}_1.png"
+        try:
+            icon = image_load(icon_path).convert_alpha()
+            
+            # Apply integer scaling if needed
+            if self.manager.ui_scale > 1:
+                original_size = icon.get_size()
+                new_size = (original_size[0] * self.manager.ui_scale, original_size[1] * self.manager.ui_scale)
+                icon = pygame.transform.scale(icon, new_size)
+        except (pygame.error, FileNotFoundError) as e:
+            runtime_globals.game_console.log(f"[StatusCarousel] Could not load icon: {icon_path} - {e}")
+            return None
         
         # Scale down the icon to fit with the larger font
         # Calculate target icon size based on box dimensions and font space needed

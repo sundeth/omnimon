@@ -1,6 +1,6 @@
 import random
 
-from core import runtime_globals
+from core import game_globals, runtime_globals
 from core.animation import PetFrame
 from core.combat.training import Training
 from components.ui.ui_manager import UIManager
@@ -44,7 +44,7 @@ class CountMatchTraining(Training):
         if self.count_match.phase != "count":
             self.start_count_phase()
         # Use frame-rate independent timing (3 seconds)
-        if self.frame_counter > int(3 * constants.FRAME_RATE):
+        if self.frame_counter > int(3 * game_globals.configuration.frame_rate):
             self.phase = "wait_attack"
             self.calculate_results()
             self.prepare_attack()
@@ -60,15 +60,21 @@ class CountMatchTraining(Training):
     def handle_event(self, event):
         event_type, event_data = event
         
-        if self.phase in "charge" and event_type in ("Y", "SHAKE"):
+        if self.phase == "charge" and event_type in ("Y", "SHAKE"):
             # Let the minigame handle the input
             if self.count_match and self.count_match.handle_event(event):
                 self.press_counter = self.count_match.get_press_counter()
                 self.rotation_index = self.count_match.get_rotation_index()
                 
-        elif self.phase in ["wait_attack", "attack_move", "impact", "result"] and event_type in ["B", "START"]:
+        elif self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
+            # Skip to result phase
+            runtime_globals.game_sound.play("cancel")
+            self.animated_sprite.stop()
+            self.phase = "result"
+            self.frame_counter = 0
+        elif self.phase == "result" and event_type in ["B", "START"]:
             self.finish_training()
-        elif self.phase in ("alert", "charge") and event_type == "B":
+        elif self.phase == "alert" and event_type == "B":
             runtime_globals.game_sound.play("cancel")
             change_scene("game")
 
@@ -154,7 +160,7 @@ class CountMatchTraining(Training):
         if self.frame_counter <= 1:
             runtime_globals.game_sound.play("attack")
 
-        speed = combat_constants.ATTACK_SPEED * (30 / constants.FRAME_RATE)
+        speed = combat_constants.ATTACK_SPEED * (30 / game_globals.configuration.frame_rate)
         for sprite, kind, x, y in wave:
             x -= speed
             if x + (24 * runtime_globals.UI_SCALE) > 0:
@@ -164,7 +170,7 @@ class CountMatchTraining(Training):
         self.attack_waves[self.current_wave_index] = new_wave
 
         # Wait at least 10 frames (at 30fps) before next wave
-        if all_off_screen and self.frame_counter >= int(10 * (constants.FRAME_RATE / 30)):
+        if all_off_screen and self.frame_counter >= int(10 * (game_globals.configuration.frame_rate / 30)):
             self.current_wave_index += 1
             self.frame_counter = 0
 

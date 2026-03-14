@@ -4,8 +4,9 @@ A scene for network battles against other Omnipet devices.
 """
 import pygame
 from components.window_background import WindowBackground
-from core import runtime_globals, constants
+from core import game_globals, runtime_globals
 from core.combat.battle_encounter import BattleEncounter
+from core.combat.battle_encounter_dcom import BattleEncounterDCom
 from core.combat.sim import models as sim_models
 from core.utils.scene_utils import change_scene
 from core.animation import PetFrame
@@ -26,6 +27,7 @@ class SceneBattlePvP:
         """
         self.background = WindowBackground()
         self.battle_encounter = None
+        self.alert_timer = 0  # Initialize alert_timer early to prevent AttributeError
         
         runtime_globals.game_console.log("[SceneBattlePvP] Initializing PvP battle scene...")
         
@@ -42,6 +44,8 @@ class SceneBattlePvP:
                 self.my_player_name = pvp_data.get('my_player_name', 'YOU')
                 self.enemy_player_name = pvp_data.get('enemy_player_name', 'ENEMY')
                 self.is_online_mode = pvp_data.get('is_online_mode', False)
+                self.is_dcom_mode = pvp_data.get('is_dcom_mode', False)  # DCom battle flag
+                self.enemy_first = pvp_data.get('enemy_first', False)  # Enemy attacks first flag
                 
                 # Validate required data
                 if not self.my_pets:
@@ -53,8 +57,10 @@ class SceneBattlePvP:
                     runtime_globals.game_console.log("[SceneBattlePvP] No enemy_team_data found")
                     change_scene("game")
                     return
-                    
-                if not self.simulation_data:
+                
+                # For non-DCom battles, simulation_data is required
+                # For DCom battles, simulation_data will be created during the battle
+                if not self.is_dcom_mode and not self.simulation_data:
                     runtime_globals.game_console.log("[SceneBattlePvP] No simulation_data found")
                     change_scene("game")
                     return
@@ -89,14 +95,29 @@ class SceneBattlePvP:
         """Sets up the PvP battle encounter with simulation data."""
         try:
             runtime_globals.game_console.log("[SceneBattlePvP] Setting up PvP battle encounter...")
-            # Create battle encounter in PvP mode
-            self.battle_encounter = BattleEncounter(
-                self.module_name, 
-                area=0, 
-                round=0, 
-                version=1, 
-                pvp_mode=True
-            )
+            
+            # Check if this is a DCom battle
+            if self.is_dcom_mode:
+                runtime_globals.game_console.log("[SceneBattlePvP] Creating DCom battle encounter...")
+                # Create DCom battle encounter (no controller/protocol needed - already connected in scene_connect)
+                self.battle_encounter = BattleEncounterDCom(
+                    self.module_name,
+                    dcom_controller=None,  # Will use existing connection if needed
+                    dcom_protocol=None,    # Will use existing protocol if needed
+                    area=0,
+                    round=0,
+                    version=1
+                )
+            else:
+                runtime_globals.game_console.log("[SceneBattlePvP] Creating standard PvP battle encounter...")
+                # Create standard PvP battle encounter
+                self.battle_encounter = BattleEncounter(
+                    self.module_name, 
+                    area=0, 
+                    round=0, 
+                    version=1, 
+                    pvp_mode=True
+                )
             
             runtime_globals.game_console.log(f"[SceneBattlePvP] Battle encounter created for module: {self.module_name}")
             
@@ -168,7 +189,45 @@ class SceneBattlePvP:
             # Host should show team1 (their pets), client should show team2 (their pets)
             self.battle_encounter.show_team2_in_result = not self.is_host
             
-            # Set the simulation data
+            # For DCom battles, don't set simulation data - let the battle run naturally
+            if self.is_dcom_mode:
+                runtime_globals.game_console.log("[SceneBattlePvP] DCom mode: Using pre-generated battle data")
+                runtime_globals.game_console.log("[SceneBattlePvP] Skipping alert and charge phases, going straight to entry->battle->result")
+                
+                # Set DCom mode flag on battle encounter for device mapping
+                self.battle_encounter.is_dcom_mode = True
+                runtime_globals.game_console.log("[SceneBattlePvP] Set is_dcom_mode flag on battle encounter")
+                
+                # Apply enemy_first flag for DCom battles (enemy attacks first in V2 protocol)
+                if self.enemy_first:
+                    # Prime enemy first (sets up shot flags and phases)
+                    self.battle_encounter.prime_enemy_first()
+                    runtime_globals.game_console.log("[SceneBattlePvP] Called prime_enemy_first() for DCom battle")
+                    
+                    # Adjust phases to start with enemy_charge for proper animation sequence
+                    # (prime_enemy_first sets phase to "enemy_attack", but we want the full charge->attack sequence)
+                    for i in range(len(self.battle_encounter.battle_player.phase)):
+                        self.battle_encounter.battle_player.phase[i] = "enemy_charge"
+                    runtime_globals.game_console.log("[SceneBattlePvP] Set phases to enemy_charge for animation sequence")
+                
+                # Set the simulation data (already generated in scene_connect)
+                self.battle_encounter.global_battle_log = runtime_globals.pvp_battle_data.get('original_battle_log')
+                self.battle_encounter.victory_status = self.simulation_data.get('victory_status', 'Victory')
+                
+                runtime_globals.game_console.log(f"[SceneBattlePvP] Victory status: {self.battle_encounter.victory_status}")
+                runtime_globals.game_console.log(f"[SceneBattlePvP] Battle log has {len(self.battle_encounter.global_battle_log.battle_log)} turns")
+                
+                # Process results for animations (skip XP in PvP)
+                if hasattr(self.battle_encounter, 'process_battle_results'):
+                    self.battle_encounter.process_battle_results()
+                
+                # Start at entry phase (will go entry -> battle -> result)
+                self.battle_encounter.phase = "entry"
+                self.battle_encounter.frame_counter = 0
+                runtime_globals.game_console.log("[SceneBattlePvP] DCom battle setup completed, starting at entry phase")
+                return
+            
+            # Set the simulation data for non-DCom battles
             # Try to use original battle log object first (for host)
             original_battle_log = runtime_globals.pvp_battle_data.get('original_battle_log', None)
             if original_battle_log is not None:
@@ -465,7 +524,7 @@ class SceneBattlePvP:
             # Handle alert phase
             if self.battle_encounter.phase == "alert":
                 self.alert_timer += 1
-                if self.alert_timer > constants.FRAME_RATE * 3:  # 3 seconds
+                if self.alert_timer > game_globals.configuration.frame_rate * 3:  # 3 seconds
                     self.battle_encounter.phase = "battle"
                     self.battle_encounter.frame_counter = 0
                     runtime_globals.game_console.log("[SceneBattlePvP] Transitioning from alert to battle phase")

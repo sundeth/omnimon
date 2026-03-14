@@ -1,0 +1,330 @@
+"""
+ArmorView - Armor evolution selection
+Shows pet selector, armor display, and armor item list for single-pet armor evolution
+"""
+import pygame
+from components.ui.ui_manager import UIManager
+from components.ui.title_scene import TitleScene
+from components.ui.button import Button
+from components.ui.background import Background
+from components.ui.pet_selector import PetSelector
+from components.ui.armor_display import ArmorDisplay
+from components.ui.armor_item_list import ArmorItemList
+from components.ui.ui_constants import BASE_RESOLUTION
+from core import runtime_globals
+from core.utils.pet_utils import get_selected_pets
+from core.utils.scene_utils import change_scene
+
+
+class ArmorView:
+    """Armor evolution selection view."""
+    
+    def __init__(self, ui_manager: UIManager, change_view_callback):
+        """Initialize the Armor view.
+        
+        Args:
+            ui_manager: The UI manager instance
+            change_view_callback: Callback to change to another view
+        """
+        self.ui_manager = ui_manager
+        self.change_view = change_view_callback
+        
+        # Selection state
+        self.selected_armor_pet = None
+        self.selected_armor_item = None
+        
+        # UI Components
+        self.background = None
+        self.title_scene = None
+        self.pet_selector = None
+        self.armor_display = None
+        self.armor_item_list = None
+        self.confirm_button = None
+        self.back_button = None
+        
+        self._setup_ui()
+        
+    def _setup_ui(self):
+        """Setup the UI components."""
+        ui_width = ui_height = BASE_RESOLUTION
+        
+        # Background
+        self.background = Background(ui_width, ui_height)
+        self.background.set_regions([(0, ui_height, "black")])
+        self.ui_manager.add_component(self.background)
+        
+        # Title
+        self.title_scene = TitleScene(0, 9, "BATTLE")
+        self.ui_manager.add_component(self.title_scene)
+        
+        # Armor display (left side)
+        display_width = 80
+        display_height = 80
+        display_x = 15 
+        display_y = 40
+        
+        self.armor_display = ArmorDisplay(display_x, display_y, display_width, display_height)
+        self.ui_manager.add_component(self.armor_display)
+        
+        # Armor item list (right side)
+        item_list_width = 120
+        item_list_height = 125
+        item_list_x = ui_width - item_list_width - 10
+        item_list_y = 25
+        
+        self.armor_item_list = ArmorItemList(
+            item_list_x, item_list_y, item_list_width, item_list_height,
+            on_item_activated=self._on_armor_item_activated
+        )
+        self.armor_item_list.set_background_visible(False)
+        self.armor_item_list.set_border_visible(False)
+        self.ui_manager.add_component(self.armor_item_list)
+        
+        # Check if there's a default selected item (first item is selected by default in BaseList)
+        if self.armor_item_list.items and len(self.armor_item_list.items) > 0:
+            first_item = self.armor_item_list.items[0]
+            if hasattr(first_item, 'game_item'):
+                self.selected_armor_item = first_item.game_item
+                runtime_globals.game_console.log(f"[ArmorView] Default armor item selected: {self.selected_armor_item.name}")
+        
+        # Buttons
+        back_button_width = 60
+        confirm_button_width = 80
+        button_height = 25
+        button_spacing = 5
+        
+        total_button_width = back_button_width + confirm_button_width + button_spacing
+        buttons_start_x = (ui_width - total_button_width) // 2
+        buttons_y = item_list_y + item_list_height + 10
+        
+        self.back_button = Button(
+            buttons_start_x, buttons_y, back_button_width, button_height,
+            "BACK", self._on_back
+        )
+        self.ui_manager.add_component(self.back_button)
+        
+        confirm_button_x = buttons_start_x + back_button_width + button_spacing
+        self.confirm_button = Button(
+            confirm_button_x, buttons_y, confirm_button_width, button_height,
+            "CONFIRM", self._on_confirm,
+            enabled=False
+        )
+        self.ui_manager.add_component(self.confirm_button)
+        
+        # Pet selector
+        selector_y = buttons_y + button_height + 5
+        selector_height = 50
+        self.pet_selector = PetSelector(10, selector_y, ui_width - 20, selector_height)
+        self.pet_selector.set_pets(get_selected_pets())
+        self.pet_selector.set_interactive(True)
+        self.pet_selector.set_armor_mode(True)
+        self.pet_selector.activation_callback = self._handle_pet_activation
+        self.ui_manager.add_component(self.pet_selector)
+        
+        # Set initial focus
+        self.ui_manager.set_focused_component(self.pet_selector)
+        self.pet_selector.focused_cell = 0
+        
+        # If a default item is selected, check compatibility with all pets
+        if self.selected_armor_item:
+            self._update_pet_compatibility()
+        
+        runtime_globals.game_console.log("[ArmorView] UI setup complete")
+    
+    def _handle_pet_activation(self):
+        """Handle pet activation from pet selector."""
+        pet_index = self.pet_selector.get_activation_cell()
+        if pet_index >= 0 and pet_index < len(self.pet_selector.pets):
+            if pet_index in self.pet_selector.enabled_pets:
+                return self._toggle_pet_selection(pet_index)
+        return False
+    
+    def _toggle_pet_selection(self, pet_index):
+        """Toggle pet selection (max 1 pet)."""
+        from core import game_globals
+        
+        if self.selected_armor_pet == pet_index:
+            # Deselect
+            self.selected_armor_pet = None
+            if self.armor_display:
+                self.armor_display.clear_pet()
+                self.armor_display.needs_redraw = True
+            runtime_globals.game_sound.play("cancel")
+        else:
+            # Select
+            self.selected_armor_pet = pet_index
+            pet = self.pet_selector.pets[pet_index] if pet_index < len(self.pet_selector.pets) else None
+            if pet and self.armor_display:
+                self.armor_display.set_pet(pet)
+                self.armor_display.needs_redraw = True
+            runtime_globals.game_sound.play("menu")
+        
+        # Update state
+        self.pet_selector.selected_pets = [self.selected_armor_pet] if self.selected_armor_pet is not None else []
+        
+        # Re-check if current armor item selection is valid for this pet
+        can_evolve = False
+        if self.selected_armor_pet is not None and self.selected_armor_item is not None:
+            pet = game_globals.pet_list[self.selected_armor_pet]
+            can_evolve = self._check_armor_evolution_possible(pet, self.selected_armor_item)
+        
+        # Update confirm button state
+        if self.confirm_button:
+            should_enable = self.selected_armor_pet is not None and self.selected_armor_item is not None and can_evolve
+            self.confirm_button.set_enabled(should_enable)
+        
+        self.pet_selector.needs_redraw = True
+        return True
+    
+    def _on_armor_item_activated(self, item, index, use_immediately=False):
+        """Handle armor item selection.
+        
+        Args:
+            item: The selected armor item
+            index: Index of the item in the list
+            use_immediately: If True, activate immediately (keyboard or double-click)
+        """
+        if not item:
+            return
+            
+        # Get the actual game item data
+        armor_game_item = item.game_item if hasattr(item, 'game_item') else None
+        if not armor_game_item:
+            runtime_globals.game_console.log(f"[ArmorView] Warning: Item has no game_item data")
+            return
+            
+        self.selected_armor_item = armor_game_item
+        runtime_globals.game_console.log(f"[ArmorView] Armor item selected: {armor_game_item.name}")
+        
+        # Check if the selected pet can evolve with this item
+        can_evolve = False
+        if self.selected_armor_pet is not None:
+            from core import game_globals
+            pet = game_globals.pet_list[self.selected_armor_pet]
+            can_evolve = self._check_armor_evolution_possible(pet, armor_game_item)
+            
+            if can_evolve:
+                runtime_globals.game_console.log(f"[ArmorView] {pet.name} can evolve with {armor_game_item.name}")
+            else:
+                runtime_globals.game_console.log(f"[ArmorView] {pet.name} cannot evolve with {armor_game_item.name}")
+        
+        # Enable confirm button only if both pet and item are selected AND evolution is possible
+        if self.confirm_button:
+            should_enable = self.selected_armor_pet is not None and self.selected_armor_item is not None and can_evolve
+            self.confirm_button.set_enabled(should_enable)
+            
+        # If use_immediately is True and evolution is possible, activate immediately
+        if use_immediately and can_evolve:
+            self._on_confirm()
+    
+    def _on_confirm(self):
+        """Handle confirm button - perform armor evolution."""
+        if self.selected_armor_pet is None or self.selected_armor_item is None:
+            runtime_globals.game_sound.play("cancel")
+            return
+        
+        from core import game_globals
+        from core.utils.inventory_utils import remove_from_inventory
+        
+        pet = game_globals.pet_list[self.selected_armor_pet]
+        armor_item = self.selected_armor_item
+        
+        runtime_globals.game_sound.play("evolution")
+        runtime_globals.game_console.log(f"[ArmorView] Performing Armor evolution: {pet.name} + {armor_item.name}")
+        
+        # Armor evolution using the item's name
+        pet.armor_evolve(armor_item.name)
+        # Remove the armor item from inventory (pass item ID, not the object)
+        remove_from_inventory(armor_item.id)
+        runtime_globals.game_console.log(f"[ArmorView] Armor evolution completed: {pet.name} evolved using {armor_item.name}")
+        
+        # Return to game scene
+        runtime_globals.game_console.log("[ArmorView] Returning to game")
+        change_scene("game")
+    
+    def _update_pet_compatibility(self):
+        """Update which pets are compatible with the currently selected armor item."""
+        if not self.selected_armor_item or not self.pet_selector:
+            return
+        
+        from core import game_globals
+        
+        # Check each pet for compatibility
+        for i, pet in enumerate(self.pet_selector.pets):
+            if self._check_armor_evolution_possible(pet, self.selected_armor_item):
+                # Pet is compatible - ensure it's enabled
+                if i not in self.pet_selector.enabled_pets:
+                    self.pet_selector.enabled_pets.append(i)
+            # Note: We don't disable pets here as they might have other reasons to be enabled
+        
+        self.pet_selector.needs_redraw = True
+    
+    def _check_armor_evolution_possible(self, pet, armor_item):
+        """Check if the given pet can evolve using the given armor item.
+        
+        Args:
+            pet: The GamePet instance
+            armor_item: The GameItem with armor data
+            
+        Returns:
+            bool: True if evolution is possible, False otherwise
+        """
+        if not pet or not armor_item:
+            return False
+            
+        # Check if pet has evolutions
+        if not hasattr(pet, 'evolve') or not pet.evolve:
+            return False
+            
+        # Get the item name to compare
+        item_name = armor_item.name if hasattr(armor_item, 'name') else None
+        if not item_name:
+            runtime_globals.game_console.log(f"[ArmorView] Armor item has no name")
+            return False
+            
+        # Check each evolution for item requirement matching the item's name
+        for evo in pet.evolve:
+            if "item" in evo and evo["item"] == item_name:
+                runtime_globals.game_console.log(f"[ArmorView] Found matching evolution: {evo.get('to', 'Unknown')} requires {item_name}")
+                return True
+                
+        runtime_globals.game_console.log(f"[ArmorView] No evolution found requiring {item_name}")
+        return False
+    
+    def _on_back(self):
+        """Handle back button."""
+        runtime_globals.game_sound.play("cancel")
+        self.change_view("main_menu")
+    
+    def cleanup(self):
+        """Remove all UI components."""
+        if self.background:
+            self.ui_manager.remove_component(self.background)
+        if self.title_scene:
+            self.ui_manager.remove_component(self.title_scene)
+        if self.pet_selector:
+            self.ui_manager.remove_component(self.pet_selector)
+        if self.armor_display:
+            self.ui_manager.remove_component(self.armor_display)
+        if self.armor_item_list:
+            self.ui_manager.remove_component(self.armor_item_list)
+        if self.confirm_button:
+            self.ui_manager.remove_component(self.confirm_button)
+        if self.back_button:
+            self.ui_manager.remove_component(self.back_button)
+    
+    def update(self):
+        """Update the view."""
+        pass
+    
+    def draw(self, surface: pygame.Surface):
+        """Draw the view."""
+        pass
+    
+    def handle_event(self, event):
+        """Handle input events."""
+        if not isinstance(event, tuple) or len(event) != 2:
+            return
+        event_type, event_data = event
+        if event_type == "B":
+            self._on_back()

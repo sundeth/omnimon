@@ -7,6 +7,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -28,7 +29,8 @@
         {
           "to": "Botamon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Botamon",
@@ -37,6 +39,7 @@
       "special": false,
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 10,
       "poop_timer": 3,
       "energy": 0,
@@ -58,7 +61,8 @@
         {
           "to": "Koromon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Koromon",
@@ -66,9 +70,10 @@
       "version": 1,
       "special": false,
       "sleeps": "20:00",
-      "wakes": "8:00",
+      "wakes": "08:00",
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -101,7 +106,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Agumon",
@@ -113,6 +119,7 @@
       "wakes": "08:00",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -270,7 +277,8 @@
             5
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Betamon",
@@ -282,6 +290,7 @@
       "wakes": "08:00",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -420,7 +429,8 @@
             8
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Airdramon",
@@ -432,6 +442,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -461,7 +472,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Devimon",
@@ -473,6 +485,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -502,7 +515,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Greymon",
@@ -514,6 +528,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -543,7 +558,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Meramon",
@@ -555,6 +571,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -584,7 +601,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Numemon",
@@ -596,6 +614,7 @@
       "wakes": "08:00",
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -625,7 +644,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Seadramon",
@@ -637,6 +657,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -666,7 +687,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Tyrannomon",
@@ -678,6 +700,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -707,7 +730,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Mamemon",
@@ -719,6 +743,7 @@
       "wakes": "08:00",
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -752,7 +777,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "MetalGreymon",
@@ -764,6 +790,7 @@
       "wakes": "08:00",
       "atk_main": 3,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -797,7 +824,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Monzaemon",
@@ -809,6 +837,7 @@
       "wakes": "08:00",
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -842,7 +871,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "BanchoMamemon",
@@ -854,6 +884,7 @@
       "wakes": "08:00",
       "atk_main": 41,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -871,7 +902,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 15
     },
     {
       "name": "BlitzGreymon",
@@ -883,6 +915,7 @@
       "wakes": "08:00",
       "atk_main": 49,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -902,11 +935,12 @@
       "critical_turn": 0,
       "evolve": [
         {
-          "to": "Omnipet Alter-S",
+          "to": "Omnimon Alter-S",
           "version": 2,
           "jogress": "CresGarurumon"
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "ShinMonzaemon",
@@ -918,6 +952,7 @@
       "wakes": "08:00",
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -935,10 +970,11 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 16
     },
     {
-      "name": "Omnipet Alter-S",
+      "name": "Omnimon Alter-S",
       "stage": 7,
       "version": 1,
       "special": false,
@@ -947,6 +983,7 @@
       "wakes": "08:00",
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -964,7 +1001,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 17
     },
     {
       "name": "DmC Ver 2",
@@ -973,6 +1011,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -994,7 +1033,8 @@
         {
           "to": "Punimon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Punimon",
@@ -1003,6 +1043,7 @@
       "special": false,
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 10,
       "poop_timer": 3,
       "energy": 0,
@@ -1024,7 +1065,8 @@
         {
           "to": "Tsunomon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Tsunomon",
@@ -1032,9 +1074,10 @@
       "version": 2,
       "special": false,
       "sleeps": "20:00",
-      "wakes": "8:00",
+      "wakes": "08:00",
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -1067,7 +1110,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Elecmon",
@@ -1079,6 +1123,7 @@
       "wakes": "08:00",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -1228,7 +1273,8 @@
             5
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Gabumon",
@@ -1240,6 +1286,7 @@
       "wakes": "08:00",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -1397,7 +1444,8 @@
             5
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Angemon",
@@ -1409,6 +1457,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1438,7 +1487,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Birdramon",
@@ -1450,6 +1500,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1479,7 +1530,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Frigimon",
@@ -1491,6 +1543,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1520,7 +1573,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Garurumon",
@@ -1532,6 +1586,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1561,7 +1616,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Kabuterimon",
@@ -1573,6 +1629,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1602,7 +1659,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Vegiemon",
@@ -1614,6 +1672,7 @@
       "wakes": "08:00",
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1643,7 +1702,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Whamon",
@@ -1654,7 +1714,8 @@
       "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 10,
-      "atk_alt": 0,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1684,7 +1745,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "MetalMamemon",
@@ -1696,6 +1758,7 @@
       "wakes": "08:00",
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1729,7 +1792,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "SkullGreymon",
@@ -1741,6 +1805,7 @@
       "wakes": "08:00",
       "atk_main": 11,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1774,7 +1839,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Vademon",
@@ -1785,7 +1851,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 15,
-      "atk_alt": 0,
+      "atk_alt": 9,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1819,7 +1886,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "CresGarurumon",
@@ -1831,6 +1899,7 @@
       "wakes": "08:00",
       "atk_main": 13,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1850,11 +1919,12 @@
       "critical_turn": 0,
       "evolve": [
         {
-          "to": "Omnipet Alter-S",
+          "to": "Omnimon Alter-S",
           "version": 1,
           "jogress": "BlitzGreymon"
         }
-      ]
+      ],
+      "index": 15
     },
     {
       "name": "Ebemon",
@@ -1866,6 +1936,7 @@
       "wakes": "08:00",
       "atk_main": 22,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1883,7 +1954,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 16
     },
     {
       "name": "SkullMammothmon",
@@ -1895,6 +1967,7 @@
       "wakes": "08:00",
       "atk_main": 12,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1912,10 +1985,11 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 14
     },
     {
-      "name": "Omnipet Alter-S",
+      "name": "Omnimon Alter-S",
       "stage": 7,
       "version": 2,
       "special": false,
@@ -1924,6 +1998,7 @@
       "wakes": "08:00",
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1941,7 +2016,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 17
     },
     {
       "name": "DmC Ver 3",
@@ -1950,6 +2026,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -1971,7 +2048,8 @@
         {
           "to": "Poyomon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Poyomon",
@@ -1980,6 +2058,7 @@
       "special": false,
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 10,
       "poop_timer": 3,
       "energy": 0,
@@ -2001,7 +2080,8 @@
         {
           "to": "Tokomon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Tokomon",
@@ -2009,9 +2089,10 @@
       "version": 3,
       "special": false,
       "sleeps": "20:00",
-      "wakes": "8:00",
+      "wakes": "08:00",
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -2044,7 +2125,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Kunemon",
@@ -2056,6 +2138,7 @@
       "wakes": "08:00",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -2208,7 +2291,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Patamon",
@@ -2216,10 +2300,11 @@
       "version": 3,
       "special": false,
       "special_key": "",
-      "sleeps": "20:00",
+      "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -2346,7 +2431,8 @@
             4
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Bakemon",
@@ -2358,6 +2444,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2387,7 +2474,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Centarumon",
@@ -2399,6 +2487,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2428,7 +2517,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Drimogemon",
@@ -2439,7 +2529,8 @@
       "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2469,7 +2560,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Ogremon",
@@ -2481,6 +2573,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2529,7 +2622,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Shellmon",
@@ -2541,6 +2635,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2589,7 +2684,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Sukamon",
@@ -2601,6 +2697,7 @@
       "wakes": "08:00",
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2649,7 +2746,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Unimon",
@@ -2661,6 +2759,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -2709,7 +2808,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Andromon",
@@ -2720,7 +2820,8 @@
       "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -2754,7 +2855,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Etemon",
@@ -2765,7 +2867,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -2799,7 +2902,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "Giromon",
@@ -2811,6 +2915,7 @@
       "wakes": "08:00",
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -2844,7 +2949,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "Kimeramon",
@@ -2856,6 +2962,7 @@
       "wakes": "08:00",
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -2894,7 +3001,8 @@
           "version": 5,
           "jogress": "Machinedramon"
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "BanchoLeomon",
@@ -2906,6 +3014,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2929,7 +3038,8 @@
           "version": 4,
           "jogress": "Darkdramon"
         }
-      ]
+      ],
+      "index": 17
     },
     {
       "name": "HiAndromon",
@@ -2941,6 +3051,7 @@
       "wakes": "08:00",
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2958,7 +3069,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 15
     },
     {
       "name": "Reapermon",
@@ -2970,6 +3082,7 @@
       "wakes": "08:00",
       "atk_main": 28,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2987,7 +3100,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 16
     },
     {
       "name": "Chaosmon",
@@ -2998,7 +3112,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 72,
-      "atk_alt": 0,
+      "atk_alt": 106,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3016,7 +3131,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 18
     },
     {
       "name": "Millenniumon",
@@ -3028,6 +3144,7 @@
       "wakes": "08:00",
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3045,7 +3162,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 19
     },
     {
       "name": "DmC Ver 4",
@@ -3054,6 +3172,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -3075,7 +3194,8 @@
         {
           "to": "Yuramon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Yuramon",
@@ -3084,10 +3204,11 @@
       "special": false,
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 10,
       "poop_timer": 3,
       "energy": 0,
-      "min_weight": 4,
+      "min_weight": 5,
       "evol_weight": 0,
       "stomach": 4,
       "hunger_loss": 3,
@@ -3105,7 +3226,8 @@
         {
           "to": "Tanemon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Tanemon",
@@ -3113,9 +3235,10 @@
       "version": 4,
       "special": false,
       "sleeps": "20:00",
-      "wakes": "8:00",
+      "wakes": "08:00",
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -3148,7 +3271,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Biyomon",
@@ -3160,6 +3284,7 @@
       "wakes": "08:00",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -3286,7 +3411,8 @@
             4
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Palmon",
@@ -3298,6 +3424,7 @@
       "wakes": "08:00",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -3446,7 +3573,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Coelamon",
@@ -3458,6 +3586,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3487,7 +3616,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Kokatorimon",
@@ -3499,6 +3629,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3528,7 +3659,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Kuwagamon",
@@ -3540,6 +3672,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3569,7 +3702,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Leomon",
@@ -3581,6 +3715,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3610,7 +3745,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Mojyamon",
@@ -3621,7 +3757,8 @@
       "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3651,7 +3788,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Monochromon",
@@ -3663,6 +3801,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3692,7 +3831,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Nanimon",
@@ -3704,6 +3844,7 @@
       "wakes": "08:00",
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -3733,7 +3874,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Digitamamon",
@@ -3744,7 +3886,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -3778,7 +3921,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "Megadramon",
@@ -3786,11 +3930,12 @@
       "version": 4,
       "special": false,
       "special_key": "",
-      "sleeps": "20:00",
+      "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 3,
-      "atk_alt": 0,
-      "time": 2160,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 50,
@@ -3823,7 +3968,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Piximon",
@@ -3835,6 +3981,7 @@
       "wakes": "08:00",
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -3868,7 +4015,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "BloomLordmon",
@@ -3880,6 +4028,7 @@
       "wakes": "08:00",
       "atk_main": 43,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3897,7 +4046,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 15
     },
     {
       "name": "Darkdramon",
@@ -3909,6 +4059,7 @@
       "wakes": "08:00",
       "atk_main": 106,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3937,7 +4088,8 @@
           "version": 5,
           "jogress": "Machinedramon"
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "Gankoomon",
@@ -3949,6 +4101,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3966,7 +4119,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 16
     },
     {
       "name": "Chaosdramon",
@@ -3978,6 +4132,7 @@
       "wakes": "08:00",
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -3995,7 +4150,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 17
     },
     {
       "name": "Chaosmon",
@@ -4006,7 +4162,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 72,
-      "atk_alt": 0,
+      "atk_alt": 106,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -4024,7 +4181,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 18
     },
     {
       "name": "DmC Ver 5",
@@ -4033,6 +4191,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -4054,7 +4213,8 @@
         {
           "to": "Zurumon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Zurumon",
@@ -4063,7 +4223,8 @@
       "special": false,
       "atk_main": 1,
       "atk_alt": 0,
-      "time": 0,
+      "atk_alt_2": 0,
+      "time": 10,
       "poop_timer": 3,
       "energy": 0,
       "min_weight": 4,
@@ -4084,7 +4245,8 @@
         {
           "to": "Pagumon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Pagumon",
@@ -4092,9 +4254,10 @@
       "version": 5,
       "special": false,
       "sleeps": "20:00",
-      "wakes": "8:00",
+      "wakes": "08:00",
       "atk_main": 1,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -4127,7 +4290,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Gazimon",
@@ -4139,6 +4303,7 @@
       "wakes": "08:00",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -4265,7 +4430,8 @@
             4
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Gizamon",
@@ -4277,6 +4443,7 @@
       "wakes": "08:00",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -4429,7 +4596,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Cyclonemon",
@@ -4441,6 +4609,7 @@
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4470,7 +4639,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "DarkTyrannomon",
@@ -4478,10 +4648,11 @@
       "version": 5,
       "special": false,
       "special_key": "",
-      "sleeps": "21:00",
+      "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4511,7 +4682,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Deltamon",
@@ -4522,7 +4694,8 @@
       "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4552,7 +4725,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Devidramon",
@@ -4564,6 +4738,7 @@
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4593,7 +4768,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Flymon",
@@ -4605,6 +4781,7 @@
       "wakes": "08:00",
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4634,7 +4811,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Raremon",
@@ -4646,6 +4824,7 @@
       "wakes": "08:00",
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4675,7 +4854,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Tuskmon",
@@ -4683,10 +4863,11 @@
       "version": 5,
       "special": false,
       "special_key": "",
-      "sleeps": "23:00",
+      "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -4716,7 +4897,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Datamon",
@@ -4728,6 +4910,7 @@
       "wakes": "08:00",
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -4761,7 +4944,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "ExTyrannomon",
@@ -4772,7 +4956,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -4806,7 +4991,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "MetalTyrannomon",
@@ -4817,7 +5003,8 @@
       "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -4851,7 +5038,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Machinedramon",
@@ -4863,6 +5051,7 @@
       "wakes": "08:00",
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -4891,7 +5080,8 @@
           "version": 4,
           "jogress": "Darkdramon"
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "Raidenmon",
@@ -4903,6 +5093,7 @@
       "wakes": "08:00",
       "atk_main": 58,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -4920,7 +5111,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 15
     },
     {
       "name": "Samudramon",
@@ -4932,6 +5124,7 @@
       "wakes": "08:00",
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -4949,7 +5142,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 16
     },
     {
       "name": "Chaosdramon",
@@ -4961,6 +5155,7 @@
       "wakes": "08:00",
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -4978,7 +5173,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 18
     },
     {
       "name": "Millenniumon",
@@ -4990,6 +5186,7 @@
       "wakes": "08:00",
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -5007,7 +5204,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 17
     }
   ]
 }

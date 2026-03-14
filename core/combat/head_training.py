@@ -69,22 +69,23 @@ class HeadToHeadTraining(Training):
         """Handle input events - delegate to minigame or handle exit"""      
         event_type, event_data = event
         
-        # Let UI manager process components first (buttons, etc.)
-        if self.ui_manager and self.ui_manager.handle_event(event):
-            return
-
+        # Let minigame handle the event first (UP/DOWN inputs)
         if self.head_charge and self.head_charge.handle_event(event):
             return  # Minigame handled the event
         
+        # Let UI manager process components (buttons for mouse/touch)
+        if self.ui_manager and self.ui_manager.handle_event(event):
+            return
+        
         # Handle exit commands
-        if event_type in ("START", "B", "RCLICK") and self.phase in ("charge", "alert"):
+        if event_type in ("START", "RCLICK") and self.phase in ("charge", "alert"):
             runtime_globals.game_sound.play("cancel")
             change_scene("game")
-        elif event_type in ("A", "B") and self.phase != "result":
+        elif event_type == "B" and self.phase in ("charge", "alert"):
             runtime_globals.game_sound.play("cancel")
-            self.phase = "result"
-            if self.head_charge.victories + self.head_charge.failures != 5:
-                self.head_charge.failures = 5 - (self.head_charge.victories + self.head_charge.failures)
+            change_scene("game")
+        elif event_type in ("A", "B") and self.phase == "result":
+            self.finish_training()
 
     def check_victory(self):
         """Check if player won the training"""

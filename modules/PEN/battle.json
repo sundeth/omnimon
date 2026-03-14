@@ -11,6 +11,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -24,6 +25,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -37,6 +39,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -50,6 +53,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -63,6 +67,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -76,6 +81,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -89,6 +95,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -102,6 +109,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -115,6 +123,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -128,6 +137,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -141,6 +151,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -154,6 +165,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -167,6 +179,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -180,6 +193,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -193,6 +207,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -206,6 +221,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -219,6 +235,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -232,6 +249,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -245,6 +263,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -258,6 +277,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -271,6 +291,7 @@
       "handicap": 0,
       "atk_main": 85,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -284,6 +305,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -297,6 +319,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -310,6 +333,7 @@
       "handicap": 0,
       "atk_main": 85,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -323,6 +347,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -336,6 +361,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -349,6 +375,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -362,6 +389,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -375,6 +403,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -388,6 +417,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -401,6 +431,7 @@
       "handicap": 0,
       "atk_main": 45,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -414,6 +445,7 @@
       "handicap": 0,
       "atk_main": 45,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 1
     },
     {
@@ -427,6 +459,7 @@
       "handicap": 0,
       "atk_main": 40,
       "atk_alt": 40,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -440,6 +473,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -453,6 +487,7 @@
       "handicap": 0,
       "atk_main": 36,
       "atk_alt": 47,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -466,6 +501,7 @@
       "handicap": 0,
       "atk_main": 38,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -479,6 +515,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -492,6 +529,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -505,6 +543,7 @@
       "handicap": 0,
       "atk_main": 36,
       "atk_alt": 47,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -518,6 +557,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -531,6 +571,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -544,6 +585,7 @@
       "handicap": 0,
       "atk_main": 42,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -557,6 +599,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -570,6 +613,7 @@
       "handicap": 0,
       "atk_main": 45,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -583,6 +627,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -596,6 +641,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -609,6 +655,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -622,6 +669,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -635,6 +683,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -648,6 +697,7 @@
       "handicap": 0,
       "atk_main": 77,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -661,6 +711,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -674,6 +725,7 @@
       "handicap": 0,
       "atk_main": 85,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -687,6 +739,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -700,6 +753,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -713,6 +767,7 @@
       "handicap": 0,
       "atk_main": 85,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -726,6 +781,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -739,6 +795,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -752,6 +809,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -765,6 +823,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -778,6 +837,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -791,6 +851,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -804,6 +865,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -817,6 +879,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -830,6 +893,7 @@
       "handicap": 0,
       "atk_main": 40,
       "atk_alt": 40,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -843,6 +907,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -856,6 +921,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -869,6 +935,7 @@
       "handicap": 0,
       "atk_main": 38,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -882,6 +949,7 @@
       "handicap": 0,
       "atk_main": 36,
       "atk_alt": 47,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -895,6 +963,7 @@
       "handicap": 0,
       "atk_main": 61,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -908,6 +977,7 @@
       "handicap": 0,
       "atk_main": 38,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -921,6 +991,7 @@
       "handicap": 0,
       "atk_main": 36,
       "atk_alt": 47,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -934,6 +1005,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -947,6 +1019,7 @@
       "handicap": 0,
       "atk_main": 42,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -960,6 +1033,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -973,6 +1047,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -986,6 +1061,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -999,6 +1075,7 @@
       "handicap": 0,
       "atk_main": 45,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1012,6 +1089,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1025,6 +1103,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1038,6 +1117,7 @@
       "handicap": 0,
       "atk_main": 77,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1051,6 +1131,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1064,6 +1145,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1077,6 +1159,7 @@
       "handicap": 0,
       "atk_main": 77,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1090,6 +1173,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1103,6 +1187,7 @@
       "handicap": 0,
       "atk_main": 38,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1116,6 +1201,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1129,6 +1215,7 @@
       "handicap": 0,
       "atk_main": 90,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1142,6 +1229,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1155,6 +1243,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1168,6 +1257,7 @@
       "handicap": 0,
       "atk_main": 25,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1181,6 +1271,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1194,6 +1285,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1207,6 +1299,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1220,6 +1313,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1233,6 +1327,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1246,6 +1341,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1259,6 +1355,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1272,6 +1369,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1285,6 +1383,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1298,6 +1397,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1311,6 +1411,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1324,6 +1425,7 @@
       "handicap": 0,
       "atk_main": 81,
       "atk_alt": 64,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1337,6 +1439,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1350,6 +1453,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1363,6 +1467,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 99,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1376,6 +1481,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1389,6 +1495,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1402,6 +1509,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 44,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1415,6 +1523,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1428,6 +1537,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1441,6 +1551,7 @@
       "handicap": 0,
       "atk_main": 45,
       "atk_alt": 75,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1454,6 +1565,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1467,6 +1579,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1480,6 +1593,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1493,6 +1607,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1506,6 +1621,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1519,6 +1635,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1532,6 +1649,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1545,6 +1663,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1558,6 +1677,7 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 89,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1571,6 +1691,7 @@
       "handicap": 0,
       "atk_main": 90,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1584,6 +1705,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1597,6 +1719,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1610,6 +1733,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1623,6 +1747,7 @@
       "handicap": 0,
       "atk_main": 40,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1636,6 +1761,7 @@
       "handicap": 0,
       "atk_main": 110,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1649,6 +1775,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1662,6 +1789,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1675,6 +1803,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 44,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1688,6 +1817,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1701,6 +1831,7 @@
       "handicap": 0,
       "atk_main": 36,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1714,6 +1845,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1727,6 +1859,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1740,6 +1873,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1753,6 +1887,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1766,6 +1901,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1779,6 +1915,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1792,6 +1929,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1805,6 +1943,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1818,6 +1957,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1831,6 +1971,7 @@
       "handicap": 0,
       "atk_main": 25,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1844,6 +1985,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1857,6 +1999,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1870,6 +2013,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1883,6 +2027,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 46,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1896,6 +2041,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1909,6 +2055,7 @@
       "handicap": 0,
       "atk_main": 78,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1922,6 +2069,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1935,6 +2083,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1948,6 +2097,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1961,6 +2111,7 @@
       "handicap": 0,
       "atk_main": 25,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1974,6 +2125,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1987,6 +2139,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2000,6 +2153,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2013,6 +2167,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2026,6 +2181,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2039,6 +2195,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2052,6 +2209,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2065,6 +2223,7 @@
       "handicap": 0,
       "atk_main": 13,
       "atk_alt": 50,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2078,6 +2237,7 @@
       "handicap": 0,
       "atk_main": 40,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2091,6 +2251,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2104,6 +2265,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 46,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2117,6 +2279,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2130,6 +2293,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 31,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2143,6 +2307,7 @@
       "handicap": 0,
       "atk_main": 110,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2156,6 +2321,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2169,6 +2335,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2182,6 +2349,7 @@
       "handicap": 0,
       "atk_main": 49,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2195,6 +2363,7 @@
       "handicap": 0,
       "atk_main": 30,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2208,6 +2377,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2221,6 +2391,7 @@
       "handicap": 0,
       "atk_main": 55,
       "atk_alt": 48,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2234,6 +2405,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2247,6 +2419,7 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2260,6 +2433,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 112,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2273,6 +2447,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2286,6 +2461,7 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2299,6 +2475,7 @@
       "handicap": 0,
       "atk_main": 30,
       "atk_alt": 34,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2312,6 +2489,7 @@
       "handicap": 0,
       "atk_main": 25,
       "atk_alt": 45,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2325,6 +2503,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 46,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2338,6 +2517,7 @@
       "handicap": 0,
       "atk_main": 13,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2351,6 +2531,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 42,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2364,6 +2545,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2379,6 +2561,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2392,6 +2575,7 @@
       "handicap": 0,
       "atk_main": 81,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2405,6 +2589,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 6,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2418,6 +2603,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2431,6 +2617,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2444,6 +2631,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2457,6 +2645,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2470,6 +2659,7 @@
       "handicap": 0,
       "atk_main": 33,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2483,6 +2673,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 50,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2496,6 +2687,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2509,6 +2701,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2522,6 +2715,7 @@
       "handicap": 0,
       "atk_main": 114,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2535,6 +2729,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2548,6 +2743,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2561,6 +2757,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2574,6 +2771,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 50,
+      "atk_alt_2": 0,
       "stage": 6
     }
   ]

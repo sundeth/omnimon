@@ -48,6 +48,12 @@ class HeartMeter(UIComponent):
         if self.value != value:
             self.value = value
             self.needs_redraw = True
+    
+    def set_max_value(self, max_value):
+        """Update the maximum value (number of hearts)"""
+        if self.max_value != max_value:
+            self.max_value = max_value
+            self.needs_redraw = True
         
     def render(self):
         # Use screen dimensions for surface

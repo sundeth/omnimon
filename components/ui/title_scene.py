@@ -52,6 +52,8 @@ class TitleScene(UIComponent):
         self.yellow_bright_background_sprite = self.manager.load_sprite_integer_scaling("Sleep", "Title", "Yellow_Bright")
         self.lime_background_sprite = self.manager.load_sprite_integer_scaling("Sleep", "Title", "Lime")
         self.dark_red_background_sprite = self.manager.load_sprite_integer_scaling("Sleep", "Title", "Dark_Red")
+        self.violet_background_sprite = self.manager.load_sprite_integer_scaling("Sleep", "Title", "Violet")
+        self.teal_background_sprite = self.manager.load_sprite_integer_scaling("Sleep", "Title", "Teal")
 
         # Get title font using centralized method with proper scaling
         # Manager already handles scaling through get_title_font_size()
@@ -110,6 +112,10 @@ class TitleScene(UIComponent):
                     background_sprite = self.lime_background_sprite
                 elif theme == "RED_DARK_VARIANT":
                     background_sprite = self.dark_red_background_sprite
+                elif theme == "VIOLET":
+                    background_sprite = self.violet_background_sprite
+                elif theme == "TEAL":
+                    background_sprite = self.teal_background_sprite
                 else:
                     # Fallback to blue if unknown theme
                     background_sprite = self.blue_background_sprite

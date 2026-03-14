@@ -32,12 +32,16 @@ YELLOW_BRIGHT = (255, 235, 59)
 YELLOW_BRIGHT_LIGHT = (255, 253, 217)
 
 RED_DARK_VARIANT_DARK = (102, 31, 31)
-RED_DARK_VARIANT = (153, 46, 46)
+RED_DARK_VARIANT = (226, 49, 49)
 RED_DARK_VARIANT_LIGHT = (255, 204, 204)
 
 CYAN_DARK = (46, 77, 77)
 CYAN = (82, 204, 204)
 CYAN_LIGHT = (217, 255, 255)
+
+VIOLET_DARK = (58, 60, 92)          # Deep blue-violet, cool and muted
+VIOLET = (138, 145, 255)            # Soft periwinkle violet (not magenta)
+VIOLET_LIGHT = (232, 235, 255)      # Pale lavender-blue background
 
 # AnimatedSprite-specific colors (used by the full-screen AnimatedSprite component)
 # These are intentionally separate from some of the generic UI color names to
@@ -49,6 +53,10 @@ ANIM_BLACK = (0, 0, 0)
 LIME_DARK = (69, 77, 46)
 LIME = (139, 195, 74)
 LIME_LIGHT = (230, 255, 217)
+
+TEAL_DARK = (33, 77, 64)
+TEAL = (38, 166, 120)
+TEAL_LIGHT = (217, 248, 235)
 
 
 BATTLE_COLORS = {
@@ -98,9 +106,10 @@ BORDER_SIZES = {1: 2, 2: 4, 3: 6, 4: 8}
 # Spacing values per scale level
 SPACING_VALUES = {1: 1, 2: 2, 3: 3, 4: 4}
 
-# Sprite scale mapping: UI scale -> sprite scale
-# 1x UI = 1x sprites, 2x UI = 2x sprites, 3x UI = 2x sprites, 4x UI = 3x sprites
-SPRITE_SCALE_MAP = {1: 1, 2: 2, 3: 2, 4: 3}
+# Sprite scale mapping: UI scale -> sprite suffix to load
+# NEW SYSTEM: Always load _1 sprites and scale them with integer scaling
+# This simplifies asset management - only need one resolution per sprite
+SPRITE_SCALE_MAP = {1: 1, 2: 1, 3: 1, 4: 1}
 
 # List sizing constants for different component types
 # Fixed list components (like inventory) maintain fixed slot counts at different scales
@@ -128,9 +137,9 @@ BUTTON_SIZE_CONSTRAINTS = {
 # ===============================
 
 def get_sprite_scale_factor(ui_scale):
-    """Get the scaling factor needed to scale sprites to match UI scale"""
-    sprite_scale = SPRITE_SCALE_MAP.get(ui_scale, 1)
-    return ui_scale / sprite_scale
+    """Get the integer scaling factor to apply to _1 sprites"""
+    # Always load _1 sprites and scale them by the UI scale
+    return ui_scale
 
 def get_font_size(font_type, ui_scale):
     """Get font size for given type and UI scale"""

@@ -76,7 +76,7 @@ def main():
             #screen.blit(offscreen, (0, 0))
 
             pygame.display.flip()
-            clock.tick(30)
+            clock.tick(game_globals.configuration.frame_rate)
         
         game.save()
         

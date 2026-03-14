@@ -21,6 +21,7 @@ lib/
 lib64/
 parts/
 utilities/
+modules/*
 sdist/
 var/
 wheels/
@@ -30,6 +31,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 build/pyinstall/
+Exported/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

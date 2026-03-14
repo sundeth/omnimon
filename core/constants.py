@@ -1,4 +1,3 @@
-import json
 import pygame
 
 #=====================================================================
@@ -10,23 +9,108 @@ IS_PYGAME2 = PYGAME_VERSION >= (2, 0, 0)
 COMPATIBLE_SRCALPHA = pygame.SRCALPHA
 
 #=====================================================================
-# Default Configuration Values
-# Actual values are loaded from config.json in main.py/main_nuitka.py
+# Configuration Accessor Properties
+# These provide backwards-compatible access to configuration values
+# The actual values are stored in game_globals.configuration
 #=====================================================================
-FRAME_RATE = 30  # Default frame rate
-MAX_PETS = 4  # Default maximum number of pets
 
-# Debug and logging configuration defaults
-DEBUG_MODE = False
-DEBUG_FILE_LOGGING = False
-SHOW_FPS = False
-DEBUG_BLIT_LOGGING = False
-DEBUG_BATTLE_INFO = False
+def _get_frame_rate():
+    """Get frame rate from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.frame_rate
 
-# Legacy aliases for backward compatibility
-DEBUG = DEBUG_MODE
-LOGGING = DEBUG_FILE_LOGGING
-LOG_BLITS = DEBUG_BLIT_LOGGING
+def _get_max_pets():
+    """Get max pets from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.max_pets
+
+def _get_debug_mode():
+    """Get debug mode from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.debug_mode
+
+def _get_debug_file_logging():
+    """Get debug file logging from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.debug_file_logging
+
+def _get_show_fps():
+    """Get show fps from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.show_fps
+
+def _get_debug_blit_logging():
+    """Get debug blit logging from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.debug_blit_logging
+
+def _get_debug_battle_info():
+    """Get debug battle info from game_globals.configuration."""
+    from core import game_globals
+    return game_globals.configuration.debug_battle_logging
+
+
+# Module-level class to make constants behave like a module with properties
+class _ConfigProxy:
+    """Proxy class that provides property access to configuration values."""
+    
+    @property
+    def FRAME_RATE(self):
+        return _get_frame_rate()
+    
+    @property
+    def MAX_PETS(self):
+        return _get_max_pets()
+    
+    @property
+    def DEBUG_MODE(self):
+        return _get_debug_mode()
+    
+    @property
+    def DEBUG(self):
+        return _get_debug_mode()
+    
+    @property
+    def DEBUG_FILE_LOGGING(self):
+        return _get_debug_file_logging()
+    
+    @property
+    def LOGGING(self):
+        return _get_debug_file_logging()
+    
+    @property
+    def SHOW_FPS(self):
+        return _get_show_fps()
+    
+    @property
+    def DEBUG_BLIT_LOGGING(self):
+        return _get_debug_blit_logging()
+    
+    @property
+    def LOG_BLITS(self):
+        return _get_debug_blit_logging()
+    
+    @property
+    def DEBUG_BATTLE_INFO(self):
+        return _get_debug_battle_info()
+
+
+# Global instance for property access
+_config = _ConfigProxy()
+
+# Dynamic attribute access for backwards compatibility
+def __getattr__(name):
+    """Provide dynamic access to configuration values."""
+    if name in ('FRAME_RATE', 'MAX_PETS', 'DEBUG_MODE', 'DEBUG', 
+                'DEBUG_FILE_LOGGING', 'LOGGING', 'SHOW_FPS',
+                'DEBUG_BLIT_LOGGING', 'LOG_BLITS', 'DEBUG_BATTLE_INFO'):
+        return getattr(_config, name)
+    raise AttributeError(f"module 'core.constants' has no attribute '{name}'")
+
+
+#=====================================================================
+# Static Constants (not configurable)
+#=====================================================================
 
 FRAME_SIZE = 48  # Original pet sprite frame size
 
@@ -62,7 +146,7 @@ CLEANING_SPEED = 6  # Speed of cleaning animation
 SLEEP_RECOVERY_HOURS = 8  # Hours needed to fully recover
 SLEEP_MANUAL_DURATION_HOURS = 1  # Duration when manually sleeping
 SLEEP_DISTURBANCE_THRESHOLD_SECONDS = 7200  # 2 hours threshold for disturbance detection
-BOOT_TIMER_FRAMES = int(150 * (FRAME_RATE / 30)) 
+# BOOT_TIMER_FRAMES is calculated dynamically based on frame_rate 
 
 MAX_LEVEL = {0: 0, 1: 1, 2: 3, 3: 4, 4: 6, 5: 8, 6: 10, 7: 10, 8: 10}
 EXPERIENCE_LEVEL = {0: 0, 1: 0, 2: 50, 3: 150, 4: 500, 5: 800, 6: 1000, 7: 1500, 8: 2000, 9: 3000, 10:5000}
@@ -255,6 +339,7 @@ CLEAR2_PATH = "assets/Clear2.png"
 WARNING1_PATH = "assets/Warning1.png"
 WARNING2_PATH = "assets/Warning2.png"
 HIT_ANIMATION_PATH = "assets/Hit.png"
+KO_PATH = "assets/KO.png"
 
 ITEM_SPRITESHEET = "assets/Items.png"
 ITEM_SPRITE_SIZE = 48  # Each cell is 48x48 in a 5x7 grid
@@ -292,10 +377,14 @@ DMC_SOUNDS_PATH = "assets/dmc_sounds"
 # Discord / Online Settings
 #=====================================================================
 # Discord bot connection
-DISCORD_BOT_URL = "http://localhost:5000"
+DISCORD_BOT_LOCAL_URL = "http://localhost:5000"
+DISCORD_BOT_MAIN_URL = "http://localhost:5000"
 DISCORD_ENABLED = True
 DISCORD_DEBUG = True  # Enable detailed Discord logging
 
 # Discord UI
 DISCORD_ROOM_REFRESH_RATE = 5  # Seconds between room list refreshes
 DISCORD_POLL_RATE = 1  # Seconds between status polls
+
+OMNINET_LOCAL_URL = "http://localhost:8000"
+OMNINET_MAIN_URL = "https://omnipet.app.br"

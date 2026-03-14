@@ -7,6 +7,7 @@
       "special": false,
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -28,7 +29,8 @@
         {
           "to": "Botamon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "G-Cell Fragment",
@@ -38,6 +40,7 @@
       "special_key": "gcell_fragment",
       "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1,
       "poop_timer": 3,
       "energy": 0,
@@ -59,7 +62,8 @@
         {
           "to": "Botamon"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Botamon",
@@ -67,8 +71,9 @@
       "version": 1,
       "special": false,
       "special_key": "",
-      "atk_main": 1,
+      "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 10,
       "poop_timer": 3,
       "energy": 0,
@@ -90,7 +95,8 @@
         {
           "to": "Koromon"
         }
-      ]
+      ],
+      "index": 0
     },
     {
       "name": "Koromon",
@@ -100,8 +106,9 @@
       "special_key": "",
       "sleeps": "20:00",
       "wakes": "08:00",
-      "atk_main": 1,
+      "atk_main": 0,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 720,
       "poop_timer": 60,
       "energy": 0,
@@ -213,7 +220,8 @@
           ],
           "area": 7
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Agumon",
@@ -224,7 +232,8 @@
       "sleeps": "20:00",
       "wakes": "08:00",
       "atk_main": 2,
-      "atk_alt": 0,
+      "atk_alt": 1,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -342,7 +351,8 @@
             13
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Baby Godzilla",
@@ -352,8 +362,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 2,
-      "atk_alt": 0,
+      "atk_main": 1,
+      "atk_alt": 1,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -511,7 +522,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Monodramon",
@@ -521,8 +533,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 27,
-      "atk_alt": 0,
+      "atk_main": 1,
+      "atk_alt": 1,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -607,7 +620,8 @@
             13
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Biollante",
@@ -616,8 +630,9 @@
       "special": false,
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 0,
-      "atk_alt": 0,
+      "atk_main": 4,
+      "atk_alt": 2,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -689,7 +704,8 @@
             4
           ]
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Chibi Godzilla",
@@ -701,6 +717,7 @@
       "wakes": "08:00",
       "atk_main": 79,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 50,
@@ -730,6 +747,7 @@
       "wakes": "08:00",
       "atk_main": 85,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 50,
@@ -757,8 +775,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 17,
-      "atk_alt": 0,
+      "atk_main": 5,
+      "atk_alt": 3,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -834,7 +853,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Godzillasaurus",
@@ -844,8 +864,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 21,
-      "atk_alt": 0,
+      "atk_main": 5,
+      "atk_alt": 3,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -956,7 +977,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Greymon",
@@ -966,8 +988,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 4,
-      "atk_alt": 0,
+      "atk_main": 5,
+      "atk_alt": 3,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1043,7 +1066,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "King Ghidorah",
@@ -1053,8 +1077,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 15,
-      "atk_alt": 0,
+      "atk_main": 4,
+      "atk_alt": 2,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1130,7 +1155,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "Little Godzilla",
@@ -1140,8 +1166,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 6,
-      "atk_alt": 0,
+      "atk_main": 3,
+      "atk_alt": 2,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1256,7 +1283,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Mothra",
@@ -1266,8 +1294,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 37,
-      "atk_alt": 0,
+      "atk_main": 3,
+      "atk_alt": 2,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1343,7 +1372,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Raremon",
@@ -1353,8 +1383,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 16,
-      "atk_alt": 0,
+      "atk_main": 3,
+      "atk_alt": 2,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1412,7 +1443,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Rodan",
@@ -1422,8 +1454,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 12,
-      "atk_alt": 0,
+      "atk_main": 5,
+      "atk_alt": 3,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1499,7 +1532,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "Fire Rodan",
@@ -1509,9 +1543,10 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 17,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 4,
+      "atk_alt": 4,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 40,
@@ -1528,7 +1563,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 23
     },
     {
       "name": "Godzilla (1954)",
@@ -1538,9 +1574,10 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 76,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 6,
+      "atk_alt": 5,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 50,
@@ -1596,7 +1633,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 18
     },
     {
       "name": "Godzilla Jr",
@@ -1606,9 +1644,10 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 2,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 5,
+      "atk_alt": 4,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 50,
@@ -1680,7 +1719,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "Kiryu",
@@ -1690,9 +1730,10 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 34,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 8,
+      "atk_alt": 5,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 40,
@@ -1763,7 +1804,8 @@
             3
           ]
         }
-      ]
+      ],
+      "index": 21
     },
     {
       "name": "Mecha-King Ghidorah",
@@ -1773,9 +1815,10 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 23,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 6,
+      "atk_alt": 5,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 80,
@@ -1808,7 +1851,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 22
     },
     {
       "name": "MetalGreymon (Vaccine)",
@@ -1818,9 +1862,10 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 3,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 7,
+      "atk_alt": 5,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 40,
@@ -1891,7 +1936,8 @@
             3
           ]
         }
-      ]
+      ],
+      "index": 16
     },
     {
       "name": "MetalGreymon: G-Erosion Mode",
@@ -1901,9 +1947,10 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 3,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 8,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 50,
       "min_weight": 40,
@@ -1959,7 +2006,8 @@
             9
           ]
         }
-      ]
+      ],
+      "index": 15
     },
     {
       "name": "SkullGreymon: G-Erosion Mode",
@@ -1969,9 +2017,10 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 117,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 8,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 40,
@@ -2008,7 +2057,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 19
     },
     {
       "name": "Space Godzilla",
@@ -2018,9 +2068,10 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 92,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 5,
+      "atk_alt": 4,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 40,
@@ -2091,7 +2142,8 @@
             3
           ]
         }
-      ]
+      ],
+      "index": 17
     },
     {
       "name": "Zilla",
@@ -2101,9 +2153,10 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 21,
-      "atk_alt": 0,
-      "time": 2400,
+      "atk_main": 5,
+      "atk_alt": 4,
+      "atk_alt_2": 0,
+      "time": 2880,
       "poop_timer": 120,
       "energy": 40,
       "min_weight": 30,
@@ -2120,7 +2173,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 20
     },
     {
       "name": "Destoroyah",
@@ -2130,8 +2184,9 @@
       "special_key": "",
       "sleeps": "00:00",
       "wakes": "08:00",
-      "atk_main": 18,
-      "atk_alt": 0,
+      "atk_main": 6,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2149,7 +2204,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 27
     },
     {
       "name": "Godzilla (1994)",
@@ -2159,8 +2215,9 @@
       "special_key": "",
       "sleeps": "00:00",
       "wakes": "08:00",
-      "atk_main": 2,
-      "atk_alt": 0,
+      "atk_main": 6,
+      "atk_alt": 7,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2195,7 +2252,8 @@
           ],
           "gcell_hatch": true
         }
-      ]
+      ],
+      "index": 24
     },
     {
       "name": "Godzilla (1999)",
@@ -2205,8 +2263,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 2,
-      "atk_alt": 0,
+      "atk_main": 7,
+      "atk_alt": 7,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2224,7 +2283,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 28
     },
     {
       "name": "Machinedramon: MFS-3",
@@ -2234,8 +2294,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 31,
-      "atk_alt": 0,
+      "atk_main": 7,
+      "atk_alt": 8,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2253,7 +2314,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 29
     },
     {
       "name": "Mechagodzilla",
@@ -2263,8 +2325,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 21,
-      "atk_alt": 0,
+      "atk_main": 8,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2282,7 +2345,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 30
     },
     {
       "name": "WarGreymon",
@@ -2292,8 +2356,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 35,
-      "atk_alt": 0,
+      "atk_main": 7,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2311,7 +2376,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 26
     },
     {
       "name": "WarGreymon: G-Erosion Mode",
@@ -2321,8 +2387,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 14,
-      "atk_alt": 0,
+      "atk_main": 8,
+      "atk_alt": 8,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2340,7 +2407,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 25
     },
     {
       "name": "Burning Godzilla",
@@ -2350,8 +2418,9 @@
       "special_key": "",
       "sleeps": "00:00",
       "wakes": "08:00",
-      "atk_main": 18,
-      "atk_alt": 0,
+      "atk_main": 6,
+      "atk_alt": 7,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -2369,7 +2438,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 31
     }
   ]
 }

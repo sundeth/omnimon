@@ -51,6 +51,8 @@ class GameModule:
                     self.description = data.get("description", "No description available.")
 
                     self.adventure_mode = data.get("adventure_mode", False)
+                    self.battle_protocol = data.get("battle_protocol", "")
+                    self.adventure_style = data.get("adventure_style", "Area Selection")
 
                     self.meat_weight_gain = int(data.get("care_meat_weight_gain"))
                     self.meat_hunger_gain = float(data.get("care_meat_hunger_gain"))
@@ -93,6 +95,17 @@ class GameModule:
                     self.battle_global_hit_points = int(data.get("battle_global_hit_points", 0))
                     # sequential rounds is a boolean flag in newer module.json files
                     self.battle_sequential_rounds = bool(data.get("battle_sequential_rounds", False))
+                    # battle_minigame determines which minigame to use in adventure battles
+                    self.battle_minigame = data.get("battle_minigame", "Dummy Bar")
+
+                    # Care settings for fixed hearts and poop
+                    self.care_fixed_4_hearts = bool(data.get("care_fixed_4_hearts", True))
+                    self.care_poop_alarm = bool(data.get("care_poop_alarm", True))
+                    self.care_poop_chance = data.get("care_poop_chance", [80, 0, 0, 20])
+                    self.care_poop_sickness_count = int(data.get("care_poop_sickness_count", 4))
+                    self.care_99g_effect = data.get("care_99g_effect", "Skull")
+                    self.care_block_actions_when_sleeping = bool(data.get("care_block_actions_when_sleeping", True))
+                    self.count_evolution_while_sleeping = bool(data.get("count_evolution_while_sleeping", True))
 
                     self.death_max_injuries = int(data.get("death_max_injuries"))
                     self.death_sick_timer = int(data.get("death_sick_timer"))
@@ -415,6 +428,9 @@ class GameModule:
                     match["prize"] = None
                 if "hp" not in match:
                     match["hp"] = 0
+                if "atk_alt_2" not in match:
+                    match["atk_alt_2"] = 0
+
                 id += 1
                 selected.append(copy.deepcopy(GameEnemy(**match)))
             else:

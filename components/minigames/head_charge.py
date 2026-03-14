@@ -51,20 +51,54 @@ class HeadCharge:
         self._sprite_cache['strikes'] = self.ui_manager.load_sprite_non_integer_scaling(constants.HEADTRAINING_STRIKE_PATH, sprite_scale_factor)
         self._sprite_cache['strikes_back'] = self.ui_manager.load_sprite_non_integer_scaling(constants.HEADTRAINING_BACK_PATH, sprite_scale_factor)
 
-        self.left_attack_sprite = pygame.transform.scale(self.left_attack_sprite, (self.pet_size//2, self.pet_size//2))
-        self.right_attack_sprite = pygame.transform.scale(self.right_attack_sprite, (self.pet_size//2, self.pet_size//2))
-        
-        # Cache pet sprites scaled at +50%
+        # Cache pet sprites first so we can use them as fallbacks
         if self.left_pet and self.right_pet:
+            runtime_globals.game_console.log(f"[HeadCharge] Caching pet sprites for {self.left_pet.name} vs {self.right_pet.name}")
+            runtime_globals.game_console.log(f"[HeadCharge] pet_sprites keys: {[p.name for p in runtime_globals.pet_sprites.keys()]}")
+            
             left_atk1 = runtime_globals.pet_sprites[self.left_pet][PetFrame.ATK1.value]
             left_atk2 = runtime_globals.pet_sprites[self.left_pet][PetFrame.ATK2.value]
             right_atk1 = runtime_globals.pet_sprites[self.right_pet][PetFrame.ATK1.value]
             right_atk2 = runtime_globals.pet_sprites[self.right_pet][PetFrame.ATK2.value]
             
-            self._sprite_cache['left_pet_atk1'] = pygame.transform.scale(left_atk1, (self.pet_size, self.pet_size))
-            self._sprite_cache['left_pet_atk2'] = pygame.transform.scale(left_atk2, (self.pet_size, self.pet_size))
+            runtime_globals.game_console.log(f"[HeadCharge] left_atk1 size: {left_atk1.get_size()}, id: {id(left_atk1)}")
+            runtime_globals.game_console.log(f"[HeadCharge] left_atk2 size: {left_atk2.get_size()}, id: {id(left_atk2)}")
+            runtime_globals.game_console.log(f"[HeadCharge] right_atk1 size: {right_atk1.get_size()}, id: {id(right_atk1)}")
+            runtime_globals.game_console.log(f"[HeadCharge] right_atk2 size: {right_atk2.get_size()}, id: {id(right_atk2)}")
+            
+            # Cache scaled sprites (unflipped)
+            left_pet_atk1_scaled = pygame.transform.scale(left_atk1, (self.pet_size, self.pet_size))
+            left_pet_atk2_scaled = pygame.transform.scale(left_atk2, (self.pet_size, self.pet_size))
+            
+            # Cache both unflipped and flipped versions for left pet (left pet is drawn flipped)
+            self._sprite_cache['left_pet_atk1'] = left_pet_atk1_scaled
+            self._sprite_cache['left_pet_atk2'] = left_pet_atk2_scaled
+            self._sprite_cache['left_pet_atk1_flipped'] = pygame.transform.flip(left_pet_atk1_scaled, True, False)
+            self._sprite_cache['left_pet_atk2_flipped'] = pygame.transform.flip(left_pet_atk2_scaled, True, False)
+            
+            # Cache scaled sprites for right pet (unflipped)
             self._sprite_cache['right_pet_atk1'] = pygame.transform.scale(right_atk1, (self.pet_size, self.pet_size))
             self._sprite_cache['right_pet_atk2'] = pygame.transform.scale(right_atk2, (self.pet_size, self.pet_size))
+            
+            runtime_globals.game_console.log(f"[HeadCharge] Cached sprites - left_pet_atk1 id: {id(self._sprite_cache['left_pet_atk1'])}")
+            runtime_globals.game_console.log(f"[HeadCharge] Cached sprites - left_pet_atk1_flipped id: {id(self._sprite_cache['left_pet_atk1_flipped'])}")
+            runtime_globals.game_console.log(f"[HeadCharge] Cached sprites - right_pet_atk1 id: {id(self._sprite_cache['right_pet_atk1'])}")
+            
+            # Use provided attack sprites if available, otherwise fall back to pet ATK1 sprites
+            if self.left_attack_sprite is None:
+                self.left_attack_sprite = left_atk1
+            if self.right_attack_sprite is None:
+                self.right_attack_sprite = right_atk1
+        
+        # Scale attack sprites for shooting (half the pet size) and cache both versions
+        if self.left_attack_sprite is not None:
+            self.left_attack_sprite = pygame.transform.scale(self.left_attack_sprite, (self.pet_size//2, self.pet_size//2))
+            self.left_attack_sprite_flipped = pygame.transform.flip(self.left_attack_sprite, True, False)
+        else:
+            self.left_attack_sprite_flipped = None
+            
+        if self.right_attack_sprite is not None:
+            self.right_attack_sprite = pygame.transform.scale(self.right_attack_sprite, (self.pet_size//2, self.pet_size//2))
         
         # Create UP/DOWN UI buttons using UI manager's base coordinate system (240x240)
         ui_base = 240  # UI manager's base resolution
@@ -172,9 +206,9 @@ class HeadCharge:
         left_x = self.pet_size + (5 * runtime_globals.UI_SCALE)
         right_x = runtime_globals.SCREEN_WIDTH - self.pet_size - (5 * runtime_globals.UI_SCALE)
 
-        left_sprite = self.left_attack_sprite
+        # Use cached flipped sprite for left attack
+        left_sprite = self.left_attack_sprite_flipped
         right_sprite = self.right_attack_sprite
-        left_sprite = pygame.transform.flip(left_sprite, True, False)
         self.attack_positions.append([left_sprite, [left_x, y_up if left_dir == "A" else y_down]])
         self.attack_positions.append([right_sprite, [right_x, y_up if right_dir == "A" else y_down]])
 
@@ -290,16 +324,29 @@ class HeadCharge:
 
     def draw_pets(self, surface):
         """Draw the two pets in attack poses using cached scaled sprites"""
-        # Use cached scaled pet sprites
+        # Use cached scaled pet sprites - use flipped versions for left pet
         if self.phase == "attack_move":
-            left_sprite = self._sprite_cache['left_pet_atk2']
-            right_sprite = self._sprite_cache['right_pet_atk2']
+            left_sprite_key = 'left_pet_atk2_flipped'
+            right_sprite_key = 'right_pet_atk2'
         else:
-            left_sprite = self._sprite_cache['left_pet_atk1']
-            right_sprite = self._sprite_cache['right_pet_atk1']
+            left_sprite_key = 'left_pet_atk1_flipped'
+            right_sprite_key = 'right_pet_atk1'
         
-        # Flip left sprite and draw
-        left_sprite = pygame.transform.flip(left_sprite, True, False)
+        left_sprite = self._sprite_cache.get(left_sprite_key)
+        right_sprite = self._sprite_cache.get(right_sprite_key)
+        
+        # Debug: Log sprite IDs every 60 frames to detect changes
+        if not hasattr(self, '_draw_frame_counter'):
+            self._draw_frame_counter = 0
+        self._draw_frame_counter += 1
+        if self._draw_frame_counter % 60 == 1:
+            runtime_globals.game_console.log(f"[HeadCharge.draw_pets] Frame {self._draw_frame_counter}: phase={self.phase}")
+            runtime_globals.game_console.log(f"[HeadCharge.draw_pets] left_sprite ({left_sprite_key}) id={id(left_sprite)}, size={left_sprite.get_size() if left_sprite else 'None'}")
+            runtime_globals.game_console.log(f"[HeadCharge.draw_pets] right_sprite ({right_sprite_key}) id={id(right_sprite)}, size={right_sprite.get_size() if right_sprite else 'None'}")
+        
+        if not left_sprite or not right_sprite:
+            runtime_globals.game_console.log(f"[HeadCharge.draw_pets] ERROR: Missing sprite! left={left_sprite}, right={right_sprite}")
+            return
 
         # Calculate positions to center the scaled sprites
         left_x = 0 + (5 * runtime_globals.UI_SCALE)

@@ -11,6 +11,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -24,6 +25,7 @@
       "handicap": 0,
       "atk_main": 24,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -39,6 +41,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -52,6 +55,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -65,6 +69,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -80,6 +85,7 @@
       "unlock": "XA",
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -93,6 +99,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -106,6 +113,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -121,6 +129,7 @@
       "unlock": "",
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -134,6 +143,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -147,6 +157,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -162,6 +173,7 @@
       "unlock": "",
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -175,6 +187,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -188,6 +201,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -203,6 +217,7 @@
       "unlock": "XA",
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -216,6 +231,7 @@
       "handicap": 0,
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -229,6 +245,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -244,6 +261,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -257,6 +275,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -270,6 +289,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -285,6 +305,7 @@
       "unlock": "",
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -298,6 +319,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -311,6 +333,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -326,6 +349,7 @@
       "unlock": "XA",
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -339,6 +363,7 @@
       "handicap": 0,
       "atk_main": 24,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -352,6 +377,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -367,6 +393,7 @@
       "unlock": "",
       "atk_main": 62,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -380,6 +407,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -393,6 +421,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -406,6 +435,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -419,6 +449,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -434,6 +465,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -447,6 +479,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -460,6 +493,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -473,6 +507,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -486,6 +521,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -501,6 +537,7 @@
       "unlock": "XA",
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -514,6 +551,7 @@
       "handicap": 0,
       "atk_main": 41,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -527,6 +565,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -540,6 +579,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -553,6 +593,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -568,6 +609,7 @@
       "unlock": "XA",
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -581,6 +623,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -594,6 +637,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -607,6 +651,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -620,6 +665,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -635,6 +681,7 @@
       "unlock": "",
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -648,6 +695,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -661,6 +709,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -674,6 +723,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -687,6 +737,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -702,6 +753,7 @@
       "unlock": "XA",
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -715,6 +767,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -728,6 +781,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -741,6 +795,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -754,6 +809,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -769,6 +825,7 @@
       "unlock": "",
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -782,6 +839,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -795,6 +853,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -808,6 +867,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -821,6 +881,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -836,6 +897,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -849,6 +911,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -862,6 +925,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -875,6 +939,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -888,6 +953,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -903,6 +969,7 @@
       "unlock": "XA",
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -916,6 +983,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -929,6 +997,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -942,6 +1011,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -955,6 +1025,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -970,6 +1041,7 @@
       "unlock": "",
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -983,6 +1055,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -996,6 +1069,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1009,6 +1083,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1022,6 +1097,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1037,6 +1113,7 @@
       "unlock": "XA",
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1050,6 +1127,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1063,6 +1141,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1076,6 +1155,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1089,6 +1169,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1102,6 +1183,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1115,6 +1197,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1130,6 +1213,7 @@
       "unlock": "XA",
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1143,6 +1227,7 @@
       "handicap": 0,
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1156,6 +1241,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1169,6 +1255,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1182,6 +1269,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1195,6 +1283,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1208,6 +1297,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1223,6 +1313,7 @@
       "unlock": "XA",
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1236,6 +1327,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1249,6 +1341,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1262,6 +1355,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1275,6 +1369,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1288,6 +1383,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1301,6 +1397,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1316,6 +1413,7 @@
       "unlock": "",
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1329,6 +1427,7 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 48,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1342,6 +1441,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1355,6 +1455,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1368,6 +1469,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1381,6 +1483,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1394,6 +1497,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 112,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1409,6 +1513,7 @@
       "unlock": "XA",
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1422,6 +1527,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1435,6 +1541,7 @@
       "handicap": 0,
       "atk_main": 77,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1448,6 +1555,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1461,6 +1569,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1476,6 +1585,7 @@
       "unlock": "",
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1489,6 +1599,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 101,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1502,6 +1613,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1517,6 +1629,7 @@
       "unlock": "",
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1530,6 +1643,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1543,10 +1657,11 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -1558,6 +1673,7 @@
       "unlock": "XA",
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1571,6 +1687,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -1584,6 +1701,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1597,6 +1715,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1610,6 +1729,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1623,6 +1743,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1636,6 +1757,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1651,6 +1773,7 @@
       "unlock": "",
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1664,6 +1787,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1677,6 +1801,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1690,6 +1815,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1703,6 +1829,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1718,6 +1845,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1731,6 +1859,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1744,6 +1873,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1757,6 +1887,7 @@
       "handicap": 0,
       "atk_main": 73,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1770,6 +1901,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1785,6 +1917,7 @@
       "unlock": "XA",
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1798,6 +1931,7 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 48,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -1811,6 +1945,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 101,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1824,6 +1959,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1837,6 +1973,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1850,6 +1987,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1863,6 +2001,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1878,6 +2017,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -1891,6 +2031,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1904,6 +2045,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1917,6 +2059,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1930,10 +2073,11 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -1943,6 +2087,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1956,6 +2101,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1971,6 +2117,7 @@
       "unlock": "XA",
       "atk_main": 105,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -1984,6 +2131,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -1997,6 +2145,7 @@
       "handicap": 0,
       "atk_main": 24,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2012,6 +2161,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2025,6 +2175,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2038,6 +2189,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2053,6 +2205,7 @@
       "unlock": "",
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2066,6 +2219,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2079,6 +2233,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2094,6 +2249,7 @@
       "unlock": "XB",
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2107,6 +2263,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2120,6 +2277,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2135,6 +2293,7 @@
       "unlock": "XB",
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2148,6 +2307,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2161,6 +2321,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2176,6 +2337,7 @@
       "unlock": "",
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2189,6 +2351,7 @@
       "handicap": 0,
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2202,6 +2365,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2217,6 +2381,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2230,6 +2395,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2243,6 +2409,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2258,6 +2425,7 @@
       "unlock": "XB",
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2271,6 +2439,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2284,6 +2453,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2299,6 +2469,7 @@
       "unlock": "",
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2312,6 +2483,7 @@
       "handicap": 0,
       "atk_main": 24,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2325,6 +2497,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2340,6 +2513,7 @@
       "unlock": "",
       "atk_main": 62,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2353,6 +2527,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2366,6 +2541,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2379,6 +2555,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2392,6 +2569,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2407,6 +2585,7 @@
       "unlock": "XB",
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2420,6 +2599,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2433,6 +2613,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2446,6 +2627,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2459,6 +2641,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2474,6 +2657,7 @@
       "unlock": "",
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2487,6 +2671,7 @@
       "handicap": 0,
       "atk_main": 41,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2500,6 +2685,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2513,6 +2699,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2526,6 +2713,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2541,6 +2729,7 @@
       "unlock": "",
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2554,6 +2743,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2567,6 +2757,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2580,6 +2771,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2593,6 +2785,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2608,6 +2801,7 @@
       "unlock": "XB",
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2621,6 +2815,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -2634,6 +2829,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2647,6 +2843,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2660,6 +2857,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2675,6 +2873,7 @@
       "unlock": "XB",
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2688,6 +2887,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2701,6 +2901,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2714,6 +2915,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2727,6 +2929,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2742,6 +2945,7 @@
       "unlock": "XB",
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2755,6 +2959,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2768,6 +2973,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2781,6 +2987,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2794,6 +3001,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2809,6 +3017,7 @@
       "unlock": "XB",
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2822,6 +3031,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2835,6 +3045,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2848,6 +3059,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2861,6 +3073,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2876,6 +3089,7 @@
       "unlock": "",
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2889,6 +3103,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2902,6 +3117,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2915,6 +3131,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2928,6 +3145,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2943,6 +3161,7 @@
       "unlock": "",
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2956,6 +3175,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -2969,6 +3189,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -2982,6 +3203,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -2995,6 +3217,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3010,6 +3233,7 @@
       "unlock": "XB",
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3023,6 +3247,7 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3036,6 +3261,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3049,6 +3275,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3062,6 +3289,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3075,6 +3303,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3088,6 +3317,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3103,6 +3333,7 @@
       "unlock": "",
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3116,6 +3347,7 @@
       "handicap": 0,
       "atk_main": 52,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3129,6 +3361,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3142,6 +3375,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3155,6 +3389,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3168,6 +3403,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3181,6 +3417,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3196,6 +3433,7 @@
       "unlock": "",
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3209,6 +3447,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3222,6 +3461,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3235,6 +3475,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3248,6 +3489,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3261,6 +3503,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3274,6 +3517,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3289,6 +3533,7 @@
       "unlock": "XB",
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3302,6 +3547,7 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 48,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3315,6 +3561,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3328,6 +3575,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3341,6 +3589,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3354,6 +3603,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3367,6 +3617,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 112,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3382,6 +3633,7 @@
       "unlock": "",
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3395,6 +3647,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3408,6 +3661,7 @@
       "handicap": 0,
       "atk_main": 77,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3421,6 +3675,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3434,6 +3689,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3449,6 +3705,7 @@
       "unlock": "XB",
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3462,6 +3719,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 101,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3475,6 +3733,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3490,6 +3749,7 @@
       "unlock": "",
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3503,6 +3763,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3516,10 +3777,11 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -3531,6 +3793,7 @@
       "unlock": "XB",
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3544,6 +3807,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -3557,6 +3821,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -3570,6 +3835,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3583,6 +3849,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3596,6 +3863,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3609,6 +3877,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3624,6 +3893,7 @@
       "unlock": "",
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3637,6 +3907,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3650,6 +3921,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3663,6 +3935,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3676,6 +3949,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3691,6 +3965,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3704,6 +3979,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3717,6 +3993,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3730,6 +4007,7 @@
       "handicap": 0,
       "atk_main": 73,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3743,6 +4021,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3758,6 +4037,7 @@
       "unlock": "XB",
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3771,6 +4051,7 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 48,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -3784,6 +4065,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 101,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3797,6 +4079,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3810,6 +4093,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3823,6 +4107,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3836,6 +4121,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3851,6 +4137,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -3864,6 +4151,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3877,6 +4165,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3890,6 +4179,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3903,10 +4193,11 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -3916,6 +4207,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3929,6 +4221,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3944,6 +4237,7 @@
       "unlock": "XB",
       "atk_main": 105,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -3957,6 +4251,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -3970,6 +4265,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 1,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -3985,6 +4281,7 @@
       "unlock": "",
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -3998,6 +4295,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4011,6 +4309,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4026,6 +4325,7 @@
       "unlock": "",
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4039,6 +4339,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4052,6 +4353,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4067,6 +4369,7 @@
       "unlock": "",
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4080,6 +4383,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4093,6 +4397,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4108,6 +4413,7 @@
       "unlock": "",
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4121,6 +4427,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4134,6 +4441,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4149,6 +4457,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4162,6 +4471,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4175,6 +4485,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4190,6 +4501,7 @@
       "unlock": "",
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4203,6 +4515,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4216,6 +4529,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4231,6 +4545,7 @@
       "unlock": "",
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4244,6 +4559,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4257,6 +4573,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4272,6 +4589,7 @@
       "unlock": "",
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4285,6 +4603,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4298,6 +4617,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4313,6 +4633,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4326,6 +4647,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4339,6 +4661,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4354,6 +4677,7 @@
       "unlock": "XC",
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4367,6 +4691,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4380,6 +4705,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4395,6 +4721,7 @@
       "unlock": "XC",
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4408,6 +4735,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4421,6 +4749,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4436,6 +4765,7 @@
       "unlock": "",
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4449,6 +4779,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4462,6 +4793,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4477,6 +4809,7 @@
       "unlock": "",
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4490,6 +4823,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4503,6 +4837,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4516,6 +4851,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4529,6 +4865,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4544,6 +4881,7 @@
       "unlock": "",
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4557,6 +4895,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4570,6 +4909,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4583,6 +4923,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4596,6 +4937,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4611,6 +4953,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4624,6 +4967,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4637,6 +4981,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4650,6 +4995,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4663,6 +5009,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4678,6 +5025,7 @@
       "unlock": "",
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4691,6 +5039,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4704,6 +5053,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4719,6 +5069,7 @@
       "unlock": "",
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4732,6 +5083,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4745,6 +5097,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4758,6 +5111,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4771,6 +5125,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4786,6 +5141,7 @@
       "unlock": "XC",
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4799,6 +5155,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4812,6 +5169,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4827,6 +5185,7 @@
       "unlock": "",
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4840,6 +5199,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -4853,6 +5213,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4866,6 +5227,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4879,6 +5241,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4894,6 +5257,7 @@
       "unlock": "XC",
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4907,6 +5271,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4920,6 +5285,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -4933,6 +5299,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4946,6 +5313,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4961,6 +5329,7 @@
       "unlock": "",
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4974,6 +5343,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -4987,6 +5357,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5000,6 +5371,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5013,6 +5385,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5028,6 +5401,7 @@
       "unlock": "XC",
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5041,6 +5415,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5054,6 +5429,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5067,6 +5443,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5080,6 +5457,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5095,6 +5473,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5108,6 +5487,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5121,6 +5501,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5134,6 +5515,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5147,6 +5529,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5160,6 +5543,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5173,6 +5557,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5188,6 +5573,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5201,6 +5587,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5214,6 +5601,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5227,6 +5615,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5240,6 +5629,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5253,6 +5643,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5266,6 +5657,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5281,6 +5673,7 @@
       "unlock": "",
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5294,6 +5687,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5307,6 +5701,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5320,6 +5715,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5333,6 +5729,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5348,6 +5745,7 @@
       "unlock": "",
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5361,6 +5759,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5374,6 +5773,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5389,6 +5789,7 @@
       "unlock": "",
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5402,6 +5803,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5415,6 +5817,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5428,6 +5831,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5441,6 +5845,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5454,6 +5859,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5467,6 +5873,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5482,6 +5889,7 @@
       "unlock": "",
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5495,6 +5903,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5508,6 +5917,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5521,6 +5931,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5534,6 +5945,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5547,6 +5959,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5560,6 +5973,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5575,6 +5989,7 @@
       "unlock": "XC",
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5588,6 +6003,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5601,6 +6017,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5614,6 +6031,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5627,6 +6045,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5642,6 +6061,7 @@
       "unlock": "XC",
       "atk_main": 103,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5655,6 +6075,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5668,6 +6089,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5681,6 +6103,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5694,6 +6117,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5707,6 +6131,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5720,6 +6145,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5735,6 +6161,7 @@
       "unlock": "",
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5748,6 +6175,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -5761,6 +6189,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5774,6 +6203,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5787,6 +6217,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5800,6 +6231,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5813,6 +6245,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5828,6 +6261,7 @@
       "unlock": "",
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5841,6 +6275,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5854,6 +6289,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5867,6 +6303,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5880,6 +6317,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5893,6 +6331,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5906,6 +6345,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -5921,6 +6361,7 @@
       "unlock": "",
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5934,6 +6375,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -5947,6 +6389,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5962,6 +6405,7 @@
       "unlock": "XC",
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -5975,6 +6419,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -5988,6 +6433,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6001,6 +6447,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6014,6 +6461,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6027,6 +6475,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6040,6 +6489,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6055,6 +6505,7 @@
       "unlock": "XC",
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6068,6 +6519,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -6081,6 +6533,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6094,6 +6547,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6107,6 +6561,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6122,6 +6577,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6135,6 +6591,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -6148,6 +6605,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6161,6 +6619,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6174,6 +6633,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6189,6 +6649,7 @@
       "unlock": "",
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6202,6 +6663,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6215,6 +6677,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6228,6 +6691,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6241,6 +6705,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6254,6 +6719,7 @@
       "handicap": 0,
       "atk_main": 103,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6267,6 +6733,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6282,6 +6749,7 @@
       "unlock": "",
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6295,6 +6763,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6308,6 +6777,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6321,6 +6791,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6334,6 +6805,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6347,6 +6819,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6360,6 +6833,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6375,6 +6849,7 @@
       "unlock": "XC",
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6388,6 +6863,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6401,6 +6877,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6414,6 +6891,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6427,6 +6905,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6440,6 +6919,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6453,6 +6933,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6468,6 +6949,7 @@
       "unlock": "",
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6481,6 +6963,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6494,6 +6977,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6507,6 +6991,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6520,6 +7005,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6533,6 +7019,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6546,6 +7033,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6561,6 +7049,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6574,6 +7063,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6587,6 +7077,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6600,6 +7091,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6613,6 +7105,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6626,6 +7119,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6639,6 +7133,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6654,6 +7149,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6667,6 +7163,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6680,6 +7177,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6695,6 +7193,7 @@
       "unlock": "",
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6708,6 +7207,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6721,6 +7221,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -6734,6 +7235,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6747,6 +7249,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6760,6 +7263,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6773,6 +7277,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6788,6 +7293,7 @@
       "unlock": "",
       "atk_main": 47,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6801,6 +7307,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6814,6 +7321,7 @@
       "handicap": 0,
       "atk_main": 47,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6827,6 +7335,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6840,6 +7349,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6853,6 +7363,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6866,6 +7377,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6881,6 +7393,7 @@
       "unlock": "",
       "atk_main": 25,
       "atk_alt": 18,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -6894,6 +7407,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6907,6 +7421,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6920,6 +7435,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6933,6 +7449,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6946,6 +7463,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6959,6 +7477,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6974,6 +7493,7 @@
       "unlock": "XC",
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -6987,6 +7507,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -7000,6 +7521,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 1,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -7015,6 +7537,7 @@
       "unlock": "",
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7028,6 +7551,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7041,6 +7565,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7056,6 +7581,7 @@
       "unlock": "",
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7069,6 +7595,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7082,6 +7609,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7097,6 +7625,7 @@
       "unlock": "",
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7110,6 +7639,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7123,6 +7653,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7138,6 +7669,7 @@
       "unlock": "",
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7151,6 +7683,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7164,6 +7697,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7179,6 +7713,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7192,6 +7727,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7205,6 +7741,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7220,6 +7757,7 @@
       "unlock": "",
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7233,6 +7771,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7246,6 +7785,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7261,6 +7801,7 @@
       "unlock": "",
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7274,6 +7815,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7287,6 +7829,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7302,6 +7845,7 @@
       "unlock": "",
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7315,6 +7859,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7328,6 +7873,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7343,6 +7889,7 @@
       "unlock": "XD",
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7356,6 +7903,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7369,6 +7917,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7384,6 +7933,7 @@
       "unlock": "",
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7397,6 +7947,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7410,6 +7961,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7425,6 +7977,7 @@
       "unlock": "",
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7438,6 +7991,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7451,6 +8005,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7466,6 +8021,7 @@
       "unlock": "XD",
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7479,6 +8035,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7492,6 +8049,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7507,6 +8065,7 @@
       "unlock": "",
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7520,6 +8079,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7533,6 +8093,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7546,6 +8107,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7559,6 +8121,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7574,6 +8137,7 @@
       "unlock": "",
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7587,6 +8151,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 76,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7600,6 +8165,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7613,6 +8179,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7626,6 +8193,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7641,6 +8209,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7654,6 +8223,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7667,6 +8237,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7680,6 +8251,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7693,6 +8265,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7708,6 +8281,7 @@
       "unlock": "XD",
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7721,6 +8295,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7734,6 +8309,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7749,6 +8325,7 @@
       "unlock": "",
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7762,6 +8339,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7775,6 +8353,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7788,6 +8367,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7801,6 +8381,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7816,6 +8397,7 @@
       "unlock": "",
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7829,6 +8411,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7842,6 +8425,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7857,6 +8441,7 @@
       "unlock": "",
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7870,6 +8455,7 @@
       "handicap": 0,
       "atk_main": 23,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -7883,6 +8469,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 39,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7896,6 +8483,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7909,6 +8497,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7924,6 +8513,7 @@
       "unlock": "",
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7937,6 +8527,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7950,6 +8541,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -7963,6 +8555,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7976,6 +8569,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -7991,6 +8585,7 @@
       "unlock": "XD",
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8004,6 +8599,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8017,6 +8613,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8030,6 +8627,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8043,6 +8641,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8058,6 +8657,7 @@
       "unlock": "",
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8071,6 +8671,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8084,6 +8685,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8097,6 +8699,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8110,6 +8713,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8125,6 +8729,7 @@
       "unlock": "XD",
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8138,6 +8743,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8151,6 +8757,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8164,6 +8771,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8177,6 +8785,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8190,6 +8799,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8203,6 +8813,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8218,6 +8829,7 @@
       "unlock": "",
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8231,6 +8843,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 87,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8244,6 +8857,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8257,6 +8871,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8270,6 +8885,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8283,6 +8899,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8296,6 +8913,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8311,6 +8929,7 @@
       "unlock": "",
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8324,6 +8943,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8337,6 +8957,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8350,6 +8971,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8363,6 +8985,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8378,6 +9001,7 @@
       "unlock": "",
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8391,6 +9015,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8404,6 +9029,7 @@
       "handicap": 0,
       "atk_main": 84,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8419,6 +9045,7 @@
       "unlock": "",
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8432,6 +9059,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 49,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8445,6 +9073,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8458,6 +9087,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8471,6 +9101,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8484,6 +9115,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8497,6 +9129,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8512,6 +9145,7 @@
       "unlock": "XD",
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8525,6 +9159,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8538,6 +9173,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8551,6 +9187,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8564,6 +9201,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8577,6 +9215,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8590,6 +9229,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8605,6 +9245,7 @@
       "unlock": "",
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8618,6 +9259,7 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8631,6 +9273,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8644,6 +9287,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8657,6 +9301,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8672,6 +9317,7 @@
       "unlock": "",
       "atk_main": 103,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8685,6 +9331,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8698,6 +9345,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8711,6 +9359,7 @@
       "handicap": 0,
       "atk_main": 74,
       "atk_alt": 82,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8724,6 +9373,7 @@
       "handicap": 0,
       "atk_main": 69,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8737,6 +9387,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8750,6 +9401,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8765,6 +9417,7 @@
       "unlock": "XD",
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8778,6 +9431,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -8791,6 +9445,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8804,6 +9459,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -8817,6 +9473,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 58,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8830,6 +9487,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8843,6 +9501,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8858,6 +9517,7 @@
       "unlock": "",
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8871,6 +9531,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8884,6 +9545,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8897,6 +9559,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 62,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8910,6 +9573,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8923,6 +9587,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8936,6 +9601,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -8951,6 +9617,7 @@
       "unlock": "XD",
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8964,6 +9631,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -8977,6 +9645,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -8992,6 +9661,7 @@
       "unlock": "",
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9005,6 +9675,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -9018,6 +9689,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9031,6 +9703,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9044,6 +9717,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9057,6 +9731,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9070,6 +9745,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9085,6 +9761,7 @@
       "unlock": "",
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9098,6 +9775,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -9111,6 +9789,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9124,6 +9803,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9137,6 +9817,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9152,6 +9833,7 @@
       "unlock": "XD",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9165,6 +9847,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -9178,6 +9861,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9191,6 +9875,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9204,6 +9889,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9219,6 +9905,7 @@
       "unlock": "",
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9232,6 +9919,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9245,6 +9933,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9258,6 +9947,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9271,6 +9961,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9284,6 +9975,7 @@
       "handicap": 0,
       "atk_main": 103,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9297,6 +9989,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9312,6 +10005,7 @@
       "unlock": "",
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9325,6 +10019,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9338,6 +10033,7 @@
       "handicap": 0,
       "atk_main": 96,
       "atk_alt": 93,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9351,6 +10047,7 @@
       "handicap": 0,
       "atk_main": 93,
       "atk_alt": 96,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9364,6 +10061,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9377,6 +10075,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9390,6 +10089,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9405,6 +10105,7 @@
       "unlock": "",
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9418,6 +10119,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 33,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9431,6 +10133,7 @@
       "handicap": 0,
       "atk_main": 116,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9444,6 +10147,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9457,6 +10161,7 @@
       "handicap": 0,
       "atk_main": 101,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9470,6 +10175,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9483,6 +10189,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9498,6 +10205,7 @@
       "unlock": "XD",
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9511,6 +10219,7 @@
       "handicap": 0,
       "atk_main": 50,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9524,6 +10233,7 @@
       "handicap": 0,
       "atk_main": 63,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9537,6 +10247,7 @@
       "handicap": 0,
       "atk_main": 87,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9550,6 +10261,7 @@
       "handicap": 0,
       "atk_main": 60,
       "atk_alt": 69,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9563,6 +10275,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 59,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9576,6 +10289,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9591,6 +10305,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9604,6 +10319,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9617,6 +10333,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9630,6 +10347,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9643,6 +10361,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9656,6 +10375,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9669,6 +10389,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9684,6 +10405,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9697,6 +10419,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 55,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9710,6 +10433,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9725,6 +10449,7 @@
       "unlock": "",
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9738,6 +10463,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9751,6 +10477,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -9764,6 +10491,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9777,6 +10505,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9790,6 +10519,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9803,6 +10533,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9818,6 +10549,7 @@
       "unlock": "",
       "atk_main": 47,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9831,6 +10563,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9844,6 +10577,7 @@
       "handicap": 0,
       "atk_main": 47,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9857,6 +10591,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9870,6 +10605,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9883,6 +10619,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9896,6 +10633,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9911,6 +10649,7 @@
       "unlock": "",
       "atk_main": 25,
       "atk_alt": 18,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -9924,6 +10663,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9937,6 +10677,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9950,6 +10691,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9963,6 +10705,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9976,6 +10719,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -9989,6 +10733,7 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -10004,6 +10749,7 @@
       "unlock": "XD",
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -10017,6 +10763,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -10030,6 +10777,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -10045,6 +10793,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -10058,6 +10807,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10071,6 +10821,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10086,6 +10837,7 @@
       "unlock": "",
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10099,6 +10851,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10112,6 +10865,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10127,6 +10881,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10140,6 +10895,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10153,6 +10909,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10168,6 +10925,7 @@
       "unlock": "",
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10181,6 +10939,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10194,6 +10953,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10209,6 +10969,7 @@
       "unlock": "",
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10222,6 +10983,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10235,6 +10997,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10250,6 +11013,7 @@
       "unlock": "",
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10263,6 +11027,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10276,6 +11041,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10291,6 +11057,7 @@
       "unlock": "",
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10304,6 +11071,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10317,6 +11085,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10332,6 +11101,7 @@
       "unlock": "",
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10345,6 +11115,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10358,6 +11129,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10373,6 +11145,7 @@
       "unlock": "XE",
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10386,6 +11159,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10399,6 +11173,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10414,6 +11189,7 @@
       "unlock": "",
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10427,6 +11203,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10440,6 +11217,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10455,6 +11233,7 @@
       "unlock": "XE",
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10468,6 +11247,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10481,6 +11261,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10496,6 +11277,7 @@
       "unlock": "",
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10509,6 +11291,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10522,6 +11305,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10537,6 +11321,7 @@
       "unlock": "",
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10550,6 +11335,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10563,6 +11349,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10576,6 +11363,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10589,6 +11377,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10604,6 +11393,7 @@
       "unlock": "",
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10617,6 +11407,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10630,6 +11421,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10643,6 +11435,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10656,6 +11449,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10671,6 +11465,7 @@
       "unlock": "",
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10684,6 +11479,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10697,6 +11493,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10710,6 +11507,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10723,6 +11521,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10738,6 +11537,7 @@
       "unlock": "XE",
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10751,6 +11551,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10764,6 +11565,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10779,6 +11581,7 @@
       "unlock": "",
       "atk_main": 10,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10792,6 +11595,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10805,6 +11609,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10818,6 +11623,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10831,6 +11637,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10846,6 +11653,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10859,6 +11667,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10872,6 +11681,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10887,6 +11697,7 @@
       "unlock": "",
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10900,6 +11711,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10913,6 +11725,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10926,6 +11739,7 @@
       "handicap": 0,
       "atk_main": 34,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10939,6 +11753,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10954,6 +11769,7 @@
       "unlock": "",
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -10967,6 +11783,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -10980,6 +11797,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -10993,6 +11811,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11006,6 +11825,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11021,6 +11841,7 @@
       "unlock": "XE",
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11034,6 +11855,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -11047,6 +11869,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11060,6 +11883,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11073,6 +11897,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11088,6 +11913,7 @@
       "unlock": "XE",
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11101,6 +11927,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11114,6 +11941,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11127,6 +11955,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11140,6 +11969,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11155,6 +11985,7 @@
       "unlock": "",
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11168,6 +11999,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11181,6 +12013,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11194,6 +12027,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11207,6 +12041,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11222,6 +12057,7 @@
       "unlock": "",
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11235,6 +12071,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11248,6 +12085,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11261,6 +12099,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11274,6 +12113,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11289,6 +12129,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11302,6 +12143,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -11315,6 +12157,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11328,6 +12171,7 @@
       "handicap": 0,
       "atk_main": 34,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11341,6 +12185,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11354,6 +12199,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11367,6 +12213,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11382,6 +12229,7 @@
       "unlock": "",
       "atk_main": 53,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11395,6 +12243,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11408,6 +12257,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11421,6 +12271,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11434,6 +12285,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11447,6 +12299,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11460,6 +12313,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11475,6 +12329,7 @@
       "unlock": "XE",
       "atk_main": 39,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11488,6 +12343,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11501,6 +12357,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11514,6 +12371,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11527,6 +12385,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11540,6 +12399,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11553,6 +12413,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11568,6 +12429,7 @@
       "unlock": "",
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11581,6 +12443,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11594,6 +12457,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11607,6 +12471,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11620,6 +12485,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11635,6 +12501,7 @@
       "unlock": "XE",
       "atk_main": 11,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11648,6 +12515,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11661,6 +12529,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11674,6 +12543,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11687,6 +12557,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11700,6 +12571,7 @@
       "handicap": 0,
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11713,6 +12585,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11728,6 +12601,7 @@
       "unlock": "",
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11741,6 +12615,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11754,6 +12629,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11767,6 +12643,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11780,6 +12657,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11793,6 +12671,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11806,6 +12685,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11821,6 +12701,7 @@
       "unlock": "",
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11834,6 +12715,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11847,6 +12729,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11860,6 +12743,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11873,6 +12757,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 21,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11886,6 +12771,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11899,6 +12785,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11914,6 +12801,7 @@
       "unlock": "XE",
       "atk_main": 76,
       "atk_alt": 63,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11927,6 +12815,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -11940,6 +12829,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -11955,6 +12845,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -11968,6 +12859,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -11981,6 +12873,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -11994,6 +12887,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12007,6 +12901,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12020,6 +12915,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12033,6 +12929,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12048,6 +12945,7 @@
       "unlock": "XE",
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12061,6 +12959,7 @@
       "handicap": 0,
       "atk_main": 53,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12074,6 +12973,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12087,6 +12987,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 21,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12100,6 +13001,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12115,6 +13017,7 @@
       "unlock": "",
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12128,6 +13031,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -12141,6 +13045,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -12154,6 +13059,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12167,6 +13073,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12180,6 +13087,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12193,6 +13101,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 63,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12208,6 +13117,7 @@
       "unlock": "XE",
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12221,6 +13131,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12234,6 +13145,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -12247,6 +13159,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12260,6 +13173,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12273,6 +13187,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12286,6 +13201,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12301,6 +13217,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12314,6 +13231,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -12327,6 +13245,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -12340,6 +13259,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12353,6 +13273,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12366,6 +13287,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12379,6 +13301,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12394,6 +13317,7 @@
       "unlock": "",
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12407,6 +13331,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -12420,6 +13345,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12433,6 +13359,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -12446,6 +13373,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12459,6 +13387,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12472,6 +13401,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12487,6 +13417,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 57,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12500,6 +13431,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12513,6 +13445,7 @@
       "handicap": 0,
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12526,6 +13459,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12539,6 +13473,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12552,6 +13487,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12565,6 +13501,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12580,6 +13517,7 @@
       "unlock": "XE",
       "atk_main": 94,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12593,6 +13531,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -12606,10 +13545,11 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -12621,6 +13561,7 @@
       "unlock": "",
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12634,6 +13575,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -12647,6 +13589,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12660,6 +13603,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12673,6 +13617,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12688,6 +13633,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12701,6 +13647,7 @@
       "handicap": 0,
       "atk_main": 105,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -12714,6 +13661,7 @@
       "handicap": 0,
       "atk_main": 47,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -12729,6 +13677,7 @@
       "unlock": "",
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12742,6 +13691,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12755,6 +13705,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12768,6 +13719,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12781,6 +13733,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12794,6 +13747,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12807,6 +13761,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12822,6 +13777,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12835,6 +13791,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12848,6 +13805,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12861,6 +13819,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12874,6 +13833,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12887,6 +13847,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12900,6 +13861,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12915,6 +13877,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 8
     },
     {
@@ -12928,6 +13891,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12941,6 +13905,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -12954,10 +13919,11 @@
       "handicap": 0,
       "atk_main": 105,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -12967,6 +13933,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12982,6 +13949,7 @@
       "unlock": "XE",
       "atk_main": 32,
       "atk_alt": 80,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -12995,6 +13963,7 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 30,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -13008,6 +13977,7 @@
       "handicap": 0,
       "atk_main": 1,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -13023,6 +13993,7 @@
       "unlock": "",
       "atk_main": 52,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -13036,6 +14007,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13049,6 +14021,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13064,6 +14037,7 @@
       "unlock": "",
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13077,6 +14051,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13090,6 +14065,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13105,6 +14081,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13118,6 +14095,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13131,6 +14109,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13146,6 +14125,7 @@
       "unlock": "",
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13159,6 +14139,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13172,6 +14153,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13187,6 +14169,7 @@
       "unlock": "",
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13200,6 +14183,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13213,6 +14197,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13228,6 +14213,7 @@
       "unlock": "",
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13241,6 +14227,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13254,6 +14241,7 @@
       "handicap": 0,
       "atk_main": 89,
       "atk_alt": 97,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13269,6 +14257,7 @@
       "unlock": "",
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13282,6 +14271,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13295,6 +14285,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13310,6 +14301,7 @@
       "unlock": "",
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13323,6 +14315,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 5,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13336,6 +14329,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13351,6 +14345,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13364,6 +14359,7 @@
       "handicap": 0,
       "atk_main": 54,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13377,6 +14373,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13392,6 +14389,7 @@
       "unlock": "XF",
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13405,6 +14403,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13418,6 +14417,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13433,6 +14433,7 @@
       "unlock": "",
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13446,6 +14447,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13459,6 +14461,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13474,6 +14477,7 @@
       "unlock": "XF",
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13487,6 +14491,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13500,6 +14505,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13515,6 +14521,7 @@
       "unlock": "",
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13528,6 +14535,7 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 95,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13541,6 +14549,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13554,6 +14563,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13567,6 +14577,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13582,6 +14593,7 @@
       "unlock": "",
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13595,6 +14607,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13608,6 +14621,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13621,6 +14635,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13634,6 +14649,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13649,6 +14665,7 @@
       "unlock": "",
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13662,6 +14679,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13675,6 +14693,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13688,6 +14707,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13701,6 +14721,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13716,6 +14737,7 @@
       "unlock": "",
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13729,6 +14751,7 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13742,6 +14765,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13757,6 +14781,7 @@
       "unlock": "",
       "atk_main": 10,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13770,6 +14795,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13783,6 +14809,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13796,6 +14823,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13809,6 +14837,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13824,6 +14853,7 @@
       "unlock": "XF",
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13837,6 +14867,7 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 71,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13850,6 +14881,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13865,6 +14897,7 @@
       "unlock": "",
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13878,6 +14911,7 @@
       "handicap": 0,
       "atk_main": 97,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13891,6 +14925,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13904,6 +14939,7 @@
       "handicap": 0,
       "atk_main": 34,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13917,6 +14953,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13932,6 +14969,7 @@
       "unlock": "XF",
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13945,6 +14983,7 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -13958,6 +14997,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -13971,6 +15011,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13984,6 +15025,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -13999,6 +15041,7 @@
       "unlock": "",
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14012,6 +15055,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -14025,6 +15069,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14038,6 +15083,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 24,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14051,6 +15097,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14066,6 +15113,7 @@
       "unlock": "",
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14079,6 +15127,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14092,6 +15141,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14105,6 +15155,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14118,6 +15169,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14133,6 +15185,7 @@
       "unlock": "XF",
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14146,6 +15199,7 @@
       "handicap": 0,
       "atk_main": 26,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14159,6 +15213,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14172,6 +15227,7 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14185,6 +15241,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14200,6 +15257,7 @@
       "unlock": "",
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14213,6 +15271,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14226,6 +15285,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14239,6 +15299,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 60,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14252,6 +15313,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14267,6 +15329,7 @@
       "unlock": "",
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14280,6 +15343,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 36,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -14293,6 +15357,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14306,6 +15371,7 @@
       "handicap": 0,
       "atk_main": 34,
       "atk_alt": 94,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14319,6 +15385,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14332,6 +15399,7 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 7,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14345,6 +15413,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 67,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14360,6 +15429,7 @@
       "unlock": "",
       "atk_main": 53,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14373,6 +15443,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14386,6 +15457,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14399,6 +15471,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14412,6 +15485,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14425,6 +15499,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14438,6 +15513,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14453,6 +15529,7 @@
       "unlock": "",
       "atk_main": 39,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14466,6 +15543,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14479,6 +15557,7 @@
       "handicap": 0,
       "atk_main": 14,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14492,6 +15571,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14505,6 +15585,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14518,6 +15599,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14531,6 +15613,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14546,6 +15629,7 @@
       "unlock": "XF",
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14559,6 +15643,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 35,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14572,6 +15657,7 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14585,6 +15671,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14598,6 +15685,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14613,6 +15701,7 @@
       "unlock": "",
       "atk_main": 11,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14626,6 +15715,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 91,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14639,6 +15729,7 @@
       "handicap": 0,
       "atk_main": 111,
       "atk_alt": 246,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14652,6 +15743,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14665,6 +15757,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14678,6 +15771,7 @@
       "handicap": 0,
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14691,6 +15785,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14706,6 +15801,7 @@
       "unlock": "XF",
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14719,6 +15815,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14732,6 +15829,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14745,6 +15843,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14758,6 +15857,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14771,6 +15871,7 @@
       "handicap": 0,
       "atk_main": 108,
       "atk_alt": 52,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14784,6 +15885,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14799,6 +15901,7 @@
       "unlock": "XF",
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14812,6 +15915,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14825,6 +15929,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14838,6 +15943,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14851,6 +15957,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 21,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14864,6 +15971,7 @@
       "handicap": 0,
       "atk_main": 56,
       "atk_alt": 114,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14877,6 +15985,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14892,6 +16001,7 @@
       "unlock": "",
       "atk_main": 76,
       "atk_alt": 63,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14905,6 +16015,7 @@
       "handicap": 0,
       "atk_main": 29,
       "atk_alt": 27,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -14918,6 +16029,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -14933,6 +16045,7 @@
       "unlock": "",
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -14946,6 +16059,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -14959,6 +16073,7 @@
       "handicap": 0,
       "atk_main": 21,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14972,6 +16087,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14985,6 +16101,7 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -14998,6 +16115,7 @@
       "handicap": 0,
       "atk_main": 91,
       "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15011,6 +16129,7 @@
       "handicap": 0,
       "atk_main": 100,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15026,6 +16145,7 @@
       "unlock": "",
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15039,6 +16159,7 @@
       "handicap": 0,
       "atk_main": 53,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15052,6 +16173,7 @@
       "handicap": 0,
       "atk_main": 10,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15065,6 +16187,7 @@
       "handicap": 0,
       "atk_main": 27,
       "atk_alt": 21,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15078,6 +16201,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15093,6 +16217,7 @@
       "unlock": "XF",
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15106,6 +16231,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -15119,6 +16245,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 4,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -15132,6 +16259,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15145,6 +16273,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15158,6 +16287,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 53,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15171,6 +16301,7 @@
       "handicap": 0,
       "atk_main": 76,
       "atk_alt": 63,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15186,6 +16317,7 @@
       "unlock": "",
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15199,6 +16331,7 @@
       "handicap": 0,
       "atk_main": 19,
       "atk_alt": 17,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15212,6 +16345,7 @@
       "handicap": 0,
       "atk_main": 57,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -15225,6 +16359,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 11,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15238,6 +16373,7 @@
       "handicap": 0,
       "atk_main": 117,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15251,6 +16387,7 @@
       "handicap": 0,
       "atk_main": 80,
       "atk_alt": 85,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15264,6 +16401,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15279,6 +16417,7 @@
       "unlock": "XF",
       "atk_main": 17,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15292,6 +16431,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 105,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -15305,6 +16445,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 15,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -15318,6 +16459,7 @@
       "handicap": 0,
       "atk_main": 20,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15331,6 +16473,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15344,6 +16487,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15357,6 +16501,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15372,6 +16517,7 @@
       "unlock": "",
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15385,6 +16531,7 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 23,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -15398,6 +16545,7 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 79,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15411,6 +16559,7 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 102,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
@@ -15424,6 +16573,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15437,6 +16587,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 74,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15450,6 +16601,7 @@
       "handicap": 0,
       "atk_main": 39,
       "atk_alt": 92,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15465,6 +16617,7 @@
       "unlock": "XF",
       "atk_main": 20,
       "atk_alt": 57,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15478,6 +16631,7 @@
       "handicap": 0,
       "atk_main": 79,
       "atk_alt": 109,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15491,6 +16645,7 @@
       "handicap": 0,
       "atk_main": 92,
       "atk_alt": 107,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15504,6 +16659,7 @@
       "handicap": 0,
       "atk_main": 66,
       "atk_alt": 68,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15517,6 +16673,7 @@
       "handicap": 0,
       "atk_main": 62,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15530,6 +16687,7 @@
       "handicap": 0,
       "atk_main": 59,
       "atk_alt": 86,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15543,6 +16701,7 @@
       "handicap": 0,
       "atk_main": 104,
       "atk_alt": 103,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15558,6 +16717,7 @@
       "unlock": "",
       "atk_main": 94,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15571,6 +16731,7 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 41,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -15584,10 +16745,11 @@
       "handicap": 0,
       "atk_main": 15,
       "atk_alt": 66,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -15599,6 +16761,7 @@
       "unlock": "",
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15612,6 +16775,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 56,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -15625,6 +16789,7 @@
       "handicap": 0,
       "atk_main": 35,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15638,6 +16803,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 32,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15651,6 +16817,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15666,6 +16833,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15679,6 +16847,7 @@
       "handicap": 0,
       "atk_main": 105,
       "atk_alt": 38,
+      "atk_alt_2": 0,
       "stage": 2
     },
     {
@@ -15692,6 +16861,7 @@
       "handicap": 0,
       "atk_main": 47,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
@@ -15707,6 +16877,7 @@
       "unlock": "",
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15720,6 +16891,7 @@
       "handicap": 0,
       "atk_main": 65,
       "atk_alt": 72,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15733,6 +16905,7 @@
       "handicap": 0,
       "atk_main": 102,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15746,6 +16919,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 25,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15759,6 +16933,7 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 117,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15772,6 +16947,7 @@
       "handicap": 0,
       "atk_main": 109,
       "atk_alt": 43,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15785,6 +16961,7 @@
       "handicap": 0,
       "atk_main": 51,
       "atk_alt": 28,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15800,6 +16977,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 51,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15813,6 +16991,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15826,6 +17005,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15839,6 +17019,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15852,6 +17033,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15865,6 +17047,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15878,6 +17061,7 @@
       "handicap": 0,
       "atk_main": 68,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15893,6 +17077,7 @@
       "unlock": "",
       "atk_main": 28,
       "atk_alt": 54,
+      "atk_alt_2": 0,
       "stage": 8
     },
     {
@@ -15906,6 +17091,7 @@
       "handicap": 0,
       "atk_main": 48,
       "atk_alt": 73,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15919,6 +17105,7 @@
       "handicap": 0,
       "atk_main": 86,
       "atk_alt": 104,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
@@ -15932,10 +17119,11 @@
       "handicap": 0,
       "atk_main": 105,
       "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
-      "name": "Omnipet X",
+      "name": "Omnimon X",
       "power": 202,
       "attribute": "Va",
       "hp": 20,
@@ -15945,6 +17133,7 @@
       "handicap": 0,
       "atk_main": 107,
       "atk_alt": 110,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
@@ -15960,6 +17149,7 @@
       "unlock": "XF",
       "atk_main": 32,
       "atk_alt": 80,
+      "atk_alt_2": 0,
       "stage": 7
     }
   ]

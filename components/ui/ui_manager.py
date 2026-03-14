@@ -55,6 +55,9 @@ class UIManager:
         self.active_menu = None
         self.active_stats_panel = None
         
+        # External border visibility (can be disabled for scenes like tutorial)
+        self.show_external_border = True
+        
         # Color animation system - smooth interpolation
         self.is_animating_colors = False
         self.color_animation_frame_counter = 0
@@ -206,6 +209,10 @@ class UIManager:
             colors = {"bg": CYAN_DARK, "fg": CYAN, "highlight": CYAN_LIGHT, "black": BLACK, "grey": GREY}
         elif self.theme == "LIME":
             colors = {"bg": LIME_DARK, "fg": LIME, "highlight": LIME_LIGHT, "black": BLACK, "grey": GREY}
+        elif self.theme == "VIOLET":
+            colors = {"bg": VIOLET_DARK, "fg": VIOLET, "highlight": VIOLET_LIGHT, "black": BLACK, "grey": GREY}
+        elif self.theme == "TEAL":
+            colors = {"bg": TEAL_DARK, "fg": TEAL, "highlight": TEAL_LIGHT, "black": BLACK, "grey": GREY}
         else:
             colors = {"bg": BLACK, "fg": GREY, "highlight": GREY, "black": BLACK, "grey": GREY}
         
@@ -423,13 +430,17 @@ class UIManager:
         if hasattr(component, "focusable") and component.focusable:
             self.focusable_components.append(component)
             
-            # If this is the first focusable component, focus it
-            if len(self.focusable_components) == 1 and self.focused_index == -1:
-                self.focused_index = 0
-                component.focused = True
-                component.needs_redraw = True
-                if hasattr(component, 'on_focus_gained'):
-                    component.on_focus_gained()
+            # If we don't have a valid focus, try to set focus to first visible focusable
+            if self.focused_index == -1 and self.focusable_components:
+                # Find first visible focusable component
+                for i, fc in enumerate(self.focusable_components):
+                    if not hasattr(fc, 'visible') or fc.visible:
+                        self.focused_index = i
+                        fc.focused = True
+                        fc.needs_redraw = True
+                        if hasattr(fc, 'on_focus_gained'):
+                            fc.on_focus_gained()
+                        break
         
         return component
     
@@ -441,12 +452,34 @@ class UIManager:
             if component in self.focusable_components:
                 # Check if this was the focused component
                 was_focused = self.focusable_components[self.focused_index] == component if 0 <= self.focused_index < len(self.focusable_components) else False
+                old_index = self.focusable_components.index(component)
                 
                 self.focusable_components.remove(component)
                 
                 # Reset focus index if it's now invalid or if we removed the focused component
-                if was_focused or self.focused_index >= len(self.focusable_components):
+                if self.focused_index >= len(self.focusable_components):
                     self.focused_index = -1
+                    # Try to focus a remaining component
+                    if self.focusable_components:
+                        for i, fc in enumerate(self.focusable_components):
+                            if not hasattr(fc, 'visible') or fc.visible:
+                                self.focused_index = i
+                                fc.focused = True
+                                fc.needs_redraw = True
+                                if hasattr(fc, 'on_focus_gained'):
+                                    fc.on_focus_gained()
+                                break
+                elif was_focused and self.focusable_components:
+                    # We removed the focused component but index is still valid
+                    # Try to focus the component at the same index or wrap around
+                    new_index = min(old_index, len(self.focusable_components) - 1)
+                    self.focused_index = new_index
+                    if 0 <= new_index < len(self.focusable_components):
+                        fc = self.focusable_components[new_index]
+                        fc.focused = True
+                        fc.needs_redraw = True
+                        if hasattr(fc, 'on_focus_gained'):
+                            fc.on_focus_gained()
                     
             component.manager = None
             if DEBUG_SCALE:
@@ -763,7 +796,21 @@ class UIManager:
         return self.shapes_equal(shape1, shape2)
     
     def find_nearest_component_in_direction(self, direction):
-        """Find the nearest focusable component in the given direction"""
+        """Find the nearest focusable component in the given direction.
+        
+        Navigation priority:
+        - UP: TOP, then TOP-LEFT, then TOP-RIGHT
+        - DOWN: DOWN, then DOWN-LEFT, then DOWN-RIGHT  
+        - LEFT: LEFT, then LEFT-UP, then LEFT-DOWN
+        - RIGHT: RIGHT, then RIGHT-UP, then RIGHT-DOWN
+        
+        Source anchor points:
+        - UP/LEFT: top-left corner
+        - RIGHT: bottom-right corner
+        - DOWN: bottom-left corner
+        
+        Target reference point: always top-left corner
+        """
         if self.focused_index < 0 or not self.focusable_components:
             return -1
             
@@ -774,52 +821,95 @@ class UIManager:
         if hasattr(current_component, 'get_focused_sub_rect'):
             current_rect = current_component.get_focused_sub_rect() or current_rect
         
-        current_center = (current_rect.centerx, current_rect.centery)
+        # Select anchor point based on direction
+        if direction == "UP":
+            anchor = (current_rect.left, current_rect.top)  # top_left
+        elif direction == "LEFT":
+            anchor = (current_rect.left, current_rect.top)  # top_left  
+        elif direction == "RIGHT":
+            anchor = (current_rect.right, current_rect.bottom)  # bottom_right
+        else:  # DOWN
+            anchor = (current_rect.left, current_rect.bottom)  # bottom_left
         
-        best_component_index = -1
-        best_distance = float('inf')
+        candidates = []
         
         for i, component in enumerate(self.focusable_components):
             if i == self.focused_index:
                 continue
             
-            # Skip invisible components
+            # Skip invisible or non-focusable components
             if hasattr(component, 'visible') and not component.visible:
+                continue
+            if hasattr(component, 'focusable') and not component.focusable:
                 continue
                 
             target_rect = component.rect
-            target_center = (target_rect.centerx, target_rect.centery)
             
-            # Check if component is in the right direction
-            if direction == "UP" and target_center[1] >= current_center[1]:
-                continue
-            elif direction == "DOWN" and target_center[1] <= current_center[1]:
-                continue
-            elif direction == "LEFT" and target_center[0] >= current_center[0]:
-                continue
-            elif direction == "RIGHT" and target_center[0] <= current_center[0]:
-                continue
+            # Target reference point is always top-left
+            reference = (target_rect.left, target_rect.top)
             
-            # Calculate distance with direction preference
-            dx = target_center[0] - current_center[0]
-            dy = target_center[1] - current_center[1]
+            # Calculate relative position
+            dx = reference[0] - anchor[0]
+            dy = reference[1] - anchor[1]
             
-            if direction in ["UP", "DOWN"]:
-                # Prefer vertical movement, penalize horizontal deviation
-                primary_distance = abs(dy)
-                secondary_distance = abs(dx) * 2  # Penalty for horizontal deviation
-            else:  # LEFT or RIGHT
-                # Prefer horizontal movement, penalize vertical deviation
-                primary_distance = abs(dx)
-                secondary_distance = abs(dy) * 2  # Penalty for vertical deviation
+            # Determine priority based on direction
+            # Lower priority value = better match
+            priority = None
             
-            total_distance = primary_distance + secondary_distance
+            if direction == "UP":
+                if dy < 0:  # Target is above
+                    if dx == 0 or (reference[0] >= anchor[0] and reference[0] < anchor[0] + current_rect.width):
+                        priority = 0  # Directly above (aligned)
+                    elif dx < 0:
+                        priority = 1  # Top-left
+                    else:
+                        priority = 2  # Top-right
+                        
+            elif direction == "DOWN":
+                if dy > 0:  # Target is below
+                    if dx == 0 or (reference[0] >= anchor[0] and reference[0] < anchor[0] + current_rect.width):
+                        priority = 0  # Directly below (aligned)
+                    elif dx < 0:
+                        priority = 1  # Down-left
+                    else:
+                        priority = 2  # Down-right
+                        
+            elif direction == "LEFT":
+                if dx < 0:  # Target is to the left
+                    if dy == 0 or (reference[1] >= anchor[1] - current_rect.height and reference[1] < anchor[1]):
+                        priority = 0  # Directly left (aligned)
+                    elif dy < 0:
+                        priority = 1  # Left-up
+                    else:
+                        priority = 2  # Left-down
+                        
+            elif direction == "RIGHT":
+                if dx > 0:  # Target is to the right
+                    if dy == 0 or (reference[1] <= anchor[1] and reference[1] > anchor[1] - current_rect.height):
+                        priority = 0  # Directly right (aligned)
+                    elif dy < 0:
+                        priority = 1  # Right-up
+                    else:
+                        priority = 2  # Right-down
             
-            if total_distance < best_distance:
-                best_distance = total_distance
-                best_component_index = i
+            if priority is not None:
+                # Calculate distance for sorting within same priority
+                distance = (dx * dx + dy * dy) ** 0.5
+                candidates.append({
+                    'index': i,
+                    'priority': priority,
+                    'distance': distance,
+                    'dx': abs(dx),
+                    'dy': abs(dy)
+                })
         
-        return best_component_index
+        if not candidates:
+            return -1
+        
+        # Sort by: priority first, then distance
+        candidates.sort(key=lambda c: (c['priority'], c['distance']))
+        
+        return candidates[0]['index']
     
     def focus_direction(self, direction):
         """Move focus in the specified direction (UP, DOWN, LEFT, RIGHT)"""
@@ -894,8 +984,14 @@ class UIManager:
         # Handle mouse clicks differently from keyboard actions
         if event_type == "LCLICK":
             # For mouse clicks, find the component under the mouse and handle it there
-            if hasattr(self, '_input_manager'):
+            # Try to get mouse position from input_manager first, then from event_data
+            mouse_pos = None
+            if hasattr(self, '_input_manager') and self._input_manager:
                 mouse_pos = self._input_manager.get_mouse_position()
+            elif event_data and "pos" in event_data:
+                mouse_pos = event_data["pos"]
+            
+            if mouse_pos:
                 runtime_globals.game_console.log(f"[UIManager] LCLICK at {mouse_pos}, checking {len(self.components)} components")
                 
                 # Check components in reverse order (top to bottom) for mouse clicks
@@ -965,7 +1061,7 @@ class UIManager:
                                 
                                 # Activate the component (same as pressing A)
                                 if hasattr(component, 'handle_event'):
-                                    component.handle_event("A")
+                                    component.handle_event(("A", None))
                                 elif hasattr(component, 'activate'):
                                     component.activate()
                                 elif hasattr(component, 'on_activate'):
@@ -1139,7 +1235,7 @@ class UIManager:
             elif hasattr(focused_component, 'on_activate'):
                 return focused_component.on_activate()
             elif hasattr(focused_component, 'handle_event'):
-                return focused_component.handle_event("A")
+                return focused_component.handle_event(("A", None))
         return False
     
     def set_input_manager(self, input_manager):
@@ -1244,22 +1340,20 @@ class UIManager:
             if component.visible and component.is_dynamic:
                 component.draw(surface, ui_local=False)
             
-        # Draw external border if UI is smaller than screen AND there's a visible Background component
-        if self.ui_offset_x > 0 or self.ui_offset_y > 0:
-            # Only draw the external border when a visible Background component is present
-            has_visible_background = any(
-                isinstance(c, Background) and (not hasattr(c, 'visible') or c.visible)
-                for c in self.components
-            )
-            if has_visible_background:
-                colors = self.get_theme_colors()
-                border_color = colors["fg"]  # Use main theme color (PURPLE for PURPLE theme)
-                border_size = 2  # Small 2-pixel border
+        # Draw external border ONLY if screen is bigger than UI (UI doesn't fill screen)
+        # Example: 300x300 screen with 240x240 UI = show border
+        # Example: 480x480 screen with 480x480 UI = no border
+        # Can be disabled with show_external_border = False
+        screen_width, screen_height = self.screen_size
+        if self.show_external_border and (self.ui_width < screen_width or self.ui_height < screen_height):
+            colors = self.get_theme_colors()
+            border_color = colors["fg"]  # Use main theme color
+            border_size = 2  # Small 2-pixel border
 
-                # Draw border around the entire UI area (external to the UI)
-                ui_rect = pygame.Rect(self.ui_offset_x - border_size, self.ui_offset_y - border_size,
-                                    self.ui_width + 2 * border_size, self.ui_height + 2 * border_size)
-                pygame.draw.rect(surface, border_color, ui_rect, width=border_size)
+            # Draw border around the entire UI area (external to the UI)
+            ui_rect = pygame.Rect(self.ui_offset_x - border_size, self.ui_offset_y - border_size,
+                                self.ui_width + 2 * border_size, self.ui_height + 2 * border_size)
+            pygame.draw.rect(surface, border_color, ui_rect, width=border_size)
             
         # Draw modal components on top (menu first, then tooltip on top of everything)
         if self.active_menu and self.active_menu.visible:
@@ -1292,21 +1386,24 @@ class UIManager:
                     component.cached_surface = component.render()
                     component.needs_redraw = False
         
-        # Draw border on master surface if theme has it
-        colors = self.get_theme_colors()
-        if self.theme != "PURPLE":
-            if "border" in colors:
-                border_color = colors["border"]
-                border_size = 2
-                border_rect = pygame.Rect(0, 0, self.ui_width, self.ui_height)
-                pygame.draw.rect(self.master_ui_surface, border_color, border_rect, width=border_size)
-        else:
-            # For PURPLE theme (default), draw purple border
-            if "fg" in colors:
-                border_color = colors["fg"]
-                border_size = 2
-                border_rect = pygame.Rect(0, 0, self.ui_width, self.ui_height)
-                pygame.draw.rect(self.master_ui_surface, border_color, border_rect, width=border_size)
+        # Draw border on master surface ONLY if screen is bigger than UI
+        # This is the internal border (on the UI surface itself)
+        screen_width, screen_height = self.screen_size
+        if self.ui_width < screen_width or self.ui_height < screen_height:
+            colors = self.get_theme_colors()
+            if self.theme != "PURPLE":
+                if "border" in colors:
+                    border_color = colors["border"]
+                    border_size = 2
+                    border_rect = pygame.Rect(0, 0, self.ui_width, self.ui_height)
+                    pygame.draw.rect(self.master_ui_surface, border_color, border_rect, width=border_size)
+            else:
+                # For PURPLE theme (default), draw purple border
+                if "fg" in colors:
+                    border_color = colors["fg"]
+                    border_size = 2
+                    border_rect = pygame.Rect(0, 0, self.ui_width, self.ui_height)
+                    pygame.draw.rect(self.master_ui_surface, border_color, border_rect, width=border_size)
         
         # Mark as clean
         self.master_ui_dirty = False
@@ -1363,7 +1460,8 @@ class UIManager:
         Returns:
             pygame.Surface: Loaded sprite surface, or None if file not found
         """
-        sprite_scale = self.get_sprite_scale()
+        # NEW SYSTEM: Always load _1 sprites and scale them
+        sprite_scale = 1  # Always load _1 suffix
         
         # Build filename based on pattern
         if suffix:
@@ -1374,20 +1472,18 @@ class UIManager:
         filepath = f"assets/ui/{filename}"
         
         if DEBUG_SCALE:
-            runtime_globals.game_console.log(f"[UIManager] Loading integer-scaled sprite: {filepath} (UI scale: {self.ui_scale})")
+            runtime_globals.game_console.log(f"[UIManager] Loading _1 sprite: {filepath} (will scale by ui_scale: {self.ui_scale})")
         
         try:
             sprite = image_load(filepath)
             
-            # Special case for 3x UI scale: resize 2x sprite to 3x
-            if self.ui_scale == 3 and sprite_scale == 2:
+            # Apply integer scaling to match UI scale
+            if self.ui_scale > 1:
                 original_size = sprite.get_size()
-                # Scale by 1.5x to go from 2x sprite to 3x UI scale
-                scale_factor = 1.5
-                new_size = (int(original_size[0] * scale_factor), int(original_size[1] * scale_factor))
+                new_size = (original_size[0] * self.ui_scale, original_size[1] * self.ui_scale)
                 sprite = pygame.transform.scale(sprite, new_size)
                 if DEBUG_SCALE:
-                    runtime_globals.game_console.log(f"[UIManager] Resized 2x sprite from {original_size} to {new_size} for 3x UI scale")
+                    runtime_globals.game_console.log(f"[UIManager] Scaled _1 sprite from {original_size} to {new_size} for {self.ui_scale}x UI scale")
             
             if DEBUG_SCALE:
                 runtime_globals.game_console.log(f"[UIManager] Successfully loaded sprite: {filepath}")

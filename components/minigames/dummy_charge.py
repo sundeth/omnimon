@@ -44,6 +44,7 @@ class DummyCharge:
     def update(self):
         pass
 
+
     def handle_event(self, event):
         """Process input events (button presses)."""
         event_type, event_data = event

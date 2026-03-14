@@ -63,27 +63,29 @@ class WindowBackground:
             module_name = game_globals.background_module_name
 
             if not name or not module_name:
-                runtime_globals.game_console.log("[!] Missing background or module name.")
-                self.image = None
-                return
+                # Use boot background if no background is set
+                runtime_globals.game_console.log("[!] No background set, using boot background.")
+                path = "assets/Splash.png"
+                boot = True
+            
+            if not boot:
+                module = get_module(module_name)
+                day_night = True
+                for bg in getattr(module, "backgrounds", []):
+                    if bg["name"] == name:
+                        day_night = bg.get("day_night", True)
+                        break
 
-            module = get_module(module_name)
-            day_night = True
-            for bg in getattr(module, "backgrounds", []):
-                if bg["name"] == name:
-                    day_night = bg.get("day_night", True)
-                    break
+                suffix = f"_{self.time_of_day}" if day_night else ""
+                base_filename = f"bg_{name}{suffix}"
 
-            suffix = f"_{self.time_of_day}" if day_night else ""
-            base_filename = f"bg_{name}{suffix}"
+                high_path = os.path.join(module.folder_path, "backgrounds", f"{base_filename}_high.png")
+                normal_path = os.path.join(module.folder_path, "backgrounds", f"{base_filename}.png")
 
-            high_path = os.path.join(module.folder_path, "backgrounds", f"{base_filename}_high.png")
-            normal_path = os.path.join(module.folder_path, "backgrounds", f"{base_filename}.png")
-
-            if game_globals.background_high_res and os.path.exists(resolve_path(high_path)):
-                path = high_path
-            else:
-                path = normal_path
+                if game_globals.background_high_res and os.path.exists(resolve_path(high_path)):
+                    path = high_path
+                else:
+                    path = normal_path
 
         # Avoid reloading if already loaded
         if path == self.last_image_path:

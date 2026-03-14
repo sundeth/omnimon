@@ -5,7 +5,10 @@
 import math
 import random
 import pygame
+from typing import List, Optional
 from components.minigames.count_match import CountMatch
+from components.minigames.count_match_classic import CountMatchClassic
+from components.minigames.count_match_z import CountMatchZ
 from components.minigames.dummy_charge import DummyCharge
 from components.minigames.shake_punch import ShakePunch
 from components.minigames.xai_roll import XaiRoll
@@ -19,7 +22,7 @@ from components.ui import ui_constants
 from core import game_globals, runtime_globals
 from core.animation import PetFrame
 from core.combat.game_battle import GameBattle
-from core.combat.sim.models import Digimon
+from core.combat.sim.models import Digimon, BattleProtocol
 from core.game_module import sprite_load
 from core.utils.module_utils import get_module
 from core.utils.pet_utils import distribute_pets_evenly, get_battle_targets
@@ -48,12 +51,13 @@ class BattleEncounter:
     # Region: Setup & State
     #========================
 
-    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False):
+    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False, is_random_encounter=False):
         """
         Initializes the BattleEncounter, loading graphics and setting initial state.
         """
         # Load module-specific attack sprites for pets and enemies
         self.pvp_mode = pvp_mode
+        self.is_random_encounter = is_random_encounter
         self.module_attack_sprites = {}
         self.module = get_module(module)
         self.set_initial_state(area, round, version)
@@ -107,6 +111,12 @@ class BattleEncounter:
         # Cache for result screen rendering (everything except animated pets)
         self.result_surface_cache = None
         self.result_animation_started = False
+
+        # Load KO overlay sprite, scaled to pet size (preserving aspect ratio)
+        self._ko_sprite = self._load_ko_sprite(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
+        boss_w = int(runtime_globals.PET_WIDTH * constants.BOSS_MULTIPLIER)
+        boss_h = int(runtime_globals.PET_HEIGHT * constants.BOSS_MULTIPLIER)
+        self._ko_sprite_boss = self._load_ko_sprite(boss_w, boss_h)
         
 
     def set_initial_state(self, area=0, round=0, version=1):
@@ -151,6 +161,10 @@ class BattleEncounter:
             self.round = round if round != 0 else game_globals.battle_round[self.module.name]
 
             self.boss = self.module.is_boss(self.area, self.round, version)
+            # For "Next and Reset" style, only flag as boss on the very last area
+            if self.boss and getattr(self.module, 'adventure_style', 'Area Selection') == "Next and Reset":
+                if self.module.area_exists(self.area + 1):
+                    self.boss = False
             self.enemy_entry_counter = runtime_globals.PET_WIDTH + (2 * runtime_globals.UI_SCALE)
 
             # --- Apply XAI roll boost (Seven Switch) ---
@@ -243,6 +257,8 @@ class BattleEncounter:
         if not hasattr(self, 'battle_player') or self.battle_player is None:
             return
         bp = self.battle_player
+        # Set enemy_first on GameBattle so it knows to increment turns after pet attacks
+        bp.enemy_first = True
         n = max(len(bp.team1), len(bp.team2))
         for i in range(n):
             if i < len(bp.team1_shot):
@@ -267,6 +283,8 @@ class BattleEncounter:
         
         # Clean up minigame instances
         self.count_match = None
+        self.count_match_classic = None
+        self.count_match_z = None
         self.dummy_charge = None
         self.shake_punch = None
         self.xai_roll = None
@@ -366,12 +384,12 @@ class BattleEncounter:
             self.hp_bar.set_values(self.battle_player.team2_total_hp, self.battle_player.team1_total_hp)
         
         # Initialize debug logs for PvP
-        if constants.DEBUG_MODE:
+        if game_globals.configuration.debug_mode:
             self.init_debug_battle_logs()
 
     def init_debug_battle_logs(self):
         """Initialize debug battle log entries for each pet position."""
-        if not constants.DEBUG_MODE:
+        if not game_globals.configuration.debug_mode:
             return
         
         num_pets = len(get_battle_targets()) if not self.pvp_mode else len(self.battle_player.team1)
@@ -385,7 +403,7 @@ class BattleEncounter:
 
     def update_debug_battle_logs(self):
         """Update debug battle logs with current phase information and hit results."""
-        if not constants.DEBUG_MODE or not hasattr(self, 'debug_battle_logs'):
+        if not game_globals.configuration.debug_mode or not hasattr(self, 'debug_battle_logs'):
             return
             
         for i in range(len(self.debug_battle_logs)):
@@ -524,6 +542,19 @@ class BattleEncounter:
         for enemy in self.enemies:
             if enemy:
                 enemy.load_sprite(self.module.name, self.boss)
+
+    def _load_ko_sprite(self, target_w, target_h):
+        """Load KO.png and scale it to fit within target dimensions, preserving aspect ratio."""
+        raw = sprite_load(constants.KO_PATH)
+        if raw is None:
+            return None
+        orig_w, orig_h = raw.get_size()
+        if orig_w == 0 or orig_h == 0:
+            return None
+        ratio = min(target_w / orig_w, target_h / orig_h)
+        new_w = max(1, int(orig_w * ratio))
+        new_h = max(1, int(orig_h * ratio))
+        return pygame.transform.smoothscale(raw, (new_w, new_h)).convert_alpha()
 
     def load_hit_animation(self):
         """
@@ -675,16 +706,40 @@ class BattleEncounter:
 
     def setup_charge(self):
         """
-        Setup logic for the charge phase, varies by ruleset.
+        Setup logic for the charge phase, varies by module's battle_minigame setting.
+        battle_minigame options: "None", "Dummy Bar", "Count Match (Color)", "Count Match", 
+                                 "Count Match (Z)", "Xai Roll+Bar", "Xai Bar", "Punch", "Mogera"
         """
-        if self.module.ruleset == "dmc":
-            # DMC ruleset: Dummy charge minigame
+        minigame = getattr(self.module, 'battle_minigame', 'Dummy Bar')
+        pets = get_battle_targets()
+        
+        if minigame == "None":
+            # Skip charge phase, use default minigame result of 2
+            self.strength = 2
+            self.minigame_result = 2
+        elif minigame == "Dummy Bar":
+            # Dummy charge minigame (A button presses)
             self.bar_level = 14
             self.battle_player.reset_frame_counters()
             self.dummy_charge = DummyCharge(self.ui_manager, "RED")
-        elif self.module.ruleset == "dmx":
-            # DMX ruleset: XAI roll and bar
-            self.xai_phase = 1  # Start Xai roll
+        elif minigame == "Count Match (Color)":
+            # Color count match minigame (shake-based with attribute colors)
+            self.rotation_index = 3
+            if not self.count_match:
+                self.count_match = CountMatch(self.ui_manager, pets[0] if pets else None, self.animated_sprite)
+            self.count_match.set_phase("count")
+        elif minigame == "Count Match":
+            # Count Match Classic (shake-based, 0-14 like Dummy Bar)
+            self.bar_level = 14
+            self.count_match_classic = CountMatchClassic(self.ui_manager)
+        elif minigame == "Count Match (Z)":
+            # Count Match Z (arrow-based with attribute scoring)
+            if not self.count_match_z:
+                self.count_match_z = CountMatchZ(self.ui_manager, pets[0] if pets else None, self.animated_sprite)
+            self.count_match_z.set_phase("count")
+        elif minigame == "Xai Roll+Bar":
+            # XAI roll and bar minigame
+            self.xai_phase = 1
             self.xai_roll = XaiRoll(
                 x=runtime_globals.SCREEN_WIDTH // 2 - int(100 * runtime_globals.UI_SCALE) // 2,
                 y=runtime_globals.SCREEN_HEIGHT // 2 - int(100 * runtime_globals.UI_SCALE) // 2,
@@ -693,18 +748,24 @@ class BattleEncounter:
                 xai_number=1
             )
             self.xai_roll.roll()
-        elif self.module.ruleset == "penc":
-            # PenC ruleset: Count match minigame
-            self.rotation_index = 3
-            # Ensure count match minigame exists
-            if not self.count_match:
-                pets = get_battle_targets()
-                self.count_match = CountMatch(self.ui_manager, pets[0], self.animated_sprite)
-            self.count_match.set_phase("count")
-        elif self.module.ruleset == "vb":
-            # VB ruleset: Shake punch minigame
+        elif minigame == "Xai Bar":
+            # XAI bar only (skips roll, uses daily xai value)
+            self.xai_phase = 2
+            self.xai_bar = XaiBar(
+                x=runtime_globals.SCREEN_WIDTH // 2 - int(152 * runtime_globals.UI_SCALE) // 2,
+                y=runtime_globals.SCREEN_HEIGHT // 2 - int(72 * runtime_globals.UI_SCALE) // 2 + int(48 * runtime_globals.UI_SCALE),
+                xai_number=game_globals.xai,
+                pet=pets[0] if pets else None
+            )
+            self.xai_bar.start()
+        elif minigame == "Punch":
+            # Shake punch minigame
             self.bar_level = 20
-            pets = get_battle_targets()
+            self.shake_punch = ShakePunch(self.ui_manager, pets)
+            self.shake_punch.set_phase("punch")
+        elif minigame == "Mogera":
+            # Mogera minigame - uses same shake punch component for now
+            self.bar_level = 20
             self.shake_punch = ShakePunch(self.ui_manager, pets)
             self.shake_punch.set_phase("punch")
 
@@ -712,38 +773,54 @@ class BattleEncounter:
         """
         Update logic for the charge phase, handles input and transitions to pet_charge phase.
         """
-        # Update minigames
-        if self.module.ruleset == "dmc" and self.dummy_charge:
+        minigame = getattr(self.module, 'battle_minigame', 'Dummy Bar')
+        
+        # Update minigames based on battle_minigame setting
+        if minigame == "None":
+            # Immediately transition - no minigame
+            pass
+        elif minigame == "Dummy Bar" and self.dummy_charge:
             self.dummy_charge.update()
             self.strength = self.dummy_charge.strength
-        elif self.module.ruleset == "penc" and self.count_match:
+        elif minigame == "Count Match (Color)" and self.count_match:
             self.count_match.update()
             self.press_counter = self.count_match.get_press_counter()
             self.rotation_index = self.count_match.get_rotation_index()
-        elif self.module.ruleset == "vb" and self.shake_punch:
+        elif minigame == "Count Match" and self.count_match_classic:
+            self.count_match_classic.update()
+            self.strength = self.count_match_classic.strength
+        elif minigame == "Count Match (Z)" and self.count_match_z:
+            self.count_match_z.update()
+            self.press_counter = self.count_match_z.get_press_counter()
+        elif minigame == "Punch" and self.shake_punch:
             self.shake_punch.update()
             self.strength = self.shake_punch.get_strength()
-        elif self.module.ruleset == "dmx":
-            if self.xai_phase == 1:
+        elif minigame == "Mogera" and self.shake_punch:
+            self.shake_punch.update()
+            self.strength = self.shake_punch.get_strength()
+        elif minigame in ["Xai Roll+Bar", "Xai Bar"]:
+            if self.xai_phase == 1 and self.xai_roll:
                 self.xai_roll.update()
                 if not self.xai_roll.rolling and not self.xai_roll.stopping:
                     self.xai_phase = 2
+                    pets = get_battle_targets()
                     self.xai_bar = XaiBar(
                         x=runtime_globals.SCREEN_WIDTH // 2 - int(152 * runtime_globals.UI_SCALE) // 2,
                         y=runtime_globals.SCREEN_HEIGHT // 2 - int(72 * runtime_globals.UI_SCALE) // 2 + int(48 * runtime_globals.UI_SCALE),
-                        xai_number=self.xai_number,
-                        pet=self.attacking_pet if hasattr(self, "attacking_pet") and self.attacking_pet else get_battle_targets()[0]
+                        xai_number=getattr(self, 'xai_number', game_globals.xai),
+                        pet=pets[0] if pets else None
                     )
                     self.xai_bar.start()
-            elif self.xai_phase == 2:
+            elif self.xai_phase == 2 and self.xai_bar:
                 self.xai_bar.update()
         
         # Check if minigame time is up and transition to battle
         time_up = False
-        if self.module.ruleset == "vb" and self.shake_punch:
-            # VB uses different timing
+        if minigame == "None":
+            time_up = True  # Immediately proceed
+        elif minigame in ["Punch", "Mogera"] and self.shake_punch:
             time_up = self.shake_punch.is_time_up() or self.strength >= 20
-        elif self.module.ruleset == "dmx":
+        elif minigame in ["Xai Roll+Bar", "Xai Bar"]:
             time_up = self.xai_phase == 3
         else:
             time_up = pygame.time.get_ticks() - self.bar_timer > combat_constants.BAR_HOLD_TIME_MS
@@ -755,8 +832,13 @@ class BattleEncounter:
             self.animated_sprite.stop()
             self.battle_player.reset_frame_counters()
             self.battle_player.reset_jump_and_forward()
-            if self.module.ruleset == "penc":
+            # Reset projectile delta-time trackers for the new battle phase
+            self._last_pet_proj_tick = pygame.time.get_ticks()
+            self._last_enemy_proj_tick = pygame.time.get_ticks()
+            if minigame == "Count Match (Color)":
                 self.calculate_results()
+            elif minigame == "Count Match (Z)" and self.count_match_z:
+                self.minigame_result = self.count_match_z.calculate_result()
             self.calculate_combat_for_pairs()
 
     def calculate_results(self):
@@ -838,7 +920,7 @@ class BattleEncounter:
             self.battle_player.bonus = 0
             # Call finish_battle here to update DP, battle number, and win rate for a loss.
             for i, pet in enumerate(self.battle_player.team1):
-                pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds))
+                pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_random_encounter=self.is_random_encounter)
             return
 
         # If victory, calculate XP for winners and bonus
@@ -864,7 +946,7 @@ class BattleEncounter:
             else:
                 self.battle_player.level_up[i] = False
 
-            pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds))
+            pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_random_encounter=self.is_random_encounter)
 
         # --- Prize logic for Victory ---
         self.prize_item = None
@@ -901,20 +983,35 @@ class BattleEncounter:
         self.battle_player.update()
 
         # Update debug battle logs based on current phases
-        if constants.DEBUG_MODE:
+        if game_globals.configuration.debug_mode:
             self.update_debug_battle_logs()
         self.hp_bar.update()
-        # For PvP, always process attacks in the same order (team1 then team2)
-        # The battle log device labels are pre-swapped for clients so the correct attacks are found
-        for i in range(len(self.battle_player.team1)):
-            if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team1_shot[i] and self.battle_player.phase[i] == "pet_attack":
-                self.setup_pet_attack(self.battle_player.team1[i])
-                self.battle_player.team1_shot[i] = False
+        
+        # Process attacks based on enemy_first flag
+        # For DCom battles: enemy attacks first (enemy_first=True)
+        # For normal PvP/battles: player attacks first (enemy_first=False)
+        if self.enemy_first:
+            # Enemy attacks first (DCom V2 protocol - device2 initiates)
+            for i in range(len(self.battle_player.team2)):
+                if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team2_shot[i] and self.battle_player.phase[i] == "enemy_attack":
+                    self.setup_enemy_attack(self.battle_player.team2[i])
+                    self.battle_player.team2_shot[i] = False
+            
+            for i in range(len(self.battle_player.team1)):
+                if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team1_shot[i] and self.battle_player.phase[i] == "pet_attack":
+                    self.setup_pet_attack(self.battle_player.team1[i])
+                    self.battle_player.team1_shot[i] = False
+        else:
+            # Player attacks first (normal order)
+            for i in range(len(self.battle_player.team1)):
+                if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team1_shot[i] and self.battle_player.phase[i] == "pet_attack":
+                    self.setup_pet_attack(self.battle_player.team1[i])
+                    self.battle_player.team1_shot[i] = False
 
-        for i in range(len(self.battle_player.team2)):
-            if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team2_shot[i] and self.battle_player.phase[i] == "enemy_attack":
-                self.setup_enemy_attack(self.battle_player.team2[i])
-                self.battle_player.team2_shot[i] = False
+            for i in range(len(self.battle_player.team2)):
+                if self.battle_player.turns[i] <= self.turn_limit and self.battle_player.team2_shot[i] and self.battle_player.phase[i] == "enemy_attack":
+                    self.setup_enemy_attack(self.battle_player.team2[i])
+                    self.battle_player.team2_shot[i] = False
 
         self.update_battle_pet_projectiles()
         self.update_battle_enemy_projectiles()
@@ -952,6 +1049,8 @@ class BattleEncounter:
         # Get the correct log entry for this turn
         if turn - 1 >= len(self.global_battle_log.battle_log):
             runtime_globals.game_console.log(f"[BattleEncounter] Invalid turn {turn} for pet {pet_index}, log length is {len(self.global_battle_log.battle_log)}")
+            # Still need to set shot_wait so battle can progress to enemy turn
+            self.battle_player.shot_wait[pet_index] = True
             return
         turn_log = self.global_battle_log.battle_log[turn - 1]
 
@@ -959,8 +1058,13 @@ class BattleEncounter:
         # Both devices use the same battle log and same visual team arrangement:
         # Team1 (left) = device1 pets, Team2 (right) = device2 pets
         if self.pvp_mode:
-            # Both host and client: team1 maps to device1
-            device_label = "device1"
+            # For DCom battles, device mapping is swapped: device1=opponent, device2=player
+            # So team1 (player) should look for device2 attacks
+            if hasattr(self, 'is_dcom_mode') and self.is_dcom_mode:
+                device_label = "device2"  # Player is device2 in DCom battle logs
+            else:
+                # Normal PvP: team1 maps to device1
+                device_label = "device1"
         else:
             # PvE: my pets are always device1
             device_label = "device1"
@@ -975,29 +1079,50 @@ class BattleEncounter:
 
         if not attack_entry:
             runtime_globals.game_console.log(f"[BattleEncounter] No attack entry found for pet {pet_index} in turn {turn} for device {device_label}")
+            # Still need to set shot_wait so battle can progress to enemy turn
+            self.battle_player.shot_wait[pet_index] = True
             return
 
-        hits = attack_entry.damage if attack_entry.hit else 0
+        # ALWAYS use the attack pattern value, regardless of hit/miss
+        # The 'damage' field stores the pattern value (1=weak, 2=strong)
+        # The 'hit' field indicates whether the attack connected
+        hits = attack_entry.damage
         defender_idx = attack_entry.defender if attack_entry else 0
 
         if pet_index != defender_idx:
             runtime_globals.game_console.log(f"[BattleEncounter] Pet {pet_index} attacking defender {defender_idx} with hits: {hits}")
 
         # Update debug battle log for this pet
-        if constants.DEBUG_MODE and pet_index < len(self.debug_battle_logs):
+        if game_globals.configuration.debug_mode and pet_index < len(self.debug_battle_logs):
             self.debug_battle_logs[pet_index]["turn"] = turn
             self.debug_battle_logs[pet_index]["arrow"] = ">"
             # Don't show hit info during attack phase, only during charge
 
-        # Choose attack sprite
-        if self.module.ruleset == "dmc":
-            if hits == 2 and getattr(pet, "atk_alt", 0) > 0:
+        # Choose attack sprite based on protocol/ruleset
+        # Cap hits at 5 for animation (bonuses don't affect animation)
+        anim_hits = min(5, hits)
+        
+        if self.module.battle_damage_limit < 3:
+            # DM20/PEN20/DM/DMC: 1-2 attack types, 70% atk_main / 30% atk_alt random
+            if getattr(pet, "atk_alt", 0) > 0 and random.random() < 0.3:
                 atk_id = str(pet.atk_alt)
             else:
                 atk_id = str(pet.atk_main)
         else:
-            if getattr(pet, "atk_alt", 0) > 0 and hits >= 3:
-                atk_id = str(pet.atk_alt)
+            # DMX/PENZ/INTERNAL_PVE: 1-5 attack types
+            # 1-2 = atk_main, 3-4 = atk_alt (fallback to atk_main), 5 = atk_alt2 (fallback to atk_alt/atk_main)
+            if anim_hits >= 5:
+                if getattr(pet, "atk_alt2", 0) > 0:
+                    atk_id = str(pet.atk_alt2)
+                elif getattr(pet, "atk_alt", 0) > 0:
+                    atk_id = str(pet.atk_alt)
+                else:
+                    atk_id = str(pet.atk_main)
+            elif anim_hits >= 3:
+                if getattr(pet, "atk_alt", 0) > 0:
+                    atk_id = str(pet.atk_alt)
+                else:
+                    atk_id = str(pet.atk_main)
             else:
                 atk_id = str(pet.atk_main)
         atk_sprite = self.get_attack_sprite(pet, atk_id)
@@ -1021,20 +1146,41 @@ class BattleEncounter:
         rotated_sprite = pygame.transform.rotate(atk_sprite, angle)
 
         self.battle_player.team1_projectiles[pet_index] = []
-        if self.module.ruleset in ["dmc", "penc"] and self.module.battle_damage_limit < 3:
-            if hits == 2:
+        s = runtime_globals.UI_SCALE
+        base_pos = [x, y]
+        base_tgt = [target_x, target_y]
+        if self.module.battle_damage_limit < 3:
+            # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
+            if anim_hits >= 2:
                 rotated_sprite = pygame.transform.scale2x(rotated_sprite.copy())
             self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, y], [target_x, target_y], attack_entry])
         else:
-            if hits == 4:
+            # DMX/PENZ/INTERNAL_PVE: multi-sprite attacks combined into single surface
+            if anim_hits >= 5:
+                # Critical: double size sprite
                 rotated_sprite = pygame.transform.scale2x(rotated_sprite.copy())
                 self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, y], [target_x, target_y], attack_entry])
+            elif anim_hits == 4:
+                # Double strong: 2 sprites combined (or 3 if no atk_alt)
+                if getattr(pet, "atk_alt", 0) > 0:
+                    offsets = [(0, 0), (-20*s, -10*s)]
+                else:
+                    offsets = [(0, 0), (-20*s, -10*s), (-40*s, 10*s)]
+                self.battle_player.team1_projectiles[pet_index].append(
+                    self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
+            elif anim_hits == 3:
+                if getattr(pet, "atk_alt", 0) > 0:
+                    self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, y], [target_x, target_y], attack_entry])
+                else:
+                    offsets = [(0, 0), (-20*s, -10*s)]
+                    self.battle_player.team1_projectiles[pet_index].append(
+                        self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
+            elif anim_hits == 2:
+                offsets = [(0, 0), (-20*s, -10*s)]
+                self.battle_player.team1_projectiles[pet_index].append(
+                    self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
             else:
                 self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, y], [target_x, target_y], attack_entry])
-                if hits > 1:
-                    self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x - (20 * runtime_globals.UI_SCALE), y - (10 * runtime_globals.UI_SCALE)], [target_x - (20 * runtime_globals.UI_SCALE), target_y - (10 * runtime_globals.UI_SCALE)], attack_entry])
-                if hits == 3:
-                    self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x - (40 * runtime_globals.UI_SCALE), y + (10 * runtime_globals.UI_SCALE)], [target_x - (40 * runtime_globals.UI_SCALE), target_y + (10 * runtime_globals.UI_SCALE)], attack_entry])
 
     def setup_enemy_attack(self, enemy):
         """
@@ -1050,6 +1196,8 @@ class BattleEncounter:
         # Get the correct log entry for this turn
         if turn - 1 >= len(self.global_battle_log.battle_log):
             runtime_globals.game_console.log(f"[BattleEncounter] Invalid turn {turn} for enemy {enemy_index}, log length is {len(self.global_battle_log.battle_log)}")
+            # Still need to set shot_wait so battle can progress
+            self.battle_player.shot_wait[enemy_index] = True
             return
         turn_log = self.global_battle_log.battle_log[turn - 1]
 
@@ -1057,8 +1205,13 @@ class BattleEncounter:
         # Both devices use the same battle log and same visual team arrangement:
         # Team1 (left) = device1 pets, Team2 (right) = device2 pets
         if self.pvp_mode:
-            # Both host and client: team2 maps to device2
-            device_label = "device2"
+            # For DCom battles, device mapping is swapped: device1=opponent, device2=player
+            # So team2 (enemy) should look for device1 attacks
+            if hasattr(self, 'is_dcom_mode') and self.is_dcom_mode:
+                device_label = "device1"  # Opponent is device1 in DCom battle logs
+            else:
+                # Normal PvP: team2 maps to device2
+                device_label = "device2"
         else:
             # PvE: enemy attacks are always device2
             device_label = "device2"
@@ -1073,29 +1226,52 @@ class BattleEncounter:
 
         if not attack_entries:
             runtime_globals.game_console.log(f"[BattleEncounter] No attack entries found for enemy {enemy_index} in turn {turn} for device {device_label}")
+            # Still need to set shot_wait so battle can progress to next turn
+            self.battle_player.shot_wait[enemy_index] = True
             return
 
-        # Choose attack sprite
-        hits = attack_entries[0].damage if attack_entries and attack_entries[0].hit else 0
+        # ALWAYS use the attack pattern value, regardless of hit/miss
+        # The 'damage' field stores the pattern value (1=weak, 2=strong)
+        # The 'hit' field indicates whether the attack connected
+        hits = attack_entries[0].damage if attack_entries else 0
+        # Cap hits at 5 for animation (bonuses don't affect animation)
+        anim_hits = min(5, hits)
         
         # Update debug battle log for enemy attacks (affects the defender pet)
-        if constants.DEBUG_MODE and attack_entries:
+        if game_globals.configuration.debug_mode and attack_entries:
             for attack_entry in attack_entries:
                 defender_idx = attack_entry.defender
                 if defender_idx < len(self.debug_battle_logs):
                     self.debug_battle_logs[defender_idx]["turn"] = turn
                     self.debug_battle_logs[defender_idx]["arrow"] = "<"
                     # Don't show hit info during attack phase, only during charge
-        if self.module.ruleset == "dmc":
-            if hits == 2 and getattr(enemy, "atk_alt", 0) > 0:
-                atk_id = str(enemy.atk_alt)
+        
+        # Choose attack sprite based on protocol/ruleset
+        if self.module.battle_damage_limit < 3:
+            # DM20/PEN20/DM/DMC: 1-2 attack types, 70% atk_main / 30% atk_alt random
+            atk_alt = getattr(enemy, "atk_alt", None)
+            if atk_alt is not None and atk_alt > 0 and random.random() < 0.3:
+                atk_id = str(atk_alt)
             else:
-                atk_id = str(enemy.atk_main)
+                atk_id = str(getattr(enemy, "atk_main", 30))
         else:
-            if getattr(enemy, "atk_alt", 0) > 0 and hits >= 3:
-                atk_id = str(enemy.atk_alt)
+            # DMX/PENZ/INTERNAL_PVE: 1-5 attack types
+            atk_alt = getattr(enemy, "atk_alt", None)
+            atk_alt2 = getattr(enemy, "atk_alt2", None)
+            if anim_hits >= 5:
+                if atk_alt2 is not None and atk_alt2 > 0:
+                    atk_id = str(atk_alt2)
+                elif atk_alt is not None and atk_alt > 0:
+                    atk_id = str(atk_alt)
+                else:
+                    atk_id = str(getattr(enemy, "atk_main", 30))
+            elif anim_hits >= 3:
+                if atk_alt is not None and atk_alt > 0:
+                    atk_id = str(atk_alt)
+                else:
+                    atk_id = str(getattr(enemy, "atk_main", 30))
             else:
-                atk_id = str(enemy.atk_main)
+                atk_id = str(getattr(enemy, "atk_main", 30))
         base_sprite = self.get_attack_sprite(enemy, atk_id)
         base_sprite = pygame.transform.flip(base_sprite, True, False)
 
@@ -1118,22 +1294,64 @@ class BattleEncounter:
             angle = -math.degrees(math.atan2(dy, dx))
             rotated_sprite = pygame.transform.rotate(base_sprite, angle)
 
-            # Add projectile for this attack
-            
+            # Add projectile for this attack based on protocol/ruleset
+            s = runtime_globals.UI_SCALE
+            base_pos = [x, y]
+            base_tgt = [target_pet_x, target_pet_y]
             if self.module.battle_damage_limit < 3:
-                if hits == 2:
+                # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
+                if anim_hits >= 2:
                     rotated_sprite = pygame.transform.scale2x(rotated_sprite)
                 self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
             else:
-                if hits == 4:
+                # DMX/PENZ/INTERNAL_PVE: multi-sprite attacks combined into single surface
+                if anim_hits >= 5:
+                    # Critical: double size sprite
                     rotated_sprite = pygame.transform.scale2x(rotated_sprite)
                     self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                elif anim_hits == 4:
+                    atk_alt = getattr(enemy, "atk_alt", None)
+                    if atk_alt is not None and atk_alt > 0:
+                        offsets = [(0, 0), (20*s, 10*s)]
+                    else:
+                        offsets = [(0, 0), (20*s, 10*s), (40*s, -10*s)]
+                    self.battle_player.team2_projectiles[defender_idx].append(
+                        self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
+                elif anim_hits == 3:
+                    atk_alt = getattr(enemy, "atk_alt", None)
+                    if atk_alt is not None and atk_alt > 0:
+                        self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                    else:
+                        offsets = [(0, 0), (20*s, 10*s)]
+                        self.battle_player.team2_projectiles[defender_idx].append(
+                            self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
+                elif anim_hits == 2:
+                    offsets = [(0, 0), (20*s, 10*s)]
+                    self.battle_player.team2_projectiles[defender_idx].append(
+                        self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
                 else:
                     self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
-                    if hits > 1:
-                        self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x + (20 * runtime_globals.UI_SCALE), y + (10 * runtime_globals.UI_SCALE)], [target_pet_x + (20 * runtime_globals.UI_SCALE), target_pet_y + (10 * runtime_globals.UI_SCALE)], attack_entry])
-                    if hits == 3:
-                        self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x + (40 * runtime_globals.UI_SCALE), y - (10 * runtime_globals.UI_SCALE)], [target_pet_x + (40 * runtime_globals.UI_SCALE), target_pet_y - (10 * runtime_globals.UI_SCALE)], attack_entry])
+
+    def _combine_projectile_sprites(self, sprite, offsets, base_pos, base_target, attack_entry):
+        """Combine a sprite rendered at multiple offsets into a single projectile entry."""
+        if len(offsets) == 1:
+            ox, oy = offsets[0]
+            return [sprite.copy(), [base_pos[0] + ox, base_pos[1] + oy],
+                    [base_target[0] + ox, base_target[1] + oy], attack_entry]
+        sw, sh = sprite.get_width(), sprite.get_height()
+        min_ox = min(o[0] for o in offsets)
+        min_oy = min(o[1] for o in offsets)
+        max_ox = max(o[0] for o in offsets)
+        max_oy = max(o[1] for o in offsets)
+        width = int(max_ox - min_ox) + sw
+        height = int(max_oy - min_oy) + sh
+        combined = pygame.Surface((width, height), pygame.SRCALPHA).convert_alpha()
+        for ox, oy in offsets:
+            combined.blit(sprite, (int(ox - min_ox), int(oy - min_oy)))
+        return [combined,
+                [base_pos[0] + min_ox, base_pos[1] + min_oy],
+                [base_target[0] + min_ox, base_target[1] + min_oy],
+                attack_entry]
 
     def move_towards(self, pos, target, speed):
         dx = target[0] - pos[0]
@@ -1149,6 +1367,14 @@ class BattleEncounter:
         if len(self.battle_player.team1_projectiles) == 0:
             return
 
+        # Use actual elapsed time for smooth frame-rate independent movement
+        now = pygame.time.get_ticks()
+        if not hasattr(self, '_last_pet_proj_tick'):
+            self._last_pet_proj_tick = now
+        dt_ms = min(100, max(1, now - self._last_pet_proj_tick))
+        self._last_pet_proj_tick = now
+        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000
+
         for i, main_data in enumerate(self.battle_player.team1_projectiles):
             if len(main_data) == 0:
                 continue
@@ -1157,7 +1383,7 @@ class BattleEncounter:
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, combat_constants.ATTACK_SPEED * (30 / constants.FRAME_RATE))
+                new_pos = self.move_towards(pos, target, speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False
@@ -1204,6 +1430,14 @@ class BattleEncounter:
         if len(self.battle_player.team2_projectiles) == 0:
             return
 
+        # Use actual elapsed time for smooth frame-rate independent movement
+        now = pygame.time.get_ticks()
+        if not hasattr(self, '_last_enemy_proj_tick'):
+            self._last_enemy_proj_tick = now
+        dt_ms = min(100, max(1, now - self._last_enemy_proj_tick))
+        self._last_enemy_proj_tick = now
+        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000
+
         for i, main_data in enumerate(self.battle_player.team2_projectiles):
             if len(main_data) == 0:
                 continue
@@ -1212,7 +1446,7 @@ class BattleEncounter:
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, combat_constants.ATTACK_SPEED * (30 / constants.FRAME_RATE))
+                new_pos = self.move_towards(pos, target, speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False
@@ -1261,10 +1495,39 @@ class BattleEncounter:
             self.frame_counter = 0
             self.phase = "result"
 
+    def _has_result_rewards(self):
+        """Check if there are any meaningful rewards to display on the result screen."""
+        if self.pvp_mode:
+            return True  # Always show PvP results
+        if self.battle_player.xp > 0 or self.battle_player.bonus > 0:
+            return True
+        if getattr(self, 'prize_item', None) is not None:
+            return True
+        if any(self.battle_player.level_up):
+            return True
+        # Check if any pet's module uses gcells and would gain/lose points
+        for pet in self.battle_player.team1:
+            pet_module = get_module(getattr(pet, 'module', self.module.name))
+            if getattr(pet_module, 'use_gcells', False):
+                if self.victory_status == "Victory":
+                    if getattr(pet_module, 'gcell_battle_win', 0) != 0:
+                        return True
+                else:
+                    if getattr(pet_module, 'gcell_battle_loose', 0) != 0:
+                        return True
+        return False
+
     def update_result(self):
         """
         Update logic for the result phase, handles victory or defeat actions.
         """
+        # Skip the result screen entirely if there are no rewards to show
+        if self.result_timer == 0 and not self._has_result_rewards():
+            runtime_globals.game_console.log("[BattleEncounter] No rewards to display, skipping result screen")
+            # Still need to run the post-result logic (progression, unlocks, etc.)
+            # Jump the timer past the wait threshold to fall through immediately
+            self.result_timer = int(120 * (constants.FRAME_RATE / 30))
+
         # Result timer, frame-rate independent
         self.result_timer += 1
 
@@ -1324,6 +1587,12 @@ class BattleEncounter:
             self.return_to_main_scene()
             return
         
+        # Random encounters skip progression and return to game immediately
+        if self.is_random_encounter:
+            runtime_globals.game_sound.play("happy" if self.victory_status == "Victory" else "fail")
+            self.return_to_main_scene()
+            return
+
         pets = get_battle_targets()
         if self.victory_status == "Victory":
             if not self.boss:
@@ -1334,12 +1603,23 @@ class BattleEncounter:
                     return
                 else:
                     self.round += 1
-                    if self.round > game_globals.battle_round[self.module.name]:
-                        game_globals.battle_round[self.module.name] = self.round
-                    self.victory_status = None
-                    if self.module.battle_sequential_rounds:
-                        self.set_initial_state(round=self.round, area=self.area)
-                        return
+                    # Check if the new round has enemies; if not, the area is cleared
+                    next_versions = self.module.get_enemy_versions(self.area, self.round)
+                    if not next_versions:
+                        # Area cleared — advance to next area
+                        self.area += 1
+                        self.round = 1
+                        if self.module.area_exists(self.area):
+                            game_globals.battle_round[self.module.name] = self.round
+                            game_globals.battle_area[self.module.name] = max(self.area, game_globals.battle_area.get(self.module.name, 0))
+                        # Fall through to total victories, unlocks, and return_to_main_scene
+                    else:
+                        if self.round > game_globals.battle_round[self.module.name]:
+                            game_globals.battle_round[self.module.name] = self.round
+                        self.victory_status = None
+                        if self.module.battle_sequential_rounds:
+                            self.set_initial_state(round=self.round, area=self.area)
+                            return
             else:
                 # --- Unlock adventure items of the area just won ---
                 unlocks = getattr(self.module, "unlocks", None)
@@ -1460,7 +1740,17 @@ class BattleEncounter:
         
         # Draw area/round text using scaled font
         from components.ui import ui_constants
-        area_text = f"AREA {self.area}-{self.round}"
+        adventure_style = getattr(self.module, 'adventure_style', 'Area Selection')
+        if adventure_style == "Next and Reset":
+            area_text = f"AREA {self.area}"
+        elif adventure_style == "Random":
+            # Show first enemy name for Random style
+            if self.enemies and self.enemies[0] and hasattr(self.enemies[0], 'name'):
+                area_text = self.enemies[0].name
+            else:
+                area_text = f"AREA {self.area}-{self.round}"
+        else:
+            area_text = f"AREA {self.area}-{self.round}"
         
         # Position: 6 pixels from left in UI space, accounting for UI offset
         text_x = self.ui_manager.ui_offset_x + int(6 * runtime_globals.UI_SCALE)
@@ -1741,30 +2031,61 @@ class BattleEncounter:
                 self.result_prize_label_text = Label(prize_label_x, prize_y, "Prize:", is_title=False, color_override=white_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
                 self.result_prize_label_text.manager = self.ui_manager
                 
-                # Position value label to the right (will calculate after rendering label text)
-                self.result_prize_value_text = prize_text
-                self.result_prize_value_color = prize_value_color
+                # Create the prize value label once and cache it
+                prize_value_x = prize_label_x + int(8 * width_scale)  # Will be adjusted after rendering "Prize:" text
+                self.result_prize_value_label = Label(prize_value_x, prize_y, prize_text, is_title=False, color_override=prize_value_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
+                self.result_prize_value_label.manager = self.ui_manager
+                
+                # Pre-cache scaled pet sprites to avoid per-frame scaling
+                self.result_pet_sprites_cache = {}
+                for pet in pets:
+                    self.result_pet_sprites_cache[pet] = {}
+                    for frame_id in [PetFrame.IDLE1.value, PetFrame.HAPPY.value, PetFrame.LOSE.value]:
+                        original_sprite = pet.get_sprite(frame_id)
+                        scaled_sprite = pygame.transform.scale(original_sprite, (sprite_width, sprite_height))
+                        self.result_pet_sprites_cache[pet][frame_id] = scaled_sprite
+                
+                # Store sprite dimensions for drawing
+                self.result_sprite_width = sprite_width
+                self.result_sprite_height = sprite_height
+                self.result_offset_x = offset_x
+                self.result_gap_between_pets = gap_between_pets
+                self.result_pets_y = pets_y
+                
+                # Create a single cached surface for ALL static text (rendered once)
+                # This avoids per-frame text rendering and shadow blitting which causes flickering
+                self.result_static_text_surface = pygame.Surface((runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT), pygame.SRCALPHA)
+                self.result_static_text_surface.fill((0, 0, 0, 0))  # Transparent
+                
+                # Render title label (centered at top)
+                title_surface = self.result_title_label.render()
+                title_x = (runtime_globals.SCREEN_WIDTH - title_surface.get_width()) // 2
+                self.result_static_text_surface.blit(title_surface, (title_x, self.result_title_label.rect.y))
+                
+                # Render prize labels at bottom
+                prize_label_surface = self.result_prize_label_text.render()
+                self.result_static_text_surface.blit(prize_label_surface, (self.result_prize_label_text.rect.x, self.result_prize_label_text.rect.y))
+                
+                # Render prize value to the right of label
+                width_scale = runtime_globals.SCREEN_WIDTH / 240
+                prize_value_x = self.result_prize_label_text.rect.x + prize_label_surface.get_width() + int(8 * width_scale)
+                self.result_prize_value_label.rect.x = prize_value_x
+                prize_value_surface = self.result_prize_value_label.render()
+                self.result_static_text_surface.blit(prize_value_surface, (prize_value_x, self.result_prize_label_text.rect.y))
+                
+                # Render all per-pet labels to the static surface
+                for i, pet_labels in enumerate(self.result_pet_labels):
+                    pet_center_x = offset_x + (i * (sprite_width + gap_between_pets)) + sprite_width // 2
+                    for label, label_center_x in pet_labels:
+                        label_surface = label.render()
+                        label_x = label_center_x - label_surface.get_width() // 2
+                        self.result_static_text_surface.blit(label_surface, (label_x, label.rect.y))
                 
                 # Mark cache as built
                 self.result_surface_cache = True
             
-            # Draw title label (centered at top)
-            title_surface = self.result_title_label.render()
-            title_x = (runtime_globals.SCREEN_WIDTH - title_surface.get_width()) // 2
-            surface.blit(title_surface, (title_x, self.result_title_label.rect.y))
-            
-            # Draw prize labels at bottom
-            prize_label_surface = self.result_prize_label_text.render()
-            surface.blit(prize_label_surface, (self.result_prize_label_text.rect.x, self.result_prize_label_text.rect.y))
-            
-            # Draw prize value to the right of label
-            width_scale = runtime_globals.SCREEN_WIDTH / 240
-            height_scale = runtime_globals.SCREEN_HEIGHT / 240
-            prize_value_x = self.result_prize_label_text.rect.x + prize_label_surface.get_width() + int(8 * width_scale)
-            prize_value_label = Label(prize_value_x, self.result_prize_label_text.rect.y, self.result_prize_value_text, is_title=False, color_override=self.result_prize_value_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
-            prize_value_label.manager = self.ui_manager
-            prize_value_surface = prize_value_label.render()
-            surface.blit(prize_value_surface, (prize_value_x, self.result_prize_label_text.rect.y))
+            # Draw the cached static text surface (single blit for all text)
+            surface.blit(self.result_static_text_surface, (0, 0))
             
             # Draw animated pet sprites (not cached, drawn directly)
             if self.pvp_mode and hasattr(self, 'show_team2_in_result') and self.show_team2_in_result:
@@ -1790,46 +2111,12 @@ class BattleEncounter:
                 pet_frame_counters = self.battle_player.frame_counters[:len(self.battle_player.team1)]
                 pet_winners = self.battle_player.winners[:len(self.battle_player.team1)]
             
-            # Calculate pet layout (scaled for any screen size) - match label creation logic
-            width_scale = runtime_globals.SCREEN_WIDTH / 240
-            height_scale = runtime_globals.SCREEN_HEIGHT / 240
-            total = len(pets)
-            
-            # Use larger sprites and better horizontal distribution
-            base_sprite_size = runtime_globals.PET_WIDTH  # Use full size instead of half
-            sprite_width = int(base_sprite_size)
-            sprite_height = int(base_sprite_size)
-            
-            # Calculate spacing to distribute evenly across width
-            margin = int(20 * width_scale)  # Side margins
-            gap_between_pets = int(16 * width_scale)  # Gap between pets
-            
-            # Calculate the actual width occupied by all pets
-            if total > 1:
-                # Total width = all sprites + gaps between them
-                total_pets_width = (total * sprite_width) + ((total - 1) * gap_between_pets)
-                
-                # If pets don't fit, scale them down
-                available_width = runtime_globals.SCREEN_WIDTH - (2 * margin)
-                if total_pets_width > available_width:
-                    # Recalculate sprite size to fit
-                    total_pets_width = available_width
-                    sprite_width = (available_width - ((total - 1) * gap_between_pets)) // total
-                    sprite_height = sprite_width  # Keep square
-            else:
-                # Single pet - just the sprite width
-                total_pets_width = sprite_width
-            
-            # Center the pet group horizontally
-            offset_x = (runtime_globals.SCREEN_WIDTH - total_pets_width) // 2
-            pets_y = int(50 * height_scale)
-            
-            # Draw each pet sprite and their labels
+            # Draw each pet sprite and their labels (using cached layout values)
             for i, pet in enumerate(pets):
-                pet_x = offset_x + (i * (sprite_width + gap_between_pets))
-                pet_center_x = pet_x + sprite_width // 2
+                pet_x = self.result_offset_x + (i * (self.result_sprite_width + self.result_gap_between_pets))
+                pet_center_x = pet_x + self.result_sprite_width // 2
                 
-                # Draw pet sprite (animated)
+                # Draw pet sprite (animated) using cached scaled sprites
                 if i < len(pet_frame_counters):
                     anim_toggle = (pet_frame_counters[i] + i * 5) // (15 * constants.FRAME_RATE / 30) % 2
                 else:
@@ -1839,16 +2126,16 @@ class BattleEncounter:
                     frame_id = PetFrame.LOSE.value
                 else:
                     frame_id = PetFrame.IDLE1.value if anim_toggle == 0 else PetFrame.HAPPY.value
-                sprite = pet.get_sprite(frame_id)
-                sprite = pygame.transform.scale(sprite, (sprite_width, sprite_height))
-                blit_with_cache(surface, sprite, (pet_x, pets_y))
                 
-                # Draw per-pet labels (centered under each pet)
-                if hasattr(self, 'result_pet_labels') and i < len(self.result_pet_labels):
-                    for label, label_center_x in self.result_pet_labels[i]:
-                        label_surface = label.render()
-                        label_x = label_center_x - label_surface.get_width() // 2
-                        surface.blit(label_surface, (label_x, label.rect.y))
+                # Use cached scaled sprite
+                if pet in self.result_pet_sprites_cache and frame_id in self.result_pet_sprites_cache[pet]:
+                    sprite = self.result_pet_sprites_cache[pet][frame_id]
+                else:
+                    # Fallback if cache miss (shouldn't happen)
+                    sprite = pet.get_sprite(frame_id)
+                    sprite = pygame.transform.scale(sprite, (self.result_sprite_width, self.result_sprite_height))
+                
+                blit_with_cache(surface, sprite, (pet_x, self.result_pets_y))
 
     def draw_hit_animations(self, surface):
         """
@@ -2047,13 +2334,17 @@ class BattleEncounter:
                     pygame.draw.rect(surface, green, (pet_x, pet_y, pet_bar_width, bar_height))
             else:
                 pet_y = self.get_y(i, total_pets)
-                # Draw red X over where the bar would be
-                start1 = (pet_x, pet_y)
-                end1 = (pet_x + runtime_globals.PET_WIDTH, pet_y + runtime_globals.PET_HEIGHT)
-                start2 = (pet_x + runtime_globals.PET_WIDTH, pet_y)
-                end2 = (pet_x, pet_y + runtime_globals.PET_HEIGHT)
-                pygame.draw.line(surface, x_color, start1, end1, x_thickness)
-                pygame.draw.line(surface, x_color, start2, end2, x_thickness)
+                if self._ko_sprite:
+                    ko_x = pet_x + (runtime_globals.PET_WIDTH - self._ko_sprite.get_width()) // 2
+                    ko_y = pet_y + (runtime_globals.PET_HEIGHT - self._ko_sprite.get_height()) // 2
+                    surface.blit(self._ko_sprite, (ko_x, ko_y))
+                else:
+                    start1 = (pet_x, pet_y)
+                    end1 = (pet_x + runtime_globals.PET_WIDTH, pet_y + runtime_globals.PET_HEIGHT)
+                    start2 = (pet_x + runtime_globals.PET_WIDTH, pet_y)
+                    end2 = (pet_x, pet_y + runtime_globals.PET_HEIGHT)
+                    pygame.draw.line(surface, x_color, start1, end1, x_thickness)
+                    pygame.draw.line(surface, x_color, start2, end2, x_thickness)
 
         # Draw enemy health bars
         total_enemies = len(self.battle_player.team2)
@@ -2074,13 +2365,18 @@ class BattleEncounter:
                     pygame.draw.rect(surface, green, (enemy_x, enemy_y, enemy_bar_width, bar_height))
             else:
                 enemy_y = self.get_y(i, total_enemies)
-                # Draw red X over the entire enemy sprite
-                start1 = (enemy_x, enemy_y)
-                end1 = (enemy_x + width, enemy_y + heigh)
-                start2 = (enemy_x + width, enemy_y)
-                end2 = (enemy_x, enemy_y + heigh)
-                pygame.draw.line(surface, x_color, start1, end1, x_thickness)
-                pygame.draw.line(surface, x_color, start2, end2, x_thickness)
+                ko = self._ko_sprite_boss if self.boss else self._ko_sprite
+                if ko:
+                    ko_x = enemy_x + (width - ko.get_width()) // 2
+                    ko_y = enemy_y + (heigh - ko.get_height()) // 2
+                    surface.blit(ko, (ko_x, ko_y))
+                else:
+                    start1 = (enemy_x, enemy_y)
+                    end1 = (enemy_x + width, enemy_y + heigh)
+                    start2 = (enemy_x + width, enemy_y)
+                    end2 = (enemy_x, enemy_y + heigh)
+                    pygame.draw.line(surface, x_color, start1, end1, x_thickness)
+                    pygame.draw.line(surface, x_color, start2, end2, x_thickness)
 
     def get_y(self, index, total):
         """
@@ -2119,12 +2415,13 @@ class BattleEncounter:
 
     def handle_event(self, event):
         """
-        Handles input events for the battle encounter, phase and ruleset specific.
+        Handles input events for the battle encounter, phase and battle_minigame specific.
         """
         if not isinstance(event, tuple) or len(event) != 2:
             return
         
         event_type, event_data = event
+        minigame = getattr(self.module, 'battle_minigame', 'Dummy Bar')
         
         # Handle string actions
         if event_type == "B":
@@ -2135,24 +2432,30 @@ class BattleEncounter:
             else:
                 runtime_globals.game_sound.play("cancel")
                 change_scene("game")
-        elif self.module.ruleset == 'dmc':
-            if self.phase == "charge":
+        elif self.phase == "charge":
+            # Handle charge phase input based on minigame type
+            if minigame == "Dummy Bar":
                 if event_type in ("A", "LCLICK"):
-                    # Let the minigame handle the input
                     if self.dummy_charge and self.dummy_charge.handle_event(event):
                         self.strength = self.dummy_charge.strength
-        elif self.module.ruleset == 'penc':
-            if self.phase == "charge" and event_type in ("Y", "SHAKE"):
-                if self.count_match and self.count_match.handle_event(event):
-                    self.press_counter = self.count_match.get_press_counter()
-                    self.rotation_index = self.count_match.get_rotation_index()
-        elif self.module.ruleset == 'vb':
-            if self.phase == "charge" and event_type in ("Y", "SHAKE"):
-                if self.shake_punch and self.shake_punch.handle_event(event):
-                    self.strength = self.shake_punch.get_strength()
-        elif self.module.ruleset == 'dmx':
-            if self.phase == "charge":
-                # Use XAI minigame handle_event methods for consistency
+            elif minigame == "Count Match (Color)":
+                if event_type in ("Y", "SHAKE"):
+                    if self.count_match and self.count_match.handle_event(event):
+                        self.press_counter = self.count_match.get_press_counter()
+                        self.rotation_index = self.count_match.get_rotation_index()
+            elif minigame == "Count Match":
+                if event_type in ("Y", "SHAKE"):
+                    if self.count_match_classic and self.count_match_classic.handle_event(event):
+                        self.strength = self.count_match_classic.strength
+            elif minigame == "Count Match (Z)":
+                if event_type in ("Y", "SHAKE"):
+                    if self.count_match_z and self.count_match_z.handle_event(event):
+                        self.press_counter = self.count_match_z.get_press_counter()
+            elif minigame in ["Punch", "Mogera"]:
+                if event_type in ("Y", "SHAKE"):
+                    if self.shake_punch and self.shake_punch.handle_event(event):
+                        self.strength = self.shake_punch.get_strength()
+            elif minigame in ["Xai Roll+Bar", "Xai Bar"]:
                 if self.xai_phase == 1 and event_type in ["A", "LCLICK"] and self.xai_roll:
                     # --- Seven Switch: force XAI roll to 7 if status_boost is active ---
                     xai_effect = self.get_battle_effect("xai_roll")
@@ -2171,21 +2474,6 @@ class BattleEncounter:
                     self.strength = self.xai_bar.get_result() or 1
                     self.xai_phase = 3
                     self.bar_timer = pygame.time.get_ticks()
-        elif self.module.ruleset == 'penc':
-            if event_type == "Y" or event_type == "SHAKE":
-                if self.phase == "alert":
-                    self.frame_counter = combat_constants.ALERT_DURATION_FRAMES
-                elif self.phase == "charge":
-                    # Let the minigame handle the input
-                    if self.count_match and self.count_match.handle_event(event):
-                        self.press_counter = self.count_match.get_press_counter()
-                        self.rotation_index = self.count_match.get_rotation_index()
-        elif self.module.ruleset == 'vb':
-            if self.phase == "charge":
-                if event_type in ("Y", "SHAKE"):
-                    # Let the minigame handle the input
-                    if self.shake_punch and self.shake_punch.handle_event(event):
-                        self.strength = self.shake_punch.get_strength()
 
     #========================
     # Region: Utility Methods

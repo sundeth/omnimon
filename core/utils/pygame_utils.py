@@ -3,7 +3,7 @@ import os
 import pygame
 import time
 import core.constants as constants
-from core import game_console, runtime_globals
+from core import game_console, game_globals, runtime_globals
 from core.utils.asset_utils import image_load
 from core.utils.module_utils import get_module
 
@@ -30,33 +30,55 @@ def get_composite_shadow(sprite, offset=(2, 2), shadow_color=(0, 0, 0, 100)):
     """Get or create a pre-rendered composite surface with shadow + sprite.
     
     This reduces 2 blits (shadow + sprite) to 1 blit (composite).
+    
+    DISABLED: Cache disabled temporarily - creating new surfaces (via transform.scale/flip)
+    every frame was causing cache misses and flickering. Now just renders shadow directly.
     """
+    # Cache disabled - just render shadow directly each frame
+    # The overhead of 2 blits is less than the cache miss overhead
+    
+    # Create composite surface large enough for sprite + shadow offset
+    width = sprite.get_width() + abs(offset[0])
+    height = sprite.get_height() + abs(offset[1])
+    composite = pygame.Surface((width, height), pygame.SRCALPHA)
+    composite.fill((0, 0, 0, 0))  # Transparent background
+    
+    # Get or create shadow (shadow cache is fine since base sprites don't change)
+    shadow = get_shadow(sprite, shadow_color)
+    
+    # Blit shadow and sprite onto composite
+    composite.blit(shadow, (offset[0], offset[1]))
+    composite.blit(sprite, (0, 0))
+    
+    return composite
+    
+    # OLD CACHED VERSION (disabled):
     # Cache key includes sprite ID and offset
-    key = (id(sprite), offset[0], offset[1])
-    
-    if key not in composite_shadow_cache:
-        # Create composite surface large enough for sprite + shadow offset
-        width = sprite.get_width() + abs(offset[0])
-        height = sprite.get_height() + abs(offset[1])
-        composite = pygame.Surface((width, height), pygame.SRCALPHA)
-        composite.fill((0, 0, 0, 0))  # Transparent background
-        
-        # Get or create shadow
-        shadow = get_shadow(sprite, shadow_color)
-        
-        # Blit shadow and sprite onto composite
-        composite.blit(shadow, (offset[0], offset[1]))
-        composite.blit(sprite, (0, 0))
-        
-        composite_shadow_cache[key] = composite
-    
-    return composite_shadow_cache[key]
+    # key = (id(sprite), offset[0], offset[1])
+    # 
+    # if key not in composite_shadow_cache:
+    #     # Create composite surface large enough for sprite + shadow offset
+    #     width = sprite.get_width() + abs(offset[0])
+    #     height = sprite.get_height() + abs(offset[1])
+    #     composite = pygame.Surface((width, height), pygame.SRCALPHA)
+    #     composite.fill((0, 0, 0, 0))  # Transparent background
+    #     
+    #     # Get or create shadow
+    #     shadow = get_shadow(sprite, shadow_color)
+    #     
+    #     # Blit shadow and sprite onto composite
+    #     composite.blit(shadow, (offset[0], offset[1]))
+    #     composite.blit(sprite, (0, 0))
+    #     
+    #     composite_shadow_cache[key] = composite
+    # 
+    # return composite_shadow_cache[key]
 
 def blit_with_shadow(surface, sprite, pos, offset=(2, 2)):
     """
     Blits a sprite with a shadow effect using a pre-rendered composite (1 blit instead of 2).
     """
-    if constants.DEBUG_MODE and constants.DEBUG_BLIT_LOGGING:
+    if game_globals.configuration.debug_mode and game_globals.configuration.debug_blit_logging:
         global _blit_shadow_calls, _last_log_time
 
         # Increment the counter
@@ -190,7 +212,8 @@ def load_misc_sprites():
         "Sick1.png", "Sick2.png", "Sleep1.png",
     "Sleep2.png", "Poop1.png", "Poop2.png",
     "JumboPoop1.png", "JumboPoop2.png", "Wash.png",
-    "CallSignInverted.png", "SickInverted.png", "PoopInverted.png"
+    "CallSignInverted.png", "SickInverted.png", "PoopInverted.png",
+    "Dots1.png", "Dots2.png"
     ]
     misc_sprites = {}
     for filename in sprite_files:
@@ -223,7 +246,7 @@ def blit_with_cache(surface, sprite, pos):
     Pygame's internal blit is already highly optimized. Caching sprites by copying
     them doesn't provide any benefit and just wastes memory.
     """
-    if constants.DEBUG_MODE and constants.DEBUG_BLIT_LOGGING:
+    if game_globals.configuration.debug_mode and game_globals.configuration.debug_blit_logging:
         global _blit_cache_calls, _last_cache_log_time
 
         # Increment the counter

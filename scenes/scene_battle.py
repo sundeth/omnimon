@@ -6,7 +6,7 @@ import pygame
 from components.ui.ui_manager import UIManager
 from core import runtime_globals
 from components.window_background import WindowBackground
-from scenes.views import (
+from scenes.battle_views import (
     AdventureView,
     JogressView,
     ArmorView,
@@ -41,8 +41,15 @@ class SceneBattle:
         # View kwargs (for passing data between views)
         self.view_kwargs = {}
         
-        # Show main menu initially
-        self._change_view("main_menu")
+        # Check if this is a random encounter triggered by an event
+        if runtime_globals.special_encounter:
+            module_name, area, round_num = runtime_globals.special_encounter
+            runtime_globals.special_encounter = []
+            from core.utils.module_utils import get_module
+            module = get_module(module_name)
+            self._change_view("adventure_battle", module=module, area=area, round_num=round_num, is_random_encounter=True)
+        else:
+            self._change_view("main_menu")
         
         runtime_globals.game_console.log("[SceneBattle] Battle scene initialized with view architecture")
     

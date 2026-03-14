@@ -2,7 +2,7 @@
   "enemies": [
     {
       "name": "Betamon",
-      "power": 15,
+      "power": 25,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -13,11 +13,12 @@
       "unlock": "",
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Agumon",
-      "power": 19,
+      "power": 30,
       "attribute": "Va",
       "hp": 0,
       "area": 1,
@@ -28,11 +29,12 @@
       "unlock": "",
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Meramon",
-      "power": 23,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 1,
@@ -41,11 +43,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Numemon",
-      "power": 19,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -54,11 +57,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Seadramon",
-      "power": 23,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 2,
@@ -67,11 +71,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Devimon",
-      "power": 28,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -80,11 +85,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Tyrannomon",
-      "power": 28,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -93,11 +99,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Airdramon",
-      "power": 37,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 3,
@@ -106,11 +113,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Greymon",
-      "power": 45,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 3,
@@ -119,6 +127,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -132,11 +141,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Meramon",
-      "power": 55,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 4,
@@ -145,11 +155,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Devimon",
-      "power": 65,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -158,11 +169,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Mamemon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 4,
@@ -171,11 +183,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Airdramon",
-      "power": 55,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 5,
@@ -184,11 +197,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Tyrannomon",
-      "power": 70,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -197,11 +211,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Greymon",
-      "power": 85,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 5,
@@ -210,11 +225,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalGreymon",
-      "power": 105,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -223,11 +239,12 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Meramon",
-      "power": 65,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -236,11 +253,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Mamemon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -249,11 +267,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Monzaemon",
-      "power": 95,
+      "power": 100,
       "attribute": "Va",
       "hp": 0,
       "area": 6,
@@ -262,11 +281,12 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BanchoMamemon",
-      "power": 120,
+      "power": 150,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -275,11 +295,12 @@
       "handicap": 0,
       "atk_main": 41,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Numemon",
-      "power": 75,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -288,11 +309,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalGreymon",
-      "power": 90,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -301,11 +323,12 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Monzaemon",
-      "power": 110,
+      "power": 100,
       "attribute": "Va",
       "hp": 0,
       "area": 7,
@@ -314,11 +337,12 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BlitzGreymon",
-      "power": 130,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -327,11 +351,12 @@
       "handicap": 0,
       "atk_main": 49,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "ShinMonzaemon",
-      "power": 145,
+      "power": 170,
       "attribute": "Va",
       "hp": 0,
       "area": 7,
@@ -340,11 +365,12 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "MetalGreymon",
-      "power": 85,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -353,11 +379,12 @@
       "handicap": 0,
       "atk_main": 3,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BanchoMamemon",
-      "power": 100,
+      "power": 150,
       "attribute": "Da",
       "hp": 0,
       "area": 8,
@@ -366,11 +393,12 @@
       "handicap": 0,
       "atk_main": 41,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "ShinMonzaemon",
-      "power": 135,
+      "power": 170,
       "attribute": "Va",
       "hp": 0,
       "area": 8,
@@ -379,11 +407,12 @@
       "handicap": 0,
       "atk_main": 9,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "BlitzGreymon",
-      "power": 160,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -392,11 +421,12 @@
       "handicap": 0,
       "atk_main": 49,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet Alter-S",
-      "power": 220,
+      "name": "Omnimon Alter-S",
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -405,11 +435,12 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Elecmon",
-      "power": 15,
+      "power": 25,
       "attribute": "Da",
       "hp": 0,
       "area": 1,
@@ -418,11 +449,12 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Gabumon",
-      "power": 19,
+      "power": 30,
       "attribute": "Da",
       "hp": 0,
       "area": 1,
@@ -431,11 +463,12 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Frigimon",
-      "power": 23,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 1,
@@ -444,11 +477,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Vegiemon",
-      "power": 19,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -457,11 +491,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Whamon",
-      "power": 23,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 2,
@@ -469,12 +504,13 @@
       "version": 2,
       "handicap": 0,
       "atk_main": 10,
-      "atk_alt": 0,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Angemon",
-      "power": 28,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 2,
@@ -483,11 +519,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Garurumon",
-      "power": 28,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 3,
@@ -496,11 +533,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Birdramon",
-      "power": 37,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 3,
@@ -509,11 +547,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Kabuterimon",
-      "power": 45,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 3,
@@ -522,6 +561,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -534,12 +574,13 @@
       "version": 2,
       "handicap": 0,
       "atk_main": 10,
-      "atk_alt": 0,
+      "atk_alt": 6,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Frigimon",
-      "power": 55,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 4,
@@ -548,11 +589,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Angemon",
-      "power": 65,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 4,
@@ -561,11 +603,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalMamemon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 4,
@@ -574,11 +617,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Birdramon",
-      "power": 55,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 5,
@@ -587,11 +631,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Garurumon",
-      "power": 70,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 5,
@@ -600,11 +645,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Kabuterimon",
-      "power": 85,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 5,
@@ -613,11 +659,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "SkullGreymon",
-      "power": 105,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -626,11 +673,12 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Frigimon",
-      "power": 65,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 6,
@@ -639,11 +687,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalMamemon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -652,11 +701,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Vademon",
-      "power": 95,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -664,12 +714,13 @@
       "version": 2,
       "handicap": 0,
       "atk_main": 15,
-      "atk_alt": 0,
+      "atk_alt": 9,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "CresGarurumon",
-      "power": 120,
+      "power": 150,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -678,11 +729,12 @@
       "handicap": 0,
       "atk_main": 13,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Vegiemon",
-      "power": 75,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -691,11 +743,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "SkullGreymon",
-      "power": 90,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -704,11 +757,12 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Vademon",
-      "power": 110,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -716,12 +770,13 @@
       "version": 2,
       "handicap": 0,
       "atk_main": 15,
-      "atk_alt": 0,
+      "atk_alt": 9,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "SkullMammothmon",
-      "power": 130,
+      "power": 170,
       "attribute": "Va",
       "hp": 0,
       "area": 7,
@@ -730,11 +785,12 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Ebemon",
-      "power": 145,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -743,11 +799,12 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "SkullGreymon",
-      "power": 85,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -756,11 +813,12 @@
       "handicap": 0,
       "atk_main": 11,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "SkullMammothmon",
-      "power": 100,
+      "power": 170,
       "attribute": "Va",
       "hp": 0,
       "area": 8,
@@ -769,11 +827,12 @@
       "handicap": 0,
       "atk_main": 12,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Ebemon",
-      "power": 135,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -782,11 +841,12 @@
       "handicap": 0,
       "atk_main": 22,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "CresGarurumon",
-      "power": 160,
+      "power": 150,
       "attribute": "Da",
       "hp": 0,
       "area": 8,
@@ -795,11 +855,12 @@
       "handicap": 0,
       "atk_main": 13,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
-      "name": "Omnipet Alter-S",
-      "power": 220,
+      "name": "Omnimon Alter-S",
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -808,11 +869,12 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Kunemon",
-      "power": 10,
+      "power": 25,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -821,11 +883,12 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Patamon",
-      "power": 14,
+      "power": 30,
       "attribute": "Da",
       "hp": 0,
       "area": 1,
@@ -834,11 +897,12 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Bakemon",
-      "power": 18,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -847,11 +911,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Sukamon",
-      "power": 14,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -860,11 +925,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Drimogemon",
-      "power": 18,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 2,
@@ -872,12 +938,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Ogremon",
-      "power": 23,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -886,11 +953,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Centarumon",
-      "power": 23,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -899,11 +967,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Shellmon",
-      "power": 32,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -912,11 +981,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Unimon",
-      "power": 42,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 3,
@@ -925,6 +995,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -937,12 +1008,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Bakemon",
-      "power": 55,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -951,11 +1023,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Giromon",
-      "power": 65,
+      "power": 85,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -964,11 +1037,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Kimeramon",
-      "power": 80,
+      "power": 100,
       "attribute": "Da",
       "hp": 0,
       "area": 4,
@@ -977,11 +1051,12 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Shellmon",
-      "power": 55,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -990,11 +1065,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Centarumon",
-      "power": 70,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -1003,11 +1079,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Unimon",
-      "power": 85,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1016,11 +1093,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Andromon",
-      "power": 105,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1028,12 +1106,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Bakemon",
-      "power": 65,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1042,11 +1121,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Giromon",
-      "power": 80,
+      "power": 85,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1055,11 +1135,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Etemon",
-      "power": 95,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1067,12 +1148,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Reapermon",
-      "power": 120,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1081,11 +1163,12 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Sukamon",
-      "power": 75,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1094,11 +1177,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Andromon",
-      "power": 90,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1106,12 +1190,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Etemon",
-      "power": 110,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1119,12 +1204,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BanchoLeomon",
-      "power": 135,
+      "power": 180,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1133,11 +1219,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Chaosmon",
-      "power": 170,
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1145,12 +1232,13 @@
       "version": 3,
       "handicap": 0,
       "atk_main": 72,
-      "atk_alt": 0,
+      "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Kimeramon",
-      "power": 85,
+      "power": 100,
       "attribute": "Da",
       "hp": 0,
       "area": 8,
@@ -1159,11 +1247,12 @@
       "handicap": 0,
       "atk_main": 18,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Reapermon",
-      "power": 100,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1172,11 +1261,12 @@
       "handicap": 0,
       "atk_main": 28,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "BanchoLeomon",
-      "power": 135,
+      "power": 180,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1185,11 +1275,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "HiAndromon",
-      "power": 160,
+      "power": 150,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1198,11 +1289,12 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Millenniumon",
-      "power": 220,
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1211,11 +1303,12 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Palmon",
-      "power": 10,
+      "power": 25,
       "attribute": "Da",
       "hp": 0,
       "area": 1,
@@ -1224,11 +1317,12 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Biyomon",
-      "power": 14,
+      "power": 30,
       "attribute": "Va",
       "hp": 0,
       "area": 1,
@@ -1237,11 +1331,12 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Kuwagamon",
-      "power": 18,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -1250,11 +1345,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Nanimon",
-      "power": 14,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -1263,11 +1359,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Mojyamon",
-      "power": 18,
+      "power": 45,
       "attribute": "Va",
       "hp": 0,
       "area": 2,
@@ -1275,12 +1372,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Leomon",
-      "power": 23,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 2,
@@ -1289,11 +1387,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Kokatorimon",
-      "power": 23,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -1302,11 +1401,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Coelamon",
-      "power": 32,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -1315,11 +1415,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Monochromon",
-      "power": 42,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 3,
@@ -1328,6 +1429,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1340,12 +1442,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Kuwagamon",
-      "power": 55,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -1354,11 +1457,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Leomon",
-      "power": 65,
+      "power": 50,
       "attribute": "Va",
       "hp": 0,
       "area": 4,
@@ -1367,11 +1471,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Piximon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 4,
@@ -1380,11 +1485,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Coelamon",
-      "power": 55,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -1393,11 +1499,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Kokatorimon",
-      "power": 70,
+      "power": 45,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -1406,11 +1513,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Monochromon",
-      "power": 85,
+      "power": 50,
       "attribute": "Da",
       "hp": 0,
       "area": 5,
@@ -1419,11 +1527,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Megadramon",
-      "power": 105,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1431,12 +1540,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Kuwagamon",
-      "power": 65,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1445,11 +1555,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Piximon",
-      "power": 80,
+      "power": 85,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -1458,11 +1569,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Digitamamon",
-      "power": 95,
+      "power": 100,
       "attribute": "Da",
       "hp": 0,
       "area": 6,
@@ -1470,12 +1582,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BloomLordmon",
-      "power": 120,
+      "power": 150,
       "attribute": "Va",
       "hp": 0,
       "area": 6,
@@ -1484,11 +1597,12 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Nanimon",
-      "power": 75,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1497,11 +1611,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Megadramon",
-      "power": 90,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1509,12 +1624,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Digitamamon",
-      "power": 110,
+      "power": 100,
       "attribute": "Da",
       "hp": 0,
       "area": 7,
@@ -1522,12 +1638,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Gankoomon",
-      "power": 135,
+      "power": 170,
       "attribute": "Da",
       "hp": 0,
       "area": 7,
@@ -1536,11 +1653,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Chaosdramon",
-      "power": 170,
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1549,11 +1667,12 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Megadramon",
-      "power": 85,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1561,12 +1680,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "BloomLordmon",
-      "power": 100,
+      "power": 150,
       "attribute": "Va",
       "hp": 0,
       "area": 8,
@@ -1575,11 +1695,12 @@
       "handicap": 0,
       "atk_main": 43,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Gankoomon",
-      "power": 135,
+      "power": 170,
       "attribute": "Da",
       "hp": 0,
       "area": 8,
@@ -1588,11 +1709,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Darkdramon",
-      "power": 160,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1601,11 +1723,12 @@
       "handicap": 0,
       "atk_main": 106,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Chaosmon",
-      "power": 220,
+      "power": 200,
       "attribute": "Va",
       "hp": 0,
       "area": 8,
@@ -1613,12 +1736,13 @@
       "version": 4,
       "handicap": 0,
       "atk_main": 72,
-      "atk_alt": 0,
+      "atk_alt": 106,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "Gizamon",
-      "power": 10,
+      "power": 25,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -1627,11 +1751,12 @@
       "handicap": 0,
       "atk_main": 5,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Gazimon",
-      "power": 14,
+      "power": 30,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -1640,11 +1765,12 @@
       "handicap": 0,
       "atk_main": 2,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 3
     },
     {
       "name": "Tuskmon",
-      "power": 18,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 1,
@@ -1653,11 +1779,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Raremon",
-      "power": 14,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -1666,11 +1793,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Deltamon",
-      "power": 18,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -1678,12 +1806,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Devidramon",
-      "power": 23,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 2,
@@ -1692,11 +1821,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Cyclonemon",
-      "power": 23,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 3,
@@ -1705,11 +1835,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Flymon",
-      "power": 32,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 3,
@@ -1718,11 +1849,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "DarkTyrannomon",
-      "power": 42,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 3,
@@ -1731,6 +1863,7 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
@@ -1743,12 +1876,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 6,
-      "atk_alt": 0,
+      "atk_alt": 12,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Tuskmon",
-      "power": 55,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -1757,11 +1891,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Devidramon",
-      "power": 65,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -1770,11 +1905,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Datamon",
-      "power": 80,
+      "power": 85,
       "attribute": "Vi",
       "hp": 0,
       "area": 4,
@@ -1783,11 +1919,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Flymon",
-      "power": 55,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1796,11 +1933,12 @@
       "handicap": 0,
       "atk_main": 6,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Cyclonemon",
-      "power": 70,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1809,11 +1947,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "DarkTyrannomon",
-      "power": 85,
+      "power": 50,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1822,11 +1961,12 @@
       "handicap": 0,
       "atk_main": 4,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalTyrannomon",
-      "power": 105,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 5,
@@ -1834,12 +1974,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Tuskmon",
-      "power": 65,
+      "power": 45,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1848,11 +1989,12 @@
       "handicap": 0,
       "atk_main": 7,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "Datamon",
-      "power": 80,
+      "power": 85,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1861,11 +2003,12 @@
       "handicap": 0,
       "atk_main": 8,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "ExTyrannomon",
-      "power": 95,
+      "power": 100,
       "attribute": "Va",
       "hp": 0,
       "area": 6,
@@ -1873,12 +2016,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Raidenmon",
-      "power": 120,
+      "power": 150,
       "attribute": "Vi",
       "hp": 0,
       "area": 6,
@@ -1887,11 +2031,12 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Raremon",
-      "power": 75,
+      "power": 40,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1900,11 +2045,12 @@
       "handicap": 0,
       "atk_main": 16,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 4
     },
     {
       "name": "MetalTyrannomon",
-      "power": 90,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1912,12 +2058,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "ExTyrannomon",
-      "power": 110,
+      "power": 100,
       "attribute": "Va",
       "hp": 0,
       "area": 7,
@@ -1925,12 +2072,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 9,
-      "atk_alt": 0,
+      "atk_alt": 14,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Samudramon",
-      "power": 135,
+      "power": 180,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1939,11 +2087,12 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Chaosdramon",
-      "power": 170,
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 7,
@@ -1952,11 +2101,12 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     },
     {
       "name": "MetalTyrannomon",
-      "power": 85,
+      "power": 100,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1964,12 +2114,13 @@
       "version": 5,
       "handicap": 0,
       "atk_main": 3,
-      "atk_alt": 0,
+      "atk_alt": 13,
+      "atk_alt_2": 0,
       "stage": 5
     },
     {
       "name": "Raidenmon",
-      "power": 100,
+      "power": 150,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1978,11 +2129,12 @@
       "handicap": 0,
       "atk_main": 58,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Samudramon",
-      "power": 135,
+      "power": 180,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -1991,11 +2143,12 @@
       "handicap": 0,
       "atk_main": 32,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Machinedramon",
-      "power": 160,
+      "power": 170,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -2004,11 +2157,12 @@
       "handicap": 0,
       "atk_main": 31,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 6
     },
     {
       "name": "Millenniumon",
-      "power": 220,
+      "power": 200,
       "attribute": "Vi",
       "hp": 0,
       "area": 8,
@@ -2017,6 +2171,7 @@
       "handicap": 0,
       "atk_main": 17,
       "atk_alt": 0,
+      "atk_alt_2": 0,
       "stage": 7
     }
   ]

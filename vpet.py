@@ -12,7 +12,6 @@ from core import game_globals, runtime_globals
 from core.game_input.system_stats import get_system_stats
 from core.utils.module_utils import load_modules
 from core.utils.pygame_utils import blit_with_cache, load_misc_sprites
-from core import constants
 from core.utils.asset_utils import image_load
 from scenes.scene_battle import SceneBattle
 from scenes.scene_battle_pvp import SceneBattlePvP
@@ -24,7 +23,12 @@ from scenes.scene_evolution import SceneEvolution
 from scenes.scene_freezerbox import SceneFreezerBox
 from scenes.scene_library import SceneLibrary
 from scenes.scene_settingsmenu import SceneSettingsMenu
+from scenes.scene_setup import SceneSetup
+from scenes.scene_tutorial import SceneTutorial
+from scenes.scene_error import SceneError
+from scenes.scene_login import SceneLogin
 from scenes.scene_sleep import SceneSleep
+from scenes.scene_healing import SceneHealing
 from scenes.scene_status import SceneStatus
 from scenes.scene_maingame import SceneMainGame
 from scenes.scene_inventory import SceneInventory
@@ -48,7 +52,21 @@ class VirtualPetGame:
     def __init__(self) -> None:
         runtime_globals.misc_sprites = load_misc_sprites()
         load_modules()
-        game_globals.load()
+        # Only load save data if game mode preference exists;
+        # otherwise setup scene will handle mode selection first.
+        if game_globals.load_game_mode_preference():
+            # For Progress Mode, load the cached player ID from omninet
+            # credentials so get_save_dir() returns the correct folder.
+            if game_globals.is_progress_mode():
+                game_globals.load_player_id()
+            # Migrate legacy save folder structure (Type0→Default, Type1→<player_id>)
+            game_globals.migrate_legacy_saves()
+            game_globals.load()
+        
+        # Reload input mappings after configuration is loaded
+        from core.game_input.input_manager import reload_input_mappings
+        reload_input_mappings(runtime_globals.game_input)
+        
         self.scene = SceneBoot()
         print("[Init] Omnibot initialized with SceneBoot")
         self.rotated = False
@@ -92,9 +110,6 @@ class VirtualPetGame:
         """
         self.scene.update()
 
-        # Poll GPIO actions
-        self.poll_gpio_inputs()
-
         # Poll joystick actions (including analog stick directions)
         #for action in runtime_globals.game_input.get_just_pressed_joystick():
         #    self.scene.handle_event(action)
@@ -102,8 +117,8 @@ class VirtualPetGame:
         if runtime_globals.game_state_update:
             self.change_scene()
 
-        if game_globals.rotated:
-            game_globals.rotated = False
+        if game_globals.configuration.rotated:
+            game_globals.configuration.rotated = False
             self.rotated = not self.rotated
 
         # Handle shake detection
@@ -131,7 +146,7 @@ class VirtualPetGame:
         global last_stats_update, cached_stats
 
         # Draw debug stats if DEBUG_MODE is enabled and clock is provided
-        if constants.SHOW_FPS and clock is not None:
+        if game_globals.configuration.show_fps and clock is not None:
             now = time.time()
             if now - last_stats_update >= 3:  # Update stats every 3 seconds
                 cached_stats = get_system_stats()
@@ -159,6 +174,11 @@ class VirtualPetGame:
         """
         Delegates event handling to the current scene.
         """
+        # Special handling for setup scene raw input detection
+        if hasattr(self.scene, 'handle_raw_pygame_event'):
+            if self.scene.handle_raw_pygame_event(event):
+                return  # Setup scene consumed the raw event
+        
         input_event = runtime_globals.game_input.process_event(event)
 
         # Pass the input event tuple to the scene if we got one
@@ -175,11 +195,6 @@ class VirtualPetGame:
                     directional = action.replace("ANALOG_", "")
                     self.scene.handle_event(create_simple_event(directional))
 
-    def poll_gpio_inputs(self):
-        from core.game_input.input_event import create_simple_event
-        for action in runtime_globals.game_input.get_gpio_just_pressed():
-            self.scene.handle_event(create_simple_event(action))
-
     def change_scene(self) -> None:
         """
         Handles changing the current scene based on runtime_globals.game_state.
@@ -191,10 +206,15 @@ class VirtualPetGame:
             "egg": SceneEggSelection,
             "game": SceneMainGame,
             "settings": SceneSettingsMenu,
+            "setup": SceneSetup,
+            "tutorial": SceneTutorial,
+            "error": SceneError,
+            "login": SceneLogin,
             "status": SceneStatus,
             "feeding": SceneInventory,
             "training": SceneTraining,
             "sleepmenu": SceneSleep,
+            "healing": SceneHealing,
             "battle": SceneBattle,
             "battle_pvp": SceneBattlePvP,
             "connect": SceneConnect,
@@ -234,8 +254,8 @@ def draw_system_stats(clock, surface, stats, font):
     global cached_stats_surface, last_stats_values
 
     # Show system stats only when DEBUG_MODE is enabled, but FPS can be shown independently
-    show_system_stats = constants.DEBUG_MODE
-    show_fps_only = constants.SHOW_FPS and not constants.DEBUG_MODE
+    show_system_stats = game_globals.configuration.debug_mode
+    show_fps_only = game_globals.configuration.show_fps and not game_globals.configuration.debug_mode
 
     if not show_system_stats and not show_fps_only:
         return
@@ -251,7 +271,7 @@ def draw_system_stats(clock, surface, stats, font):
         y = 0
         
         # Always show FPS if SHOW_FPS is enabled OR if DEBUG_MODE is enabled
-        if constants.SHOW_FPS or constants.DEBUG_MODE:
+        if game_globals.configuration.show_fps or game_globals.configuration.debug_mode:
             cached_stats_surface.blit(font.render(f"FPS: {fps}", True, (255, 255, 255)), (0, y))
             y += 16
             

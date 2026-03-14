@@ -8,6 +8,7 @@
       "special_key": "",
       "atk_main": 10,
       "atk_alt": 10,
+      "atk_alt_2": 0,
       "time": 2,
       "poop_timer": 65535,
       "energy": 0,
@@ -29,7 +30,8 @@
         {
           "to": "Egg (Phase II)"
         }
-      ]
+      ],
+      "index": -1
     },
     {
       "name": "Egg (Phase II)",
@@ -37,18 +39,19 @@
       "version": 1,
       "special": false,
       "special_key": "",
-      "atk_main": 10,
-      "atk_alt": 10,
+      "atk_main": 15,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 20,
       "poop_timer": 65535,
-      "energy": 1,
+      "energy": 0,
       "min_weight": 99,
       "evol_weight": 0,
       "stomach": 4,
       "hunger_loss": 65535,
       "strength_loss": 65535,
       "heal_doses": 100,
-      "power": 1,
+      "power": 0,
       "attribute": "",
       "condition_hearts": 0,
       "jogress_avaliable": false,
@@ -177,7 +180,8 @@
         {
           "to": "Khezu (Young)"
         }
-      ]
+      ],
+      "index": 1
     },
     {
       "name": "Gore Magala (Young)",
@@ -188,7 +192,8 @@
       "sleeps": "21:00",
       "wakes": "08:00",
       "atk_main": 14,
-      "atk_alt": 14,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -210,7 +215,8 @@
         {
           "to": "Gore Magala"
         }
-      ]
+      ],
+      "index": 6
     },
     {
       "name": "Khezu (Young)",
@@ -220,8 +226,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 48,
-      "atk_alt": 48,
+      "atk_main": 5,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -265,7 +272,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 9
     },
     {
       "name": "Mizutsune (Young)",
@@ -275,12 +283,13 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 57,
-      "atk_alt": 57,
+      "atk_main": 67,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
-      "min_weight": 30,
+      "min_weight": 99,
       "evol_weight": 0,
       "stomach": 6,
       "hunger_loss": 38,
@@ -298,7 +307,8 @@
         {
           "to": "Mizutsune"
         }
-      ]
+      ],
+      "index": 7
     },
     {
       "name": "Nargacuga (Young)",
@@ -308,8 +318,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 13,
-      "atk_alt": 13,
+      "atk_main": 33,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -372,7 +383,8 @@
             999999
           ]
         }
-      ]
+      ],
+      "index": 4
     },
     {
       "name": "Rajang (Young)",
@@ -382,8 +394,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 49,
-      "atk_alt": 49,
+      "atk_main": 22,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -405,7 +418,8 @@
         {
           "to": "Rajang"
         }
-      ]
+      ],
+      "index": 8
     },
     {
       "name": "Rathalos (Young)",
@@ -415,8 +429,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 17,
-      "atk_alt": 17,
+      "atk_main": 2,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -490,7 +505,8 @@
             3
           ]
         }
-      ]
+      ],
+      "index": 2
     },
     {
       "name": "Tigrex (Young)",
@@ -500,8 +516,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 10,
-      "atk_alt": 10,
+      "atk_main": 15,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -564,7 +581,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 3
     },
     {
       "name": "Zinogre (Young)",
@@ -574,8 +592,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 74,
-      "atk_alt": 74,
+      "atk_main": 58,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 1440,
       "poop_timer": 120,
       "energy": 20,
@@ -649,7 +668,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 5
     },
     {
       "name": "Azure Rathalos",
@@ -659,8 +679,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 17,
-      "atk_alt": 17,
+      "atk_main": 2,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -709,7 +730,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 11
     },
     {
       "name": "Brute Tigrex",
@@ -719,8 +741,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 19,
-      "atk_alt": 19,
+      "atk_main": 59,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -769,7 +792,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 13
     },
     {
       "name": "Gore Magala",
@@ -780,7 +804,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 14,
-      "atk_alt": 14,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -829,7 +854,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 18
     },
     {
       "name": "Green Nargacuga",
@@ -839,8 +865,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 25,
-      "atk_alt": 25,
+      "atk_main": 88,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -889,7 +916,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 17
     },
     {
       "name": "Khezu",
@@ -899,8 +927,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 58,
-      "atk_alt": 58,
+      "atk_main": 5,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -918,7 +947,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 21
     },
     {
       "name": "Mizutsune",
@@ -928,8 +958,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 57,
-      "atk_alt": 57,
+      "atk_main": 67,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -989,7 +1020,8 @@
             100
           ]
         }
-      ]
+      ],
+      "index": 19
     },
     {
       "name": "Nargacuga",
@@ -999,8 +1031,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 15,
-      "atk_alt": 15,
+      "atk_main": 33,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1045,7 +1078,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 16
     },
     {
       "name": "Rajang",
@@ -1055,8 +1089,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 49,
-      "atk_alt": 49,
+      "atk_main": 22,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1090,7 +1125,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 20
     },
     {
       "name": "Rathalos",
@@ -1100,8 +1136,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 17,
-      "atk_alt": 17,
+      "atk_main": 2,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1146,7 +1183,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 10
     },
     {
       "name": "Red Khezu",
@@ -1156,8 +1194,9 @@
       "special_key": "",
       "sleeps": "21:00",
       "wakes": "08:00",
-      "atk_main": 58,
-      "atk_alt": 58,
+      "atk_main": 5,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1175,7 +1214,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 22
     },
     {
       "name": "Stygian Zinogre",
@@ -1186,7 +1226,8 @@
       "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 82,
-      "atk_alt": 82,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1220,7 +1261,8 @@
             3
           ]
         }
-      ]
+      ],
+      "index": 15
     },
     {
       "name": "Tigrex",
@@ -1230,8 +1272,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 19,
-      "atk_alt": 19,
+      "atk_main": 59,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1276,7 +1319,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 12
     },
     {
       "name": "Zinogre",
@@ -1287,7 +1331,8 @@
       "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 58,
-      "atk_alt": 58,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2160,
       "poop_timer": 120,
       "energy": 30,
@@ -1321,7 +1366,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 14
     },
     {
       "name": "Apex Mizutsune",
@@ -1332,7 +1378,8 @@
       "sleeps": "22:00",
       "wakes": "08:00",
       "atk_main": 69,
-      "atk_alt": 69,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1350,7 +1397,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 32
     },
     {
       "name": "Chaotic Gore Magala",
@@ -1361,7 +1409,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 14,
-      "atk_alt": 14,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1379,7 +1428,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 31
     },
     {
       "name": "Dreadking Rathalos",
@@ -1389,8 +1439,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 18,
-      "atk_alt": 18,
+      "atk_main": 17,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1424,7 +1475,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 23
     },
     {
       "name": "Furious Rajang",
@@ -1434,8 +1486,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 34,
-      "atk_alt": 34,
+      "atk_main": 35,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1453,7 +1506,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 35
     },
     {
       "name": "Grimclaw Tigrex",
@@ -1463,8 +1517,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 19,
-      "atk_alt": 19,
+      "atk_main": 59,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1482,7 +1537,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 25
     },
     {
       "name": "Lucent Nargacuga",
@@ -1492,8 +1548,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 42,
-      "atk_alt": 42,
+      "atk_main": 86,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1511,7 +1568,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 28
     },
     {
       "name": "Molten Tigrex",
@@ -1521,8 +1579,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 19,
-      "atk_alt": 19,
+      "atk_main": 59,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1540,7 +1599,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 26
     },
     {
       "name": "Shagaru Magala",
@@ -1550,8 +1610,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 31,
-      "atk_alt": 31,
+      "atk_main": 37,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1569,7 +1630,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 30
     },
     {
       "name": "Silver Rathalos",
@@ -1579,8 +1641,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 10,
-      "atk_alt": 10,
+      "atk_main": 4,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1614,7 +1677,8 @@
             1
           ]
         }
-      ]
+      ],
+      "index": 24
     },
     {
       "name": "Silverwind Nargacuga",
@@ -1624,8 +1688,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 27,
-      "atk_alt": 27,
+      "atk_main": 33,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1643,7 +1708,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 27
     },
     {
       "name": "Soulseer Mizutsune",
@@ -1654,7 +1720,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 69,
-      "atk_alt": 69,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1672,7 +1739,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 34
     },
     {
       "name": "Thunderlord Zinogre",
@@ -1683,7 +1751,8 @@
       "sleeps": "23:00",
       "wakes": "08:00",
       "atk_main": 74,
-      "atk_alt": 74,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1717,7 +1786,8 @@
             2
           ]
         }
-      ]
+      ],
+      "index": 29
     },
     {
       "name": "Violet Mizutsune",
@@ -1727,8 +1797,9 @@
       "special_key": "",
       "sleeps": "22:00",
       "wakes": "08:00",
-      "atk_main": 52,
-      "atk_alt": 52,
+      "atk_main": 67,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 40,
@@ -1746,7 +1817,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 33
     },
     {
       "name": "Rathalos Greymon",
@@ -1756,8 +1828,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 4,
-      "atk_alt": 4,
+      "atk_main": 2,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1775,7 +1848,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 36
     },
     {
       "name": "Zino Garurumon",
@@ -1785,8 +1859,9 @@
       "special_key": "",
       "sleeps": "23:00",
       "wakes": "08:00",
-      "atk_main": 82,
-      "atk_alt": 82,
+      "atk_main": 58,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
       "time": 2880,
       "poop_timer": 120,
       "energy": 50,
@@ -1804,7 +1879,8 @@
       "star": 0,
       "attack": 0,
       "critical_turn": 0,
-      "evolve": []
+      "evolve": [],
+      "index": 37
     }
   ]
 }

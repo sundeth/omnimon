@@ -41,6 +41,9 @@ class AdventurePanel(UIComponent):
         self.available_round = available_round
         self.area_round_limits = area_round_limits if area_round_limits is not None else {}
         
+        # Hide progress for Random adventure style
+        self.show_progress = getattr(module, 'adventure_style', 'Area Selection') != 'Random'
+        
         # Calculate progress based on available area/round
         # Progress is areas cleared (available_area - 1), not current area
         self.progress_current = max(0, available_area - 1)
@@ -98,8 +101,9 @@ class AdventurePanel(UIComponent):
                 battle_icon = image_load(battle_icon_path).convert_alpha()
                 
                 # Scale to match UI scale
-                sprite_scale = self.manager.get_sprite_scale()
-                scaled_size = (48 * sprite_scale, 48 * sprite_scale)
+                # NEW SYSTEM: Use ui_scale directly for scaling
+                ui_scale = self.manager.ui_scale
+                scaled_size = (48 * ui_scale, 48 * ui_scale)
                 icon_sprite = pygame.transform.scale(battle_icon, scaled_size)
             except Exception as e:
                 runtime_globals.game_console.log(f"[AdventurePanel] Failed to load BattleIcon: {e}")
@@ -123,43 +127,44 @@ class AdventurePanel(UIComponent):
                 name_rect.top = scaled_padding
                 blit_with_cache(surface, name_surface, name_rect.topleft)
                 
-                # Draw progress below the name
-                # Determine progress color
-                progress_color = fg_color
-                if self.progress_total > 0:
-                    percentage = (self.progress_current / self.progress_total) * 100
-                    if percentage < 50:
-                        from components.ui.ui_constants import RED
-                        progress_color = RED
-                    elif percentage < 99:
-                        from components.ui.ui_constants import YELLOW
-                        progress_color = YELLOW
-                    else:
-                        from components.ui.ui_constants import GREEN
-                        progress_color = GREEN
-                
-                # Draw "Progress:" label
-                progress_label_text = "Progress:"
-                progress_label_surface = text_font.render(progress_label_text, False, fg_color)
-                progress_label_rect = progress_label_surface.get_rect()
-                progress_label_rect.left = icon_rect.right + scaled_padding
-                progress_label_rect.top = name_rect.bottom + scaled_padding // 2
-                blit_with_cache(surface, progress_label_surface, progress_label_rect.topleft)
-                
-                # Draw progress value
-                progress_value_text = f"{self.progress_current}/{self.progress_total}"
-                progress_value_surface = text_font.render(progress_value_text, False, progress_color)
-                progress_value_rect = progress_value_surface.get_rect()
-                progress_value_rect.right = self.rect.width - scaled_padding
-                progress_value_rect.top = progress_label_rect.top
-                blit_with_cache(surface, progress_value_surface, progress_value_rect.topleft)
+                # Draw progress below the name (hidden for Random adventure style)
+                if getattr(self, 'show_progress', True):
+                    # Determine progress color
+                    progress_color = fg_color
+                    if self.progress_total > 0:
+                        percentage = (self.progress_current / self.progress_total) * 100
+                        if percentage < 50:
+                            from components.ui.ui_constants import RED
+                            progress_color = RED
+                        elif percentage < 99:
+                            from components.ui.ui_constants import YELLOW
+                            progress_color = YELLOW
+                        else:
+                            from components.ui.ui_constants import GREEN
+                            progress_color = GREEN
+                    
+                    # Draw "Progress:" label
+                    progress_label_text = "Progress:"
+                    progress_label_surface = text_font.render(progress_label_text, False, fg_color)
+                    progress_label_rect = progress_label_surface.get_rect()
+                    progress_label_rect.left = icon_rect.right + scaled_padding
+                    progress_label_rect.top = name_rect.bottom + scaled_padding // 2
+                    blit_with_cache(surface, progress_label_surface, progress_label_rect.topleft)
+                    
+                    # Draw progress value
+                    progress_value_text = f"{self.progress_current}/{self.progress_total}"
+                    progress_value_surface = text_font.render(progress_value_text, False, progress_color)
+                    progress_value_rect = progress_value_surface.get_rect()
+                    progress_value_rect.right = self.rect.width - scaled_padding
+                    progress_value_rect.top = progress_label_rect.top
+                    blit_with_cache(surface, progress_value_surface, progress_value_rect.topleft)
                 
                 # Draw battle effects below progress (if any active for this module)
-                self._draw_battle_effects(surface, icon_rect, progress_label_rect, scaled_padding, text_font, fg_color, sprite_scale)
+                self._draw_battle_effects(surface, icon_rect, progress_label_rect, scaled_padding, text_font, fg_color, ui_scale)
         
         return surface
     
-    def _draw_battle_effects(self, surface, icon_rect, progress_label_rect, scaled_padding, text_font, fg_color, sprite_scale):
+    def _draw_battle_effects(self, surface, icon_rect, progress_label_rect, scaled_padding, text_font, fg_color, ui_scale):
         """Draw active battle effect icons with amounts below the progress section"""
         from core import game_globals
         import os
@@ -207,8 +212,8 @@ class AdventurePanel(UIComponent):
                 
                 if os.path.exists(sprite_path):
                     icon = image_load(sprite_path).convert_alpha()
-                    # Scale icon to small size (20x20 base)
-                    scaled_icon_size = (16 * sprite_scale, 16 * sprite_scale)
+                    # Scale icon to small size (16x16 base, scaled by ui_scale)
+                    scaled_icon_size = (16 * ui_scale, 16 * ui_scale)
                     scaled_icon = pygame.transform.scale(icon, scaled_icon_size)
                     
                     effect_display_data.append({
@@ -221,7 +226,7 @@ class AdventurePanel(UIComponent):
         # Draw effects horizontally below the progress
         start_x = icon_rect.right + scaled_padding
         start_y = progress_label_rect.bottom + scaled_padding
-        effect_spacing = 4 * sprite_scale
+        effect_spacing = 4 * ui_scale
         
         current_x = start_x
         for effect_data in effect_display_data:

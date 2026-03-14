@@ -6,6 +6,7 @@ Modern UI version with category selection for different types of pets/DIMs.
 import pygame
 import os
 import random
+from components.ui.text_panel import TextPanel
 from components.ui.ui_manager import UIManager
 from components.ui.title_scene import TitleScene
 from components.ui.button import Button
@@ -14,19 +15,22 @@ from components.ui.image import Image
 from components.ui.label import Label
 from components.ui.label_value import LabelValue
 from components.ui.experience_bar import ExperienceBar
-from components.ui.grid import Grid
+from components.ui.grid import Grid, GridItem
 from components.window_background import WindowBackground
 from core import runtime_globals, game_globals
 from core.game_digidex import register_digidex_entry
 from core.game_pet import GamePet
+from core.utils.pet_utils import distribute_pets_evenly
 from core.utils.scene_utils import change_scene
-from core.utils.module_utils import get_module
+from core.utils.module_utils import get_module, load_modules
 from core.utils.utils_unlocks import unlock_item
+from core.utils import navigation_utils
 from components.ui.ui_constants import BASE_RESOLUTION, BLUE, GRAY, GREEN, PURPLE, YELLOW, RED
 from core.game_digidex import is_pet_unlocked
 from core.utils.utils_unlocks import get_unlocked_backgrounds, is_unlocked
 from core.utils.sprite_utils import load_pet_sprites
 from core.utils.asset_utils import image_load
+from scenes.scene_error import SceneError
 
 #=====================================================================
 # SceneEggSelection (New Journey Category Selection)
@@ -40,7 +44,7 @@ class SceneEggSelection:
         """Initialize the egg selection scene with new UI system."""
         
         # Use GRAY theme for egg selection (neutral, welcoming)
-        self.ui_manager = UIManager("GRAY")
+        self.ui_manager = UIManager("VIOLET")
         
         # Scene phases: "category" -> "module_selection" -> other phases will be added later
         self.phase = "category"
@@ -92,13 +96,52 @@ class SceneEggSelection:
         # Check if this is the first pet
         self.is_first_pet = len(game_globals.pet_list) == 0
         
+        # Check module availability and redirect to SceneError if needed
+        if not navigation_utils.has_modules_installed():
+            # No modules installed at all
+            SceneError.set_error(
+                message="NO MODULE DETECTED",
+                return_scene="connect",
+                bottom_message="Install a module from the Connect menu"
+            )
+            change_scene("error")
+            return
+
+        if not self._has_any_modules_with_eggs():
+            # No installed modules have eggs (Tutorial is excluded) — show
+            # the inline "get some modules" UI regardless of game mode.
+            self.phase = "no_modules"
+            runtime_globals.game_console.log(
+                "[SceneEggSelection] No installed modules have eggs")
+        elif game_globals.is_progress_mode() and not navigation_utils.has_owned_modules():
+            # Progress Mode: modules are installed but player owns none of them.
+            # Offer the shop so they can purchase / download one.
+            SceneError.set_error(
+                message="MODULES NOT PURCHASED",
+                return_scene="connect",
+                bottom_message="Buy or download a module from the Shop"
+            )
+            change_scene("error")
+            return
+        else:
+            runtime_globals.game_console.log(
+                "[SceneEggSelection] Modules available, showing category selection")
+        
         self.setup_ui()
         
-        # Set mouse mode and focus on the recommended option (Modern if first pet, otherwise Classic)
-        if self.is_first_pet and self.modern_button:
+        # Set mouse mode and focus on the recommended option (Modern if first pet and enabled, otherwise first enabled button)
+        if self.is_first_pet and self.modern_button and self.modern_button.enabled:
             self.ui_manager.set_focused_component(self.modern_button)
-        elif self.classic_button:
+        elif self.classic_button and self.classic_button.enabled:
             self.ui_manager.set_focused_component(self.classic_button)
+        elif self.modern_button and self.modern_button.enabled:
+            self.ui_manager.set_focused_component(self.modern_button)
+        elif self.conversions_button and self.conversions_button.enabled:
+            self.ui_manager.set_focused_component(self.conversions_button)
+        elif self.custom_button and self.custom_button.enabled:
+            self.ui_manager.set_focused_component(self.custom_button)
+        elif self.random_button:
+            self.ui_manager.set_focused_component(self.random_button)
         
         runtime_globals.game_console.log("[SceneEggSelection] New journey category selection initialized.")
 
@@ -108,7 +151,9 @@ class SceneEggSelection:
             # Clear existing components
             self.clear_components()
             
-            if self.phase == "category":
+            if self.phase == "no_modules":
+                self.setup_no_modules_ui()
+            elif self.phase == "category":
                 self.setup_category_ui()
             elif self.phase == "module_selection":
                 self.setup_module_selection_ui()
@@ -120,6 +165,97 @@ class SceneEggSelection:
             import traceback
             runtime_globals.game_console.log(f"[SceneEggSelection] Traceback: {traceback.format_exc()}")
             raise
+
+    def _has_modules_for_category(self, category: str) -> bool:
+        """Check if there are any modules with eggs available for the given category."""
+        for module_name, module in runtime_globals.game_modules.items():
+            module_category = getattr(module, 'category', 'Custom')
+            
+            # In Progress Mode, skip modules the player doesn't own
+            if game_globals.is_progress_mode():
+                if module_name.lower() != 'tutorial' and not game_globals.purchases.owns_module_name(module_name):
+                    continue
+            
+            # Flexible category matching - case insensitive and handle plurals
+            if (module_category.lower() == category.lower() or 
+                (category.lower() == 'classic' and module_category.lower() in ['classic', 'classics']) or
+                (category.lower() == 'modern' and module_category.lower() in ['modern', 'moderns']) or
+                (category.lower() == 'conversions' and module_category.lower() in ['conversion', 'conversions']) or
+                (category.lower() == 'custom' and module_category.lower() in ['custom', 'customs', 'other', ''])):
+                
+                # Check if module has any eggs (stage 0 monsters)
+                eggs = module.get_monsters_by_stage(0)
+                if eggs:
+                    return True
+        return False
+
+    def _has_any_modules_with_eggs(self) -> bool:
+        """Check if there are any installed modules that have selectable eggs.
+
+        This is purely a scene-usability check (does the scene have anything
+        to show at all?).  Ownership filtering for Progress Mode is handled
+        separately in ``load_available_modules`` and in the ``__init__``
+        routing logic (which shows a shop-redirect error when no owned modules
+        are installed).
+        """
+        for module_name, module in runtime_globals.game_modules.items():
+            # Skip the Tutorial module — it is not a real playable module
+            if module_name.lower() == "tutorial":
+                continue
+            eggs = module.get_monsters_by_stage(0)
+            if eggs:
+                return True
+        return False
+
+    def setup_no_modules_ui(self):
+        """Setup UI for when no modules are available."""
+        ui_width = ui_height = BASE_RESOLUTION
+        
+        # Background
+        self.background = Background(ui_width, ui_height)
+        self.background.set_regions([(0, ui_height, "black")])
+        self.ui_manager.add_component(self.background)
+        
+        # Title
+        self.title_scene = TitleScene(0, 9, "NEW JOURNEY")
+        self.ui_manager.add_component(self.title_scene)
+        
+        # Message text panel
+        message_panel = TextPanel(30, 80, 180, 80)
+        message_panel.set_text("No modules installed. Install manually or download from the Shop.")
+        self.ui_manager.add_component(message_panel)
+
+        # Action buttons
+        btn_w = 90
+        btn_h = 30
+        gap = 12
+        btn_y = 180
+        total_w = btn_w * 2 + gap
+        start_x = (ui_width - total_w) // 2
+
+        def on_try_again():
+            runtime_globals.game_sound.play("menu")
+            change_scene("egg")
+
+        def on_shop():
+            runtime_globals.game_sound.play("menu")
+            change_scene("connect")
+
+        try_again_button = Button(
+            start_x, btn_y, btn_w, btn_h,
+            "Try Again", on_try_again,
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+        )
+        self.ui_manager.add_component(try_again_button)
+
+        shop_button = Button(
+            start_x + btn_w + gap, btn_y, btn_w, btn_h,
+            "Shop", on_shop,
+            cut_corners={'tl': False, 'tr': True, 'bl': True, 'br': False}
+        )
+        self.ui_manager.add_component(shop_button)
+        
+        runtime_globals.game_console.log("[SceneEggSelection] No modules UI setup complete")
 
     def clear_components(self):
         """Clear all components from the UI manager."""
@@ -165,43 +301,53 @@ class SceneEggSelection:
         custom_x = grid_start_x + button_width + grid_spacing
         custom_y = grid_start_y + button_height + grid_spacing
         
-        # Create Classic button
+        # Check which categories have modules available
+        has_classic = self._has_modules_for_category('classic')
+        has_modern = self._has_modules_for_category('modern')
+        has_conversions = self._has_modules_for_category('conversions')
+        has_custom = self._has_modules_for_category('custom')
+        
+        # Create Classic button (disabled if no modules)
         self.classic_button = Button(
             classic_x, classic_y, button_width, button_height,
             "", self.on_classic_selection,
             cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
-            decorators=["Selection_Classics"]
+            decorators=["Selection_Classics"],
+            enabled=has_classic
         )
         self.ui_manager.add_component(self.classic_button)
         
-        # Create Modern button (with recommended decorator if first pet)
+        # Create Modern button (with recommended decorator if first pet, disabled if no modules)
         modern_decorators = ["Selection_Modern"]
-        if self.is_first_pet:
+        if self.is_first_pet and has_modern:
             modern_decorators.append("Selection_Recommended")
         
         self.modern_button = Button(
             modern_x, modern_y, button_width, button_height,
             "", self.on_modern_selection,
             cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
-            decorators=modern_decorators
+            decorators=modern_decorators,
+            enabled=has_modern
         )
         self.ui_manager.add_component(self.modern_button)
         
-        # Create Conversions button
+        # Create Conversions button (disabled if no modules)
         self.conversions_button = Button(
             conversions_x, conversions_y, button_width, button_height,
             "", self.on_conversions_selection,
             cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
-            decorators=["Selection_Conversions"]
+            decorators=["Selection_Conversions"],
+            enabled=has_conversions
         )
         self.ui_manager.add_component(self.conversions_button)
         
-        # Create Custom button
+        # Create Custom button (disabled if no modules)
         self.custom_button = Button(
             custom_x, custom_y, button_width, button_height,
             "", self.on_custom_selection,
             cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
-            decorators=["Selection_Custom"]
+            decorators=["Selection_Custom"],
+            enabled=has_custom
         )
         self.ui_manager.add_component(self.custom_button)
         
@@ -450,6 +596,11 @@ class SceneEggSelection:
         
         # Get all modules from runtime globals
         for module_name, module in runtime_globals.game_modules.items():
+            # In Progress Mode, skip modules the player doesn't own (Tutorial always allowed)
+            if game_globals.is_progress_mode():
+                if module_name.lower() != 'tutorial' and not game_globals.purchases.owns_module_name(module_name):
+                    continue
+            
             # Filter modules by category
             module_category = getattr(module, 'category', 'Custom')  # Default to Custom if no category
             
@@ -636,7 +787,6 @@ class SceneEggSelection:
                         sprite = sprites_dict["0"]
                 
                 # Create grid item with sprite and egg name
-                from components.ui.grid import GridItem
                 grid_item = GridItem(
                     sprite=sprite,
                     text=egg["name"],
@@ -647,7 +797,6 @@ class SceneEggSelection:
             except Exception as e:
                 runtime_globals.game_console.log(f"[SceneEggSelection] Failed to load sprite for egg {egg['name']}: {e}")
                 # Create grid item without sprite
-                from components.ui.grid import GridItem
                 grid_item = GridItem(
                     sprite=None,
                     text=egg["name"],
@@ -1092,6 +1241,7 @@ class SceneEggSelection:
         
         # Go to game scene
         change_scene("game")
+        distribute_pets_evenly()
     
     def on_egg_back_to_module(self):
         """Handle back to module selection button press."""

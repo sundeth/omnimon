@@ -37,12 +37,12 @@ class SceneSleep:
         self.is_animating = False
         self.animation_frame_counter = 0
         # Use frame rate from constants for exactly 1 second animation
-        self.animation_duration_frames = constants.FRAME_RATE  # About 1 second at current frame rate
+        self.animation_duration_frames = game_globals.configuration.frame_rate  # About 1 second at current frame rate
         
         # Post-animation pause system
         self.is_pausing_after_animation = False
         self.pause_frame_counter = 0
-        self.pause_duration_frames = constants.FRAME_RATE // 3  # About 1/3 second pause
+        self.pause_duration_frames = game_globals.configuration.frame_rate // 3  # About 1/3 second pause
         
         # Use appropriate theme based on initial state
         initial_theme = "BLUE" if self.scene_state == "sleep" else "YELLOW"

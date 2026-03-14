@@ -253,7 +253,7 @@ class SceneMainGame:
         if game_globals.event is None:
             if self.event_stage == 0:
                 # Count minutes using frame rate - every 60 seconds * frame rate = 1 minute
-                if self.frame_counter % (constants.FRAME_RATE * 60) == 0:
+                if self.frame_counter % (game_globals.configuration.frame_rate * 60) == 0:
                     game_globals.event_time -= 1
                     if game_globals.event_time <= 0:
                         # Check if all pets are awake before triggering events
@@ -303,7 +303,7 @@ class SceneMainGame:
         """
         Handles the gift animation for ITEM_PACKAGE events.
         """
-        gift_move_duration = 4 * constants.FRAME_RATE  # 4 seconds
+        gift_move_duration = 4 * game_globals.configuration.frame_rate  # 4 seconds
         if self.event_gift_timer < gift_move_duration:
             # Smooth movement using easing
             progress = self.event_gift_timer / gift_move_duration
@@ -315,7 +315,7 @@ class SceneMainGame:
             self.event_gift_timer += 1
         
         # Phase 2: Gift "opens" - show item only (2 seconds)
-        elif self.event_gift_timer < gift_move_duration + (2 * constants.FRAME_RATE):
+        elif self.event_gift_timer < gift_move_duration + (2 * game_globals.configuration.frame_rate):
             self.event_gift_x = runtime_globals.SCREEN_WIDTH // 2 - 24  # Keep centered
 
             # On first frame of this phase, add item to inventory using utils
@@ -339,7 +339,7 @@ class SceneMainGame:
         # Phase 3: Animation complete, make pets happy and cleanup
         else:
             # Make all pets happy and play sound only once when cleaning up
-            if self.event_gift_timer == gift_move_duration + (2 * constants.FRAME_RATE):
+            if self.event_gift_timer == gift_move_duration + (2 * game_globals.configuration.frame_rate):
                 for pet in game_globals.pet_list:
                     pet.set_state("happy2")
                 runtime_globals.game_sound.play("happy")
@@ -481,7 +481,7 @@ class SceneMainGame:
             self.update_mouse_hover()
         
         # Screensaver: check timeout (seconds) using frame-based timing to avoid frequent time.time() calls
-        timeout = getattr(game_globals, 'screen_timeout', 0)
+        timeout = game_globals.configuration.screen_timeout
         last_frame = getattr(runtime_globals, 'last_input_frame', self.frame_counter)
         elapsed_frames = self.frame_counter - last_frame
         timeout_frames = int(timeout * constants.FRAME_RATE) if timeout and timeout > 0 else 0
@@ -619,7 +619,7 @@ class SceneMainGame:
                 if idx in game_pet_eating and pet.state == "eat":
                     anim_frames = self.food_anims.get(idx)
                     if anim_frames:
-                        frame_duration = constants.FRAME_RATE
+                        frame_duration = game_globals.configuration.frame_rate
                         total_frames = 4
                         total_anim_time = frame_duration * total_frames
                         # Clamp frame_idx to last frame if animation_counter exceeds total_anim_time
@@ -632,13 +632,13 @@ class SceneMainGame:
                         # Prevent food from overlapping menu icons
                         y_offset = 20 * runtime_globals.UI_SCALE if game_globals.showClock else 5 * runtime_globals.UI_SCALE
                         y_min = y_offset + 2 * runtime_globals.MENU_ICON_SIZE
-                        if constants.MAX_PETS == 4:
+                        if game_globals.configuration.max_pets == 4:
                             y = max(y_min, pet.y - (food_sprite.get_height() // 2))
                             surface.blit(food_sprite, (x, y))
                         else:
                             # Scale the food sprite
                             food_size = food_sprite.get_height()
-                            food_size = food_size * max(constants.MAX_PETS, 2) // 4
+                            food_size = food_size * max(game_globals.configuration.max_pets, 2) // 4
                             food_sprite_scaled = pygame.transform.scale(food_sprite, (food_size, food_size))
                             y = max(y_min, pet.y - (food_size // 2))
                             surface.blit(food_sprite_scaled, (x, y))
@@ -671,7 +671,7 @@ class SceneMainGame:
             from core.game_event import EventType
             
             if game_globals.event.type == EventType.ITEM_PACKAGE:
-                gift_move_duration = 4 * constants.FRAME_RATE  # 4 seconds
+                gift_move_duration = 4 * game_globals.configuration.frame_rate  # 4 seconds
                 
                 # Phase 1: Show gift sprite moving to center
                 if self.event_gift_timer < gift_move_duration:
@@ -872,7 +872,7 @@ class SceneMainGame:
             runtime_globals.game_sound.play("menu")
             change_scene("test")
             runtime_globals.game_console.log("[DEBUG] Opening test scene")
-        elif event_type == "F12" and constants.DEBUG_MODE:
+        elif event_type == "F12" and game_globals.configuration.debug_mode:
             # Open debug scene
             runtime_globals.game_sound.play("menu")
             change_scene("debug")
@@ -945,14 +945,16 @@ class SceneMainGame:
                 self.start_scene("library")
             elif index == 8:
                 self.start_connect()
-
+        elif event_type == "B" and index >= 0:
+            runtime_globals.game_sound.play("cancel")
+            runtime_globals.main_menu_index = -1  # Deselect menu
         elif event_type in ["START", "RCLICK"] or (platform.system() == "Windows" and event_type == "B"):  # Maps to ESC (PC) & "START" button (Pi)
             runtime_globals.game_sound.play("cancel")
             self.start_scene("settings")
 
         elif event_type == "L":  # Rotate screen upside-down
             runtime_globals.game_sound.play("menu")
-            game_globals.rotated = True
+            game_globals.configuration.rotated = True
 
         elif event_type == "R":
             runtime_globals.game_sound.play("menu")
@@ -1024,14 +1026,9 @@ class SceneMainGame:
 
     def start_connect(self) -> None:
         """
-        Checks if battle is possible and starts it.
+        Opens the connect scene.
         """
-        can_train = any(pet.can_battle_pvp() for pet in get_selected_pets())
-        if can_train:
-            self.start_scene("connect")
-        else:
-            runtime_globals.game_sound.play("cancel")
-            runtime_globals.game_console.log("[SceneMainGame] Cannot start battle: no eligible pets.")
+        self.start_scene("connect")
 
     def start_cleaning(self) -> None:
         """
@@ -1046,7 +1043,8 @@ class SceneMainGame:
 
     def heal_sick_pets(self) -> None:
         """
-        Heals sick pets by 1 sickness point, playing angry animation.
+        Heals sick pets. If both Dots and Skull types exist, opens healing scene.
+        Otherwise heals directly.
         """
         sick_pets = [pet for pet in game_globals.pet_list if pet.sick > 0]
 
@@ -1055,10 +1053,26 @@ class SceneMainGame:
             runtime_globals.game_console.log("[SceneMainGame] No sick pets to heal.")
             return
 
+        # Check if there are both dots and non-dots sick pets
+        has_dots = any(getattr(pet, 'sick_type', '') == 'dots' for pet in sick_pets)
+        has_skull = any(getattr(pet, 'sick_type', '') != 'dots' for pet in sick_pets)
+
+        if has_dots and has_skull:
+            # Open healing scene for selection
+            self.start_scene("healing")
+            return
+
+        # Only one type — heal all directly
+        self._do_heal(sick_pets)
+
+    def _do_heal(self, pets_to_heal) -> None:
+        """Heal the given list of pets by 1 sickness point."""
         runtime_globals.game_sound.play("fail")
         distribute_pets_evenly()
 
-        for pet in sick_pets:
+        for pet in pets_to_heal:
             pet.sick = max(0, pet.sick - 1)
+            if pet.sick == 0:
+                pet.sick_type = ""
             pet.set_state("angry")
             runtime_globals.game_console.log(f"[SceneMainGame] {pet.name} healed. Remaining sickness: {pet.sick}")

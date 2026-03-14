@@ -5,6 +5,7 @@ Allows the player to browse inventory items and use/discard them.
 
 import pygame
 import os
+import time
 
 from components.ui.ui_manager import UIManager
 from components.ui.title_scene import TitleScene
@@ -128,7 +129,7 @@ class SceneInventory:
             self.ui_manager.add_component(self.background)
             
             # Create and add the title scene at top
-            self.title_scene = TitleScene(0, 5, "INVENTORY")
+            self.title_scene = TitleScene(0, 9, "INVENTORY")
             self.ui_manager.add_component(self.title_scene)
             
             # Create and add the item list positioned at 0, 27 with size 156x176
@@ -324,7 +325,7 @@ class SceneInventory:
             # Strategy 0: Enable all pets that are in selected_pets list
             enabled_indices = []
             for i, pet in enumerate(all_pets):
-                if pet in selected_pet_set:
+                if pet in selected_pet_set and not pet._is_blocked_by_sleep():
                     enabled_indices.append(i)
             self.pet_selector.set_enabled_pets(enabled_indices)
         else:
@@ -334,6 +335,8 @@ class SceneInventory:
             for i, pet in enumerate(all_pets):
                 if pet not in selected_pet_set:
                     continue  # Skip pets not in selected_pets
+                if pet._is_blocked_by_sleep():
+                    continue  # Skip pets blocked by sleep window
                     
                 pet_needs_item = False
                 if item_status == "hunger":
@@ -473,9 +476,9 @@ class SceneInventory:
         
         elif status_to_change == 'timer':
             for pet in targets:
-                pet.timer += amount * constants.FRAME_RATE * 60  # Convert minutes to frames
+                pet._rt_origin -= amount * 60  # shift origin back by the given number of minutes
                 affected_pets.append(pet)
-                runtime_globals.game_console.log(f"[SceneInventory] {pet.name} timer increased by {amount} minutes")
+                runtime_globals.game_console.log(f"[SceneInventory] {pet.name} timer advanced by {amount} minutes")
         
         elif status_to_change == 'vital_values':
             for pet in targets:

@@ -1,11 +1,12 @@
 from core import constants
 
 class GameBattle:
-    def __init__(self, team1, team2, hp_buff, attack_buff, module):
+    def __init__(self, team1, team2, hp_buff, attack_buff, module, enemy_first=False):
         self.module = module
         self.attack_buff = attack_buff  # Attack boost for the player
         self.team1 = team1  # Player's team
         self.team2 = team2  # Enemy's team
+        self.enemy_first = enemy_first  # Whether enemy attacks first (DCom battles)
 
         self.team1_hp = [0] * len(team1)  # HP for each pet in team1
         self.team1_max_hp = [0] * len(team1)  # Max HP for team1
@@ -187,6 +188,11 @@ class GameBattle:
                     self.phase[i] = "enemy_charge"
                     self.attack_forward[i] = 0
                     self.attack_jump[i] = 0
+                    # For enemy_first mode, increment turn AFTER pet attacks (end of round)
+                    if self.enemy_first:
+                        self.turns[i] += 1
+                        if self.turns[i] > 12:
+                            self.phase[i] = "result"
                 elif self.phase[i] == "pet_charge":
                     self.phase[i] = "pet_attack"
                     self.team1_shot[i] = True if self.team1_hp[i] > 0 else False
@@ -195,9 +201,11 @@ class GameBattle:
                     self.phase[i] = "pet_charge"
                     self.attack_forward[i] = 0
                     self.attack_jump[i] = 0
-                    self.turns[i] += 1
-                    if self.turns[i] > 12:
-                        self.phase[i] = "result"
+                    # For normal mode (pet first), increment turn AFTER enemy attacks (end of round)
+                    if not self.enemy_first:
+                        self.turns[i] += 1
+                        if self.turns[i] > 12:
+                            self.phase[i] = "result"
                 elif self.phase[i] == "enemy_charge":
                     self.phase[i] = "enemy_attack"
                     self.team2_shot[i] = True if self.team2_hp[i] > 0 else False

@@ -7,7 +7,7 @@ from core.animation import PetFrame
 from core.combat.sim.models import Digimon
 import core.constants as constants
 from core.utils.scene_utils import change_scene
-from core import runtime_globals
+from core import game_globals, runtime_globals
 from core.utils.utils_unlocks import unlock_item
 from core.utils.module_utils import get_module
 import components.ui.ui_constants as ui_constants
@@ -37,15 +37,18 @@ class BattleEncounterVersus(BattleEncounter):
         # Override the BattlePlayer with the two pets for versus mode
         self.battle_player = GameBattle([pet1], [pet2], 0, 0, self.module)
         fixed_hp = None
-        if protocol in [BattleProtocol.DMC_BS]:
-            fixed_hp = 6
-            self.turn_limit = 5
+        if protocol in [BattleProtocol.DM_BS]:
+            fixed_hp = 5  # Original DM uses 5 HP
+            self.turn_limit = 4  # 4 turns (3 normal + 1 finishing)
+        elif protocol in [BattleProtocol.DMC_BS]:
+            fixed_hp = 5  # DMC uses 5 HP (Winner 1112, Loser 1111)
+            self.turn_limit = 4  # 4 turns
         elif protocol in [BattleProtocol.DM20_BS]:
-            fixed_hp = 4
-            self.turn_limit = 6
+            fixed_hp = 5  # DM20 uses 5 HP
+            self.turn_limit = 5  # 5 turns
         elif protocol in [BattleProtocol.PEN20_BS]:
-            fixed_hp = 3
-            self.turn_limit = 6
+            fixed_hp = 5  # PEN20 uses 5 HP
+            self.turn_limit = 5  # 5 turns
         elif protocol in [BattleProtocol.DMX_BS]:
             self.turn_limit = 5
 
@@ -93,9 +96,28 @@ class BattleEncounterVersus(BattleEncounter):
 
     def calculate_combat_for_pairs(self):
         self.simulate_combat()
+        
+        # Load battle turns from simulation into BattlePlayer for animations
+        self._load_protocol_turns_into_battle_player()
 
         self.process_battle_results()
+    
+    def _load_protocol_turns_into_battle_player(self):
+        """
+        Load battle turns from global_battle_log into BattlePlayer so animations can play.
+        Sets up the battle system to use short cooldowns for rapid attack sequences.
+        """
+        if not self.global_battle_log or not self.global_battle_log.battle_log:
+            runtime_globals.game_console.log("[BattleEncounterVersus] No battle log to load")
+            return
         
+        # Set short cooldowns for protocol battles to trigger rapid attacks
+        for i in range(len(self.battle_player.team1)):
+            self.battle_player.cooldowns[i] = 10  # Very short cooldown for fast attacks
+            self.battle_player.phase[i] = "pet_charge"  # Start with charge phase
+            self.battle_player.turns[i] = 1
+        
+        runtime_globals.game_console.log(f"[BattleEncounterVersus] Loaded protocol turns for {len(self.global_battle_log.battle_log)} turns")
 
     def setup_alert_components(self):
         """
@@ -149,6 +171,26 @@ class BattleEncounterVersus(BattleEncounter):
         self.right_label.get_font = lambda font_type, custom_size=None: UIComponent.get_font(self.right_label, font_type, custom_size=24)
         self.ui_manager.add_component(self.right_label)
 
+    def _wrap_byte_value(self, value, max_value=255):
+        """
+        Wrap a value to fit in the specified range, but ensure it never becomes 0.
+        If value exceeds max_value, wrap around (e.g., for max=255: 260->5, 256->1).
+        
+        Args:
+            value: Integer value that might exceed the range
+            max_value: Maximum allowed value (default 255 for byte)
+            
+        Returns:
+            Value wrapped to 1-max_value range
+        """
+        if value <= 0:
+            return 1
+        if value > max_value:
+            # Wrap around: (max+1)->1, (max+2)->2, etc.
+            wrapped = value % (max_value + 1)
+            return wrapped if wrapped != 0 else 1
+        return value
+
     def simulate_combat(self):
         strength_bonus = 3
 
@@ -161,6 +203,7 @@ class BattleEncounterVersus(BattleEncounter):
         }
 
         # Create Digimon instance for the attacker
+        # Note: DM20 protocol uses 6-bit shot values (0-63), so we cap them at 63
         attacker = Digimon(
             name=self.battle_player.team1[0].name,
             order=0,
@@ -176,8 +219,8 @@ class BattleEncounterVersus(BattleEncounter):
             level=self.battle_player.team1[0].level,
             stage=self.battle_player.team1[0].stage,
             sick=1 if self.battle_player.team1[0].sick else 0,
-            shot1=self.battle_player.team1[0].atk_main,
-            shot2=self.battle_player.team1[0].atk_alt,
+            shot1=self._wrap_byte_value(self.battle_player.team1[0].atk_main, max_value=63),
+            shot2=self._wrap_byte_value(self.battle_player.team1[0].atk_alt, max_value=63),
             tag_meter=2
         )
 
@@ -197,8 +240,8 @@ class BattleEncounterVersus(BattleEncounter):
             level=self.battle_player.team2[0].level,
             stage=self.battle_player.team2[0].stage,
             sick=1 if self.battle_player.team2[0].sick else 0,
-            shot1=self.battle_player.team2[0].atk_main,
-            shot2=self.battle_player.team2[0].atk_alt,
+            shot1=self._wrap_byte_value(self.battle_player.team2[0].atk_main, max_value=63),
+            shot2=self._wrap_byte_value(self.battle_player.team2[0].atk_alt, max_value=63),
             tag_meter=2
         )
 
@@ -212,7 +255,7 @@ class BattleEncounterVersus(BattleEncounter):
         """
         Handles the alert phase, transitioning to the battle phase.
         """
-        if self.frame_counter > constants.FRAME_RATE * 3:  # Wait for 3 seconds
+        if self.frame_counter > game_globals.configuration.frame_rate * 3:  # Wait for 3 seconds
             self.frame_counter = 0
             self.phase = "battle"
             self.calculate_combat_for_pairs()
@@ -284,7 +327,7 @@ class BattleEncounterVersus(BattleEncounter):
         
         # Animate winner pet sprite centered on screen
         # Toggle between IDLE1 and HAPPY every half second
-        anim_toggle = (self.frame_counter // (constants.FRAME_RATE // 2)) % 2
+        anim_toggle = (self.frame_counter // (game_globals.configuration.frame_rate // 2)) % 2
         
         if winner_pet:
             # Get the frame (IDLE1 or HAPPY)

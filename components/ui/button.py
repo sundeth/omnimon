@@ -37,14 +37,20 @@ class Button(UIComponent):
     def on_manager_set(self):
         """Called when UI manager is set - load icon and decorators if specified"""
         if self.icon_name and self.manager:
-            sprite_scale = self.manager.get_sprite_scale()
-            # Load icon sprite using <prefix>_<name>_<scale> format
-            self.icon_sprite = image_load(f"assets/ui/{self.icon_prefix}_{self.icon_name}_{sprite_scale}.png").convert_alpha()
+            # NEW SYSTEM: Always load _1 sprites and scale them
+            icon_path = f"assets/ui/{self.icon_prefix}_{self.icon_name}_1.png"
+            self.icon_sprite = image_load(icon_path).convert_alpha()
+            
+            # Apply integer scaling if UI scale > 1
+            if self.manager.ui_scale > 1:
+                original_size = self.icon_sprite.get_size()
+                new_size = (original_size[0] * self.manager.ui_scale, original_size[1] * self.manager.ui_scale)
+                self.icon_sprite = pygame.transform.scale(self.icon_sprite, new_size)
             
         # Load decorator sprites
         if self.decorators and self.manager:
-            sprite_scale = self.manager.get_sprite_scale()
-            runtime_globals.game_console.log(f"[Button] Loading decorators for {self.decorators} at sprite_scale {sprite_scale}")
+            # NEW SYSTEM: Always load _1 sprites and scale them
+            runtime_globals.game_console.log(f"[Button] Loading decorators for {self.decorators} (using _1 sprites, scaling by {self.manager.ui_scale}x)")
             for decorator in self.decorators:
                 try:
                     # Determine prefix based on decorator type
@@ -55,7 +61,10 @@ class Button(UIComponent):
                         prefix = ""  # Battle_ decorators don't need additional prefix
                         decorator_path = decorator
                     elif decorator.startswith("Settings_"):
-                        prefix = ""  # Battle_ decorators don't need additional prefix
+                        prefix = ""  # Settings_ decorators don't need additional prefix
+                        decorator_path = decorator
+                    elif decorator.startswith("Connect_"):
+                        prefix = ""  # Connect_ decorators don't need additional prefix
                         decorator_path = decorator
                     elif decorator.startswith("Freezer_"):
                         prefix = ""  # Freezer_ decorators don't need additional prefix
@@ -63,19 +72,35 @@ class Button(UIComponent):
                     elif decorator.startswith("Library_"):
                         prefix = ""  # Library_ decorators don't need additional prefix
                         decorator_path = decorator
+                    elif decorator.startswith("Shop_"):
+                        prefix = ""  # Shop_ decorators don't need additional prefix
+                        decorator_path = decorator
                     else:
                         prefix = "Training_"  # Traditional training decorators
                         decorator_path = decorator
                     
-                    # Load standard decorator sprite
-                    standard_path = f"assets/ui/{prefix}{decorator_path}_{sprite_scale}.png"
+                    # Load standard decorator sprite (_1 version)
+                    standard_path = f"assets/ui/{prefix}{decorator_path}_1.png"
                     standard_sprite = image_load(standard_path).convert_alpha()
+                    
+                    # Apply integer scaling if needed
+                    if self.manager.ui_scale > 1:
+                        original_size = standard_sprite.get_size()
+                        new_size = (original_size[0] * self.manager.ui_scale, original_size[1] * self.manager.ui_scale)
+                        standard_sprite = pygame.transform.scale(standard_sprite, new_size)
                     
                     # Try to load highlight decorator sprite, fall back to standard if not found
                     highlight_sprite = standard_sprite  # Default fallback
                     try:
-                        highlight_path = f"assets/ui/{prefix}{decorator_path}_Highlight_{sprite_scale}.png"
+                        highlight_path = f"assets/ui/{prefix}{decorator_path}_Highlight_1.png"
                         highlight_sprite = image_load(highlight_path).convert_alpha()
+                        
+                        # Apply integer scaling if needed
+                        if self.manager.ui_scale > 1:
+                            original_size = highlight_sprite.get_size()
+                            new_size = (original_size[0] * self.manager.ui_scale, original_size[1] * self.manager.ui_scale)
+                            highlight_sprite = pygame.transform.scale(highlight_sprite, new_size)
+                        
                         runtime_globals.game_console.log(f"[Button] Loaded highlight decorator: {highlight_path}")
                     except (pygame.error, FileNotFoundError):
                         # No highlight version available, use standard for both
@@ -468,35 +493,27 @@ class Button(UIComponent):
                 use_highlight = self.focused or self.clicked
                 sprite_key = 'highlight' if use_highlight else 'standard'
                 decorator_sprite = self.decorator_sprites[decorator][sprite_key]
-                # Scale decorator sprite to match UI scale
-                if self.manager:
-                    ui_scale = self.manager.ui_scale
-                    sprite_scale = self.manager.get_sprite_scale()
-                    # Sprite scale 3 is actually for 4x UI, so adjust the effective sprite scale
-                    effective_sprite_scale = 4 if sprite_scale == 3 else sprite_scale
-                    scale_factor = ui_scale / effective_sprite_scale
-                    original_size = decorator_sprite.get_size()
-                    if scale_factor != 1.0:
-                        new_size = (int(original_size[0] * scale_factor), int(original_size[1] * scale_factor))
-                        scaled_sprite = pygame.transform.scale(decorator_sprite, new_size)
-                    else:
-                        scaled_sprite = decorator_sprite
-                else:
-                    scaled_sprite = decorator_sprite
+                
+                # NEW SYSTEM: Decorators are already scaled in on_manager_set(), just use them directly
+                # No additional scaling needed
+                
                 # Center decorator if smaller than button surface
-                sprite_w, sprite_h = scaled_sprite.get_size()
+                sprite_w, sprite_h = decorator_sprite.get_size()
                 surf_w, surf_h = surface.get_size()
                 offset_x = max(0, (surf_w - sprite_w) // 2)
                 offset_y = max(0, (surf_h - sprite_h) // 2)
                 if decorator_use_shadow:
-                    blit_with_shadow(surface, scaled_sprite, (offset_x, offset_y))
+                    blit_with_shadow(surface, decorator_sprite, (offset_x, offset_y))
                 else:
-                    blit_with_cache(surface, scaled_sprite, (offset_x, offset_y))
+                    blit_with_cache(surface, decorator_sprite, (offset_x, offset_y))
         
-        # Apply transparency for disabled buttons
+        # Apply transparency for disabled buttons, reset for enabled
         if not self.enabled:
             # Create a semi-transparent version by setting alpha
             surface.set_alpha(128)  # 50% transparency
+        else:
+            # Reset to fully opaque for enabled buttons
+            surface.set_alpha(255)
         
         return surface
     

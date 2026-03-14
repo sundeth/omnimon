@@ -1,0 +1,38 @@
+"""
+Views package for SceneConnect
+Each view represents a distinct UI state in the connect scene.
+"""
+
+from .main_menu_view import MainMenuView
+from .pet_selection_view import PetSelectionView
+from .wifi_hosting_view import WifiHostingView
+from .wifi_discovery_view import WifiDiscoveryView
+from .dcom_view import DComView
+from .discord_view import DiscordView
+from .link_dialog_view import LinkDialogView
+from .omninet_link_view import OmninetLinkView
+from .shop_view import ShopView
+from .shop_modules_view import ShopModulesView
+from .shop_gameplay_view import ShopGameplayView
+from .shop_items_view import ShopItemsView
+from .shop_cosmetics_view import ShopCosmeticsView
+from .shop_specials_view import ShopSpecialsView
+from .battle_confirm_view import BattleConfirmView
+
+__all__ = [
+    'MainMenuView',
+    'PetSelectionView',
+    'WifiHostingView',
+    'WifiDiscoveryView',
+    'DComView',
+    'DiscordView',
+    'LinkDialogView',
+    'OmninetLinkView',
+    'ShopView',
+    'ShopModulesView',
+    'ShopGameplayView',
+    'ShopItemsView',
+    'ShopCosmeticsView',
+    'ShopSpecialsView',
+    'BattleConfirmView',
+]

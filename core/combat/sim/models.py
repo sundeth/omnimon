@@ -168,6 +168,7 @@ class AttributeEnum(Enum):
     VACCINE = 3
 
 class BattleProtocol(Enum):
+    DM_BS = auto()     # Original Digital Monster (slot-based)
     DM20_BS = auto()
     DMC_BS = auto()
     DMX_BS = auto()

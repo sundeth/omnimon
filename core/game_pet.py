@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import pygame
 import random
 
@@ -25,6 +26,19 @@ class GamePet:
         self.shook = False
         self.edited = False
 
+        # Real-time gameplay timers (seconds via time.monotonic)
+        _now = time.monotonic()
+        self._rt_origin = _now        # Base for per-minute tick detection
+        self._rt_last_minute = 0      # Last processed minute count since _rt_origin
+        self._rt_last_sleep_check = _now
+        self._rt_dead_start = 0.0     # When pet entered dead state (0 = not dead)
+        self._last_age_date = datetime.now().date()  # Age increments at midnight
+        # Countdown/countup gameplay counters (initialized properly in reset_variables)
+        self._evol_minutes = 0
+        self._cd_hunger = 0
+        self._cd_strength = 0
+        self._cd_poop = 0
+
         self.set_data(pet_data)
         self.reset_variables()
         self.load_sprite()
@@ -33,7 +47,6 @@ class GamePet:
         self.state = ""
         self.set_state("idle")
         
-        self.age_timer = 0
         self.direction = -1
         self.injuries = 0
         self.move_timer = random.randint(60, 120)
@@ -48,6 +61,7 @@ class GamePet:
         self.experience = 0
         self.gcell_fragment = False
         self.vital_activities = []
+        self.evolution_history = []  # Names of prior forms, oldest first
 
         self.bonus_stats = [0, 0, 0]  # HP, ATK, POWER bonuses from items
 
@@ -57,6 +71,7 @@ class GamePet:
         self.stage = data["stage"]
         self.version = data["version"]
         self.special = data["special"]
+        self.index = data.get("index", 0)
         if self.special:
             self.special_key = data.get("special_key")
         else:
@@ -68,6 +83,7 @@ class GamePet:
         self.atk_alt = data.get("atk_alt", 0)
         if self.atk_alt == 0:
             self.atk_alt = self.atk_main
+        self.atk_alt2 = data.get("atk_alt2", 0)
         self.time = data.get("time", 0)
         self.poop_timer = data.get("poop_timer", 60)
         self.min_weight = data.get("min_weight")
@@ -90,7 +106,7 @@ class GamePet:
 
 
     def reset_variables(self):
-        self.timer = 0
+        self.timer = 0  # Kept for animation/frame counting only
         if self.evol_weight > 0:
             self.weight = self.evol_weight
         if self.weight < self.min_weight:
@@ -103,6 +119,19 @@ class GamePet:
         self.win = self.battles = 0
         self.animation_counter = self.frame_counter = self.frame_index = 0
         self.care_food_mistake_timer = self.care_strength_mistake_timer = self.care_sleep_mistake_timer = self.care_sick_mistake_timer = 0
+
+        # Reset real-time gameplay timers (NOT _last_age_date — age persists across evolutions)
+        _now = time.monotonic()
+        self._rt_origin = _now
+        self._rt_last_minute = 0
+        self._rt_dead_start = 0.0
+        self._rt_last_sleep_check = _now
+        # Countdown counters: start at max, tick down 1/min, trigger & reset at 0
+        self._cd_hunger = self.hunger_loss or 0
+        self._cd_strength = self.strength_loss or 0
+        self._cd_poop = self.poop_timer or 0
+        # Evolution count-up: starts at 0, increments 1/min, checks conditions after reaching self.time
+        self._evol_minutes = 0
         self.special_encounter = False
 
         self.enemy_kills = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -139,6 +168,10 @@ class GamePet:
         self.mistakes = 0
 
         self.gcell_points = 0
+
+        self._99g_triggered = False
+        self.sick_type = ""
+        self.burpmon_active = False
 
     def begin_position(self):
         self.subpixel_x = float(runtime_globals.SCREEN_WIDTH - runtime_globals.PET_WIDTH) / 2
@@ -213,6 +246,10 @@ class GamePet:
                 sprites[PetFrame.ATK1.value], sprites[PetFrame.ATK2.value] = sprites[PetFrame.ATK2.value], sprites[PetFrame.ATK1.value]  # ATK1 ↔ ATK2
             runtime_globals.pet_sprites[self] = sprites
 
+        # If pet was saved as Burpmon, restore that sprite
+        if getattr(self, 'burpmon_active', False):
+            self._load_burpmon_sprite()
+
     def draw(self, surface):
         # Get base frame; skip if missing
         sprite_list = runtime_globals.pet_sprites.get(self)
@@ -240,7 +277,10 @@ class GamePet:
         elif self.state in {"happy2", "happy3"} and anim_phase == 0:
             overlay = runtime_globals.misc_sprites.get("Cheer")
         elif self.sick > 0 and self.state != "dead":
-            overlay = runtime_globals.misc_sprites.get(f"Sick{anim_phase + 1}")
+            if getattr(self, 'sick_type', '') == "dots":
+                overlay = runtime_globals.misc_sprites.get(f"Dots{anim_phase + 1}")
+            else:
+                overlay = runtime_globals.misc_sprites.get(f"Sick{anim_phase + 1}")
             sick = True
         elif self.state == "angry":
             overlay = runtime_globals.misc_sprites.get(f"Mad{anim_phase + 1}")
@@ -266,11 +306,11 @@ class GamePet:
 
     def update(self):
         self.timer += 1
-        self.age_timer += 1
         self.update_animation()
         self.update_cache()
 
-        if self.state != "nap" and self.state in ("moving", "idle"):
+        # Frame-based state handling (animation/movement)
+        if self.state in ("moving", "idle"):
             self.update_idle_movement()
         elif self.state == "nap":
             self.sleep_timer += 1
@@ -287,28 +327,43 @@ class GamePet:
 
             if self.animation_counter == int(15 * (constants.FRAME_RATE / 30)):
                 self.poop()
-        elif self.state in ("moving", "idle") and self.timer % (constants.FRAME_RATE // 2) == 0 and self.should_sleep():
-            self.set_state("tired")
 
-        # Increase age every day (24 * 60 * 60 = 86.400)
-        if self.age_timer % (constants.FRAME_RATE * 86400) == 0:
-            self.age += 1
+        # --- Real-time gameplay ticks ---
+        now = time.monotonic()
+
+        # Sleep check (~every 0.5s real-time)
+        if now - self._rt_last_sleep_check >= 0.5:
+            self._rt_last_sleep_check = now
+            if self.state in ("moving", "idle") and self.should_sleep():
+                self.set_state("tired")
+
+        # Age at midnight
+        today = datetime.now().date()
+        if today > self._last_age_date:
+            self.age += (today - self._last_age_date).days
+            self._last_age_date = today
             runtime_globals.game_console.log(f"{self.name} aged to {self.age}")
 
-        # Update immunity timer (only when not sleeping)
-        
+        # Per-minute gameplay tick
+        elapsed_min = int((now - self._rt_origin) / 60)
+        if elapsed_min > self._rt_last_minute:
+            minutes_passed = elapsed_min - self._rt_last_minute
+            old_hour = self._rt_last_minute // 60
+            self._rt_last_minute = elapsed_min
 
-        # Check for evolutions once a minute, considering variable constants
-        if self.timer % (constants.FRAME_RATE * 60) == 0:
             if self.state not in ("nap", "dead"):
+                self._evol_minutes += minutes_passed
                 self.update_evolution()
-                self.update_needs()
-                self.update_pooping()
+                self.update_needs(minutes_passed)
+                self.update_pooping(minutes_passed)
                 self.update_care_mistakes()
                 self.update_vital_values_loss()
+            elif self.state == "nap" and getattr(get_module(self.module), 'count_evolution_while_sleeping', True):
+                self._evol_minutes += minutes_passed
+                self.update_evolution()
             if self.state != "nap":
                 self.update_death_save_counters()
-                self.update_death_check()
+                self.update_death_check(now)
 
                 if self.death_save_immunity > 0:
                     self.death_save_immunity -= 1
@@ -320,10 +375,11 @@ class GamePet:
                 if self.back_to_sleep == 0 and self.state != "nap" and self.should_sleep():
                     self.set_state("nap")
 
-        # Check for vital values gain every hour (60 minutes)
-        if self.timer % (constants.FRAME_RATE * 60 * 60) == 0:
-            if self.state not in ("nap", "dead"):
-                self.update_vital_values_gain()
+            # Per-hour tick
+            new_hour = elapsed_min // 60
+            if new_hour > old_hour:
+                if self.state not in ("nap", "dead"):
+                    self.update_vital_values_gain()
 
     def update_cache(self):
         # Check for changes that require cache invalidation
@@ -416,13 +472,18 @@ class GamePet:
             if self.state != "nap" and self.animation_counter > int(4 * constants.FRAME_RATE):
                 self.set_state("happy"if self.state == "eat" else "idle")
 
-        # Handle hatching animation
-        if self.stage == 0 and ((self.timer / constants.FRAME_RATE) - (self.time * 60)) >= -5:
-            self.set_state("hatch")
+        # Handle hatching animation (real-time: within 5 seconds of evolution time)
+        if self.stage == 0:
+            elapsed_sec = time.monotonic() - self._rt_origin
+            if elapsed_sec - (self.time * 60) >= -5:
+                self.set_state("hatch")
 
     def evolve_to(self, name, version):
         runtime_globals.game_console.log(f"Evolving to {name}")
         runtime_globals.game_sound.play("evolution")
+        if not hasattr(self, 'evolution_history'):
+            self.evolution_history = []
+        self.evolution_history.append(self.name)
         module = get_module(self.module)
         pet_data = module.get_monster(name, version)
         pet_data["module"] = module.name
@@ -455,13 +516,59 @@ class GamePet:
         self.set_state("pooping")
 
     def poop(self):
-        runtime_globals.game_sound.play("cancel")
-        if random.random() < 0.2:
-            game_globals.poop_list.append(GamePoop((12 * runtime_globals.UI_SCALE) + self.x + (constants.FRAME_SIZE // 2), self.y + (runtime_globals.PET_HEIGHT-(48 * runtime_globals.UI_SCALE)), True))
-        else:
-            game_globals.poop_list.append(GamePoop((12 * runtime_globals.UI_SCALE) + self.x + (constants.FRAME_SIZE // 2), self.y + (runtime_globals.PET_HEIGHT-(24 * runtime_globals.UI_SCALE))))
+        # Get module for care settings
+        module = get_module(self.module)
+        
+        # care_poop_alarm: play sound on poop if True (default True for backwards compatibility)
+        care_poop_alarm = getattr(module, 'care_poop_alarm', True)
+        if care_poop_alarm:
+            runtime_globals.game_sound.play("cancel")
+        
+        # care_poop_chance: [single, double, triple, giga] percentages
+        # Default: [80, 0, 0, 20] for backwards compatibility (80% single, 20% giga/jumbo)
+        care_poop_chance = getattr(module, 'care_poop_chance', [80, 0, 0, 20])
+        
+        # Normalize chances to ensure we have 4 values
+        if len(care_poop_chance) < 4:
+            care_poop_chance = care_poop_chance + [0] * (4 - len(care_poop_chance))
+        
+        # Calculate cumulative probabilities
+        total = sum(care_poop_chance)
+        if total <= 0:
+            total = 100
+            care_poop_chance = [100, 0, 0, 0]  # Default fallback
+        
+        roll = random.random() * total
+        cumulative = 0
+        poop_type = 0  # 0=single, 1=double, 2=triple, 3=giga
+        
+        for i, chance in enumerate(care_poop_chance):
+            cumulative += chance
+            if roll < cumulative:
+                poop_type = i
+                break
+        
+        # Calculate base position for poop
+        base_x = (12 * runtime_globals.UI_SCALE) + self.x + (constants.FRAME_SIZE // 2)
+        base_y = self.y + (runtime_globals.PET_HEIGHT - (24 * runtime_globals.UI_SCALE))
+        
+        # Create poop(s) based on type
+        if poop_type == 0:  # Single
+            game_globals.poop_list.append(GamePoop(base_x, base_y))
+        elif poop_type == 1:  # Double
+            game_globals.poop_list.append(GamePoop(base_x - (12 * runtime_globals.UI_SCALE), base_y))
+            game_globals.poop_list.append(GamePoop(base_x + (12 * runtime_globals.UI_SCALE), base_y))
+        elif poop_type == 2:  # Triple
+            game_globals.poop_list.append(GamePoop(base_x - (18 * runtime_globals.UI_SCALE), base_y))
+            game_globals.poop_list.append(GamePoop(base_x, base_y))
+            game_globals.poop_list.append(GamePoop(base_x + (18 * runtime_globals.UI_SCALE), base_y))
+        elif poop_type == 3:  # Giga (jumbo)
+            giga_y = self.y + (runtime_globals.PET_HEIGHT - (48 * runtime_globals.UI_SCALE))
+            game_globals.poop_list.append(GamePoop(base_x, giga_y, True))
+        
         if self.weight > self.min_weight:
             self.weight -= 1
+        self.update_99g_effect()
         self.set_state("idle")
 
     def check_death_conditions(self):
@@ -486,12 +593,12 @@ class GamePet:
 
         # 4. Stage IV ou V + 5+ erros após fim do tempo de evolução
         if self.stage in [4, 5] and self.mistakes >= module.death_stage45_mistake > 0 and self.mistakes >= module.death_stage45_mistake:
-            if self.timer > self.time * 60 * constants.FRAME_RATE:
+            if self._evol_minutes > self.time:
                 result = True
 
-        # 5. Stage VI ou VI+ + 5+ erros após 48h
+        # 5. Stage VI ou VI+ + 5+ erros após 2 days
         if self.stage >= 6 and module.death_stage67_mistake > 0 and self.mistakes >= module.death_stage67_mistake:
-            if self.age_timer >= 48 * 60 * 60 * constants.FRAME_RATE:
+            if self.age >= 2:
                 result = True
 
         if module.death_old_age > 0 and self.age >= module.death_old_age:
@@ -537,28 +644,29 @@ class GamePet:
                 runtime_globals.game_sound.play("happy")
                 runtime_globals.game_console.log(f"[Death Save] {self.name} was saved! 60-minute immunity granted.")
 
-    def update_death_check(self):
+    def update_death_check(self, now=None):
         """Checks pet death conditions and updates the sprite accordingly."""
+        if now is None:
+            now = time.monotonic()
         if self.check_death_conditions() and self.death_save_immunity == 0:
             self.set_state("dead")
+            self.burpmon_active = False
             runtime_globals.game_sound.play("death")
 
-            # 🔹 Load dead frame with sprite_load()
             dead_sprite = sprite_load(constants.DEAD_FRAME_PATH, size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
             runtime_globals.pet_sprites[self][0] = dead_sprite
             runtime_globals.pet_sprites[self][1] = dead_sprite
 
-            self.timer = 0
+            self._rt_dead_start = now
 
-        # 🔥 Remove pet from game if dead for too long
-        if self.state == "dead" and self.timer > 9000:
+        # Remove pet from game if dead for 5 minutes (real-time)
+        if self.state == "dead" and self._rt_dead_start > 0 and now - self._rt_dead_start > 300:
             if self in game_globals.pet_list:
                 game_globals.pet_list.remove(self)
                 del runtime_globals.pet_sprites[self]
 
             self.set_traited_egg()
 
-            # 🔹 If no pets remain, reset to egg scene
             if not game_globals.pet_list:
                 change_scene("egg")
 
@@ -572,6 +680,10 @@ class GamePet:
 
         # Can't eat if sleeping and module doesn't allow it
         if not module.can_eat_sleeping and self.state == "nap":
+            return False
+
+        # Block feeding during sleep window if care_block_actions_when_sleeping is set
+        if self._is_blocked_by_sleep():
             return False
 
         accepted = False
@@ -623,6 +735,7 @@ class GamePet:
             else:
                 self.set_state("nope")
 
+        self.update_99g_effect()
         return accepted
 
     def set_sick(self):
@@ -630,8 +743,62 @@ class GamePet:
         self.injuries += 1
         self.set_state("sick")
 
+    def update_99g_effect(self):
+        """Handle the 99g weight effect based on the module's care_99g_effect setting."""
+        module = get_module(self.module)
+        effect = getattr(module, 'care_99g_effect', 'Skull')
+
+        if effect == "Nothing":
+            return
+
+        if effect == "Burpmon":
+            if self.state == "dead":
+                if getattr(self, 'burpmon_active', False):
+                    self.burpmon_active = False
+                    self.load_sprite()
+                return
+            if self.weight >= 99 and not getattr(self, 'burpmon_active', False):
+                self.burpmon_active = True
+                self._load_burpmon_sprite()
+            elif self.weight < 99 and getattr(self, 'burpmon_active', False):
+                self.burpmon_active = False
+                self.load_sprite()
+            return
+
+        # Dots or Skull: allow re-trigger only after weight drops below 90
+        if self.weight < 90:
+            self._99g_triggered = False
+            if self.sick == 0:
+                self.sick_type = ""
+
+        if self.weight >= 99 and not getattr(self, '_99g_triggered', False):
+            self._99g_triggered = True
+            if effect == "Dots":
+                self.sick_type = "dots"
+                self.sick = self.heal_doses
+                self.injuries += 1
+                self.set_state("sick")
+            else:  # Skull
+                self.set_sick()
+
+    def _load_burpmon_sprite(self):
+        """Replace current pet sprite with the Burpmon sprite."""
+        module_obj = get_module(self.module)
+        if not module_obj:
+            return
+        sprites_dict = load_pet_sprites(
+            "Burpmon", module_obj.folder_path, module_obj.name_format,
+            module_high_definition_sprites=module_obj.high_definition_sprites,
+            size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
+        )
+        if sprites_dict:
+            runtime_globals.pet_sprites[self] = convert_sprites_to_list(sprites_dict)
+            runtime_globals.game_console.log(f"[99g] {self.name} became Burpmon!")
+        else:
+            runtime_globals.game_console.log(f"[99g] Burpmon sprite not found, keeping original.")
+
     def update_evolution(self):
-        if self.stage > 5 or (self.timer / ( constants.FRAME_RATE * 60)) < self.time or self.need_care():
+        if self.stage > 5 or self._evol_minutes < self.time or self.need_care():
             return
         
         for evo in self.evolve:
@@ -713,40 +880,54 @@ class GamePet:
             
             break
 
-    def update_needs(self):
-        if self.timer % (self.hunger_loss  * 60 * constants.FRAME_RATE) == 0 and self.overfeed_timer == 0:
-            if self.hunger > 0:
-                self.hunger -= 1
-                if self.hunger < 0:
-                    self.hunger = 0
-            else:
-                self.starvation_counter += 1
-        if self.timer % (self.strength_loss * 60 * constants.FRAME_RATE) == 0 and self.strength > 0:
-            if self.strength > 4:
-                self.strength = 4
-            else:
-                self.strength -= 1
-                if self.strength < 0:
-                    self.strength = 0
+    def update_needs(self, minutes_passed):
+        # Hunger countdown
+        if self._cd_hunger > 0:
+            if self.overfeed_timer == 0:
+                self._cd_hunger -= minutes_passed
+                while self._cd_hunger <= 0:
+                    if self.hunger > 0:
+                        self.hunger -= 1
+                    else:
+                        self.starvation_counter += 1
+                    self._cd_hunger += self.hunger_loss
+        # Strength countdown
+        if self._cd_strength > 0:
+            self._cd_strength -= minutes_passed
+            while self._cd_strength <= 0:
+                if self.strength > 4:
+                    self.strength = 4
+                elif self.strength > 0:
+                    self.strength -= 1
+                self._cd_strength += self.strength_loss
         if self.overfeed_timer > 0:
             self.overfeed_timer -= 1
 
-    def update_pooping(self):
-        if self.stage <= 0 or (self.timer / ( constants.FRAME_RATE * 60)) < 1: return
-        if len(game_globals.poop_list) >= (len(game_globals.pet_list) * 8) and self.stage >= 2:
+        self.update_99g_effect()
+
+    def update_pooping(self, minutes_passed):
+        if self.stage <= 0 or self._cd_poop <= 0:
+            return
+        module = get_module(self.module)
+        poop_sickness_count = getattr(module, 'care_poop_sickness_count', 0)
+        if poop_sickness_count > 0:
+            poop_threshold = poop_sickness_count * max(1, len(game_globals.pet_list) - 1)
+            poop_sick = len(game_globals.poop_list) >= poop_threshold and self.stage >= 2
+        else:
+            poop_sick = False
+        if poop_sick:
             if self.poop_count_flag == 0:
                 self.poop_count_flag = 1
                 self.set_sick()
                 runtime_globals.game_console.log(f"[!] Care sick of poop ({len(game_globals.poop_list)})! Injuries: {self.injuries}")
         else:
             self.poop_count_flag = 0
-            
-        depletion_rate = 1
-        if self.stage >= 6 and self.age_timer >= 48 * 60 * 60 * constants.FRAME_RATE:
-            depletion_rate = 2  # Accelerate depletion after 48 hours
 
-        if self.timer % (self.poop_timer * 60 * constants.FRAME_RATE // depletion_rate) == 0:
+        depletion = minutes_passed * (2 if (self.stage >= 6 and self.age >= 2) else 1)
+        self._cd_poop -= depletion
+        if self._cd_poop <= 0:
             self.set_state("pooping")
+            self._cd_poop = max(1, self.poop_timer)
 
     def update_care_mistakes(self):
         sound_alert = False
@@ -859,8 +1040,7 @@ class GamePet:
                     runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
         elif ruleset == "penc":
             win_ratio = (self.win * 100) // self.battles if self.battles > 0 else 0
-
-            if self.stage >= 6 and self.age_timer >= 48 * 60 * 60 * constants:
+            if self.stage >= 6 and self.age >= 2:
                 if win_ratio >= 60:
                     key = f"{self.module}@{self.version}"
                     if key not in game_globals.traited:
@@ -868,7 +1048,7 @@ class GamePet:
                         runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
         elif ruleset == "dmx":
             trait = False
-            if self.timer > 5184000: #48 hours
+            if self._evol_minutes >= 2880:  # 48 hours
                 trait = True
 
             if self.version > 4 and self.area < 45:
@@ -883,14 +1063,19 @@ class GamePet:
             pass # No Traited Eggs in VB
 
 
+    def _is_blocked_by_sleep(self):
+        if not getattr(get_module(self.module), 'care_block_actions_when_sleeping', True):
+            return False
+        return self.state == "nap" or self.should_sleep()
+
     def can_battle(self):
-        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self.dp > 0
+        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self.dp > 0 and not self._is_blocked_by_sleep()
     
     def can_battle_pvp(self):
-        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self.dp > 0 and self.edited == False
+        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self.dp > 0 and not self._is_blocked_by_sleep()  # and self.edited == False
     
     def can_train(self):
-        return self.stage > 0 and self.state != "dead" and self.atk_main > 0
+        return self.stage > 0 and self.state != "dead" and self.atk_main > 0 and not self._is_blocked_by_sleep()
 
     def set_back_to_sleep(self):
         self.back_to_sleep = get_module(self.module).back_to_sleep_time
@@ -1009,7 +1194,7 @@ class GamePet:
             return int(normalized)
 
     def get_attack(self):
-        attack = constants.ATK_LEVEL[self.stage]
+        attack = 1 # constants.ATK_LEVEL[self.stage]
 
         if self.level >= 4:
             attack += 1
@@ -1043,7 +1228,8 @@ class GamePet:
 
         weight_loss = module.training_weight_win if won else module.training_weight_lose
         self.weight = max(self.min_weight, self.weight - weight_loss)
-        
+        self.update_99g_effect()
+
         # Add/Remove G-Cell points for training if module uses G-Cells
         if getattr(module, 'use_gcells', False):
             if won:
@@ -1092,6 +1278,10 @@ class GamePet:
             self.win += 1
             self.totalWin += 1
             sick_chance = get_module(self.module).battle_base_sick_chance_win
+
+            # Mark special encounter flag on win (enables special evolution paths)
+            if is_random_encounter:
+                self.special_encounter = True
 
             # Add battle activity for vital_values (only once)
             if "battle" not in self.vital_activities:
@@ -1253,10 +1443,54 @@ class GamePet:
     def __getstate__(self):
         state = self.__dict__.copy()
         state.pop("frames", None)
+        # Convert monotonic timestamps to elapsed seconds for serialization
+        now = time.monotonic()
+        state['_rt_elapsed_sec'] = now - self._rt_origin
+        if self._rt_dead_start > 0:
+            state['_rt_dead_elapsed_sec'] = now - self._rt_dead_start
+        else:
+            state['_rt_dead_elapsed_sec'] = 0.0
+        # Remove non-serializable monotonic timestamps
+        state.pop('_rt_origin', None)
+        state.pop('_rt_last_sleep_check', None)
+        state.pop('_rt_dead_start', None)
+        # Remove deprecated keys from old system
+        state.pop('_rt_age_origin', None)
         return state
     
     def __setstate__(self, state):
         self.__dict__.update(state)
+        now = time.monotonic()
+        # Restore monotonic timestamp for per-minute tick
+        rt_elapsed = state.get('_rt_elapsed_sec', None)
+        if rt_elapsed is None:
+            rt_elapsed = getattr(self, 'timer', 0) / 30
+        self._rt_origin = now - rt_elapsed
+        self._rt_last_sleep_check = now
+        dead_elapsed = state.get('_rt_dead_elapsed_sec', 0.0)
+        self._rt_dead_start = (now - dead_elapsed) if dead_elapsed > 0 else 0.0
+        # Ensure minute counter exists
+        if not hasattr(self, '_rt_last_minute'):
+            self._rt_last_minute = int(rt_elapsed / 60)
+        # Migrate old age system to midnight-based
+        if not hasattr(self, '_last_age_date'):
+            self._last_age_date = datetime.now().date()
+        # Migrate old elapsed-minute counters to new countdown/countup system
+        if not hasattr(self, '_evol_minutes'):
+            self._evol_minutes = int(rt_elapsed / 60)
+        if not hasattr(self, '_cd_hunger'):
+            self._cd_hunger = getattr(self, 'hunger_loss', 0) or 0
+        if not hasattr(self, '_cd_strength'):
+            self._cd_strength = getattr(self, 'strength_loss', 0) or 0
+        if not hasattr(self, '_cd_poop'):
+            self._cd_poop = getattr(self, 'poop_timer', 60) or 60
+        if not hasattr(self, 'evolution_history'):
+            self.evolution_history = []
+        # Clean up serialization-only and deprecated keys
+        for key in ('_rt_elapsed_sec', '_rt_age_elapsed_sec', '_rt_dead_elapsed_sec',
+                    '_rt_age_origin', '_rt_last_age_day',
+                    '_rt_last_hunger_min', '_rt_last_strength_min', '_rt_last_poop_min'):
+            self.__dict__.pop(key, None)
         self.load_sprite()
         if self.state == "dead":
             runtime_globals.pet_sprites[self][0] = image_load(constants.DEAD_FRAME_PATH).convert_alpha()
@@ -1297,6 +1531,41 @@ class GamePet:
             self.death_save_immunity = 0
         if not hasattr(self, "bonus_stats"):
             self.bonus_stats = [0, 0, 0]
+        if not hasattr(self, "atk_alt2"):
+            self.atk_alt2 = 0
+        if not hasattr(self, "evolution_history"):
+            self.evolution_history = []
+        # Migrate / repair real-time timer attributes
+        now = time.monotonic()
+        if not hasattr(self, '_rt_origin'):
+            fps = getattr(constants, 'FRAME_RATE', 30) or 30
+            elapsed_sec = getattr(self, 'timer', 0) / fps
+            self._rt_origin = now - elapsed_sec
+            self._rt_last_sleep_check = now
+            self._rt_dead_start = now if self.state == "dead" else 0.0
+            self._rt_last_minute = int(elapsed_sec / 60)
+        else:
+            if not hasattr(self, '_rt_last_minute'):
+                self._rt_last_minute = int((now - self._rt_origin) / 60)
+            if not hasattr(self, '_rt_last_sleep_check'):
+                self._rt_last_sleep_check = now
+            if not hasattr(self, '_rt_dead_start'):
+                self._rt_dead_start = now if self.state == "dead" else 0.0
+        # Migrate to countdown/countup counter system
+        if not hasattr(self, '_last_age_date'):
+            self._last_age_date = datetime.now().date()
+        if not hasattr(self, '_evol_minutes'):
+            self._evol_minutes = int((now - self._rt_origin) / 60)
+        if not hasattr(self, '_cd_hunger'):
+            self._cd_hunger = getattr(self, 'hunger_loss', 0) or 0
+        if not hasattr(self, '_cd_strength'):
+            self._cd_strength = getattr(self, 'strength_loss', 0) or 0
+        if not hasattr(self, '_cd_poop'):
+            self._cd_poop = getattr(self, 'poop_timer', 60) or 60
+        # Clean up deprecated attributes from old timer system
+        for key in ('_rt_age_origin', '_rt_last_age_day',
+                    '_rt_last_hunger_min', '_rt_last_strength_min', '_rt_last_poop_min'):
+            self.__dict__.pop(key, None)
 
     def get_blue_gcells(self):
         """

@@ -18,6 +18,7 @@ class GameEnemy:
     version: int
     atk_main: int
     atk_alt: int
+    atk_alt_2: int
     handicap: int
     id: int
     stage: int

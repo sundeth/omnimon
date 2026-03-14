@@ -14,6 +14,8 @@ from components.window_background import WindowBackground
 
 from core import game_globals, runtime_globals
 from core.combat.count_training import CountMatchTraining
+from core.combat.count_classic_training import CountMatchClassicTraining
+from core.combat.count_z_training import CountMatchZTraining
 from core.combat.dummy_training import DummyTraining
 from core.combat.excite_training import ExciteTraining
 from core.combat.head_training import HeadToHeadTraining
@@ -23,6 +25,17 @@ import core.constants as constants
 from core.utils.pet_utils import get_training_targets
 from core.utils.scene_utils import change_scene
 from components.ui.ui_constants import BASE_RESOLUTION, GREEN
+
+# Gameplay shop item IDs for training modes
+TRAINING_GAMEPLAY_IDS = {
+    "count_classic": "b2c3d4e5-0002-4000-b000-000000000001",  # Count Match (Classic)
+    "count_z": "b2c3d4e5-0002-4000-b000-000000000002",        # Count Match (Z)
+    "count": "b2c3d4e5-0002-4000-b000-000000000003",          # Count Match (Color)
+    "head": "b2c3d4e5-0002-4000-b000-000000000004",           # Head Charge
+    "mogera": "b2c3d4e5-0002-4000-b000-000000000005",         # Mogera
+    "excite": "b2c3d4e5-0002-4000-b000-000000000006",         # Xai Bar (Excite)
+    "punch": "b2c3d4e5-0002-4000-b000-000000000007",          # Punch
+}
 
 #=====================================================================
 # SceneTraining (Training Menu)
@@ -40,6 +53,8 @@ class SceneTraining:
         self.dummy_button = None
         self.head_button = None
         self.count_button = None
+        self.count_classic_button = None
+        self.count_z_button = None
         self.excite_button = None
         self.punch_button = None
         self.mogera_button = None
@@ -62,6 +77,29 @@ class SceneTraining:
         self.setup_ui()
 
         runtime_globals.game_console.log("[SceneTraining] Training scene initialized.")
+
+    def owns_training_mode(self, mode_key: str) -> bool:
+        """Check if the player owns a training mode.
+        
+        Args:
+            mode_key: Key for the training mode (e.g., 'count', 'head', 'mogera')
+            
+        Returns:
+            True if the player owns the training mode, False otherwise.
+            Dummy training is always available.
+            In Free Mode, all training modes are unlocked.
+        """
+        if mode_key == "dummy":
+            return True  # Dummy is always available
+        
+        if game_globals.is_free_mode():
+            return True  # Free Mode: all training modes unlocked
+        
+        gameplay_id = TRAINING_GAMEPLAY_IDS.get(mode_key)
+        if not gameplay_id:
+            return False
+        
+        return game_globals.purchases.owns_gameplay(gameplay_id)
 
     def create_static_background(self):
         """Create a static surface with GREEN border around the screen"""
@@ -98,7 +136,7 @@ class SceneTraining:
             self.ui_manager.add_component(self.background)
             
             # Create and add the title scene at top left
-            self.title_scene = TitleScene(0, 5, "TRAINING")
+            self.title_scene = TitleScene(0, 9, "TRAINING")
             self.ui_manager.add_component(self.title_scene)
             
             # Create and add the pet selector at bottom right (60% of UI width)
@@ -113,75 +151,111 @@ class SceneTraining:
             self.pet_selector.set_interactive(False)  # Static display for now
             self.ui_manager.add_component(self.pet_selector)
             
-            # Create training type buttons (56x56) arranged in 2 rows of 3
+            # Create training type buttons (56x56) arranged in 3 rows of 3
+            # Only show buttons for training modes the player owns
             button_size = 54
             button_spacing = 2
             start_x = 36  # Left margin
             start_y = 25  # Below title
             
-            # Row 1: Dummy, Head-to-Head, Count Match
+            # Collect owned training modes as (button_instance, mode_key)
+            owned_buttons = []
+            
+            # Row 1: Dummy (always available), Head-to-Head, Count Match (Color)
+            # Dummy is always available
             self.dummy_button = Button(
-                start_x, start_y, button_size, button_size,
+                0, 0, button_size, button_size,  # Position will be set later
                 "", self.on_dummy_training,
                 cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': False},
                 decorators=["Dummy"]
             )
-            self.ui_manager.add_component(self.dummy_button)
+            owned_buttons.append(self.dummy_button)
 
-            self.head_button = Button(
-                start_x + (button_size + button_spacing), start_y, button_size, button_size,
-                "", self.on_head_training,
-                cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': False},
-                decorators=["HeadToHead"]
-            )
-            self.ui_manager.add_component(self.head_button)
+            if self.owns_training_mode("head"):
+                self.head_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_head_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': False},
+                    decorators=["HeadToHead"]
+                )
+                owned_buttons.append(self.head_button)
 
-            self.count_button = Button(
-                start_x + (button_size + button_spacing) * 2, start_y, button_size, button_size,
-                "", self.on_count_training,
-                cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
-                decorators=["CountMatch"]
-            )
-            self.ui_manager.add_component(self.count_button)
+            if self.owns_training_mode("count"):
+                self.count_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_count_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+                    decorators=["CountMatch"]
+                )
+                owned_buttons.append(self.count_button)
 
-            # Row 2: Excite, Punch, Mogera
-            row2_y = start_y + button_size + button_spacing
+            if self.owns_training_mode("count_classic"):
+                self.count_classic_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_count_classic_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': False},
+                    decorators=["CountMatch_Classic"]
+                )
+                owned_buttons.append(self.count_classic_button)
 
-            # Excite button has two decorators: Excite and current XAI number
-            excite_decorators = ["Excite", f"Xai_{game_globals.xai}"]
-            self.excite_button = Button(
-                start_x, row2_y, button_size, button_size,
-                "", self.on_excite_training,
-                cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
-                decorators=excite_decorators
-            )
-            self.ui_manager.add_component(self.excite_button)
-            
-            self.punch_button = Button(
-                start_x + (button_size + button_spacing), row2_y, button_size, button_size,
-                "", self.on_punch_training,
-                cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
-                decorators=["Punch"]
-            )
-            self.ui_manager.add_component(self.punch_button)
+            if self.owns_training_mode("count_z"):
+                self.count_z_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_count_z_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': False},
+                    decorators=["CountMatch_Z"]
+                )
+                owned_buttons.append(self.count_z_button)
 
-            self.mogera_button = Button(
-                start_x + (button_size + button_spacing) * 2, row2_y, button_size, button_size,
-                "", self.on_mogera_training,
-                cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
-                decorators=["Mogera"]
-            )
-            self.ui_manager.add_component(self.mogera_button)
+            if self.owns_training_mode("excite"):
+                # Excite button has two decorators: Excite and current XAI number
+                excite_decorators = ["Excite", f"Xai_{game_globals.xai}"]
+                self.excite_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_excite_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+                    decorators=excite_decorators
+                )
+                owned_buttons.append(self.excite_button)
 
-            # Row 3: Exit (under Punch)
-            row3_y = row2_y + button_size + button_spacing
+            if self.owns_training_mode("punch"):
+                self.punch_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_punch_training,
+                    cut_corners={'tl': False, 'tr': False, 'bl': False, 'br': False},
+                    decorators=["Punch"]
+                )
+                owned_buttons.append(self.punch_button)
 
+            if self.owns_training_mode("mogera"):
+                self.mogera_button = Button(
+                    0, 0, button_size, button_size,
+                    "", self.on_mogera_training,
+                    cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+                    decorators=["Mogera"]
+                )
+                owned_buttons.append(self.mogera_button)
+
+            # Exit button is always available
             self.exit_button = Button(
-                start_x + (button_size + button_spacing), row3_y, button_size, button_size,
+                0, 0, button_size, button_size,
                 "EXIT", self.on_exit_training,
                 cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
             )
-            self.ui_manager.add_component(self.exit_button)
+            owned_buttons.append(self.exit_button)
+            
+            # Arrange buttons in a 3-column grid
+            columns = 3
+            for i, button in enumerate(owned_buttons):
+                row = i // columns
+                col = i % columns
+                new_x = start_x + col * (button_size + button_spacing)
+                new_y = start_y + row * (button_size + button_spacing)
+                button.rect.x = new_x
+                button.rect.y = new_y
+                self.ui_manager.add_component(button)
+            
+            self.owned_buttons = owned_buttons
             
             runtime_globals.game_console.log("[SceneTraining] UI setup completed successfully")
             
@@ -191,19 +265,23 @@ class SceneTraining:
             runtime_globals.game_console.log(f"[SceneTraining] Traceback: {traceback.format_exc()}")
             raise
         
-        # Set mouse mode and focus on the first button initially
-        if self.dummy_button:
+        # Restore focus to last used training button
+        idx = runtime_globals.training_index
+        if idx < len(self.owned_buttons):
+            self.ui_manager.set_focused_component(self.owned_buttons[idx])
+        elif self.dummy_button:
             self.ui_manager.set_focused_component(self.dummy_button)
             
     def hide_menu_buttons(self):
         """Hide all menu buttons when entering training phase."""
         buttons = [
             self.dummy_button, self.head_button, self.count_button,
+            self.count_classic_button, self.count_z_button,
             self.excite_button, self.punch_button, self.mogera_button,
             self.exit_button, self.pet_selector, self.title_scene, self.background
         ]
         for button in buttons:
-            if button:
+            if button is not None:
                 button.visible = False
                 button.focusable = False
     
@@ -211,13 +289,15 @@ class SceneTraining:
         """Show all menu buttons when returning to menu phase."""
         buttons = [
             self.dummy_button, self.head_button, self.count_button,
+            self.count_classic_button, self.count_z_button,
             self.excite_button, self.punch_button, self.mogera_button,
             self.exit_button, self.pet_selector, self.title_scene, self.background
         ]
         for button in buttons:
-            if button:
+            if button is not None:
                 button.visible = True
-                if button != self.pet_selector and button != self.title_scene and button != self.background:
+                # Only make training buttons focusable (not pet_selector, title_scene, background)
+                if button not in [self.pet_selector, self.title_scene, self.background]:
                     button.focusable = True
 
     # Button callback methods that preserve existing training logic
@@ -259,6 +339,34 @@ class SceneTraining:
             self.mode = CountMatchTraining(self.ui_manager)
             self.create_training_exit_button()  # Create exit button for training phase
             runtime_globals.game_console.log("Starting Count Match Training.")
+            for pet in get_training_targets():
+                pet.check_disturbed_sleep()
+        else:
+            runtime_globals.game_sound.play("cancel")
+
+    def on_count_classic_training(self):
+        """Handle Count Match Classic training button press."""
+        if len(get_training_targets()) > 0:
+            runtime_globals.game_sound.play("menu")
+            self.hide_menu_buttons()
+            self.phase = "count_classic"
+            self.mode = CountMatchClassicTraining(self.ui_manager)
+            self.create_training_exit_button()
+            runtime_globals.game_console.log("Starting Count Match Classic Training.")
+            for pet in get_training_targets():
+                pet.check_disturbed_sleep()
+        else:
+            runtime_globals.game_sound.play("cancel")
+
+    def on_count_z_training(self):
+        """Handle Count Match Z training button press."""
+        if len(get_training_targets()) > 0:
+            runtime_globals.game_sound.play("menu")
+            self.hide_menu_buttons()
+            self.phase = "count_z"
+            self.mode = CountMatchZTraining(self.ui_manager)
+            self.create_training_exit_button()
+            runtime_globals.game_console.log("Starting Count Match Z Training.")
             for pet in get_training_targets():
                 pet.check_disturbed_sleep()
         else:
@@ -313,6 +421,7 @@ class SceneTraining:
             self.mode.handle_event(("B", None))
         else:
             runtime_globals.game_sound.play("cancel")
+            self._save_training_index()
             change_scene("game")
 
     def on_training_exit(self):
@@ -413,6 +522,16 @@ class SceneTraining:
             # Pass event to training mode
             self.mode.handle_event(event)
 
+    def _save_training_index(self):
+        """Save the currently focused button index to runtime_globals."""
+        idx = self.ui_manager.focused_index
+        focused = self.ui_manager.focusable_components[idx] if 0 <= idx < len(self.ui_manager.focusable_components) else None
+        if focused and hasattr(self, 'owned_buttons'):
+            try:
+                runtime_globals.training_index = self.owned_buttons.index(focused)
+            except ValueError:
+                pass
+
     def handle_menu_input(self, event):
         # Handle pygame events through UI manager first
         if self.ui_manager.handle_event(event):
@@ -422,6 +541,7 @@ class SceneTraining:
         event_type, event_data = event
         if event_type == "B":
             runtime_globals.game_sound.play("cancel")
+            self._save_training_index()
             change_scene("game")
             return
 

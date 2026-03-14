@@ -9,6 +9,7 @@ class GameFreezer:
     page: int
     background: str
     background_module: str
+    game_mode: int = -1  # -1 = legacy/unknown (treated as free), 0 = free, 1 = progress
 
     pet_grid: List[List[Optional[GamePet]]] = field(init=False)
 

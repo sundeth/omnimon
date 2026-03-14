@@ -78,7 +78,7 @@ class SceneDigidex:
         self.ui_manager.add_component(self.background)
         
         # Title
-        self.title_scene = TitleScene(0, 5, "DIGIDEX")
+        self.title_scene = TitleScene(0, 9, "DIGIDEX")
         self.ui_manager.add_component(self.title_scene)
         
         # Filter button (top right, before EXIT)

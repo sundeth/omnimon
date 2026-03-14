@@ -1,13 +1,18 @@
-"""
-Scene Boot
+"""Scene Boot
 Initial boot scene responsible for setting up the game start.
-Transitions automatically to either Egg Selection or Main Game based on pet list.
+Shows the Omnipet logo, plays optional sounds, then routes to the
+appropriate scene based on game state.
+
+Navigation flow:
+    1. No game mode preference → SceneSetup (first-time setup)
+    2. Setup flags active → SceneSetup (incomplete setup)
+    3. Progress Mode + device key → validate with server; fail → SceneError
+    4. No modules + no internet → SceneError
+    5. Otherwise → route_to_next_scene (tutorial → game → freezer → egg)
 """
 
-import platform
 import pygame
-import os
-import pickle
+import socket
 
 from components.window_background import WindowBackground
 from core import game_globals, runtime_globals
@@ -16,28 +21,35 @@ from core.utils.module_utils import get_module
 from core.utils.pet_utils import distribute_pets_evenly
 from core.utils.pygame_utils import blit_with_cache, sprite_load_percent
 from core.utils.scene_utils import change_scene
+from core.utils import navigation_utils
 
 
-def has_freezer_pets() -> bool:
+def check_internet_connection(timeout: float = 2.0) -> bool:
     """
-    Check if there are any pets stored in the freezer save file.
-    Returns True if freezer.pkl exists and contains at least one pet.
-    """
-    freezer_path = "save/freezer.pkl"
-    if not os.path.exists(freezer_path):
-        return False
+    Check if there is an active internet connection.
     
+    Args:
+        timeout: Connection timeout in seconds.
+        
+    Returns:
+        True if internet is available, False otherwise.
+    """
     try:
-        with open(freezer_path, "rb") as f:
-            freezer_data = pickle.load(f)
-            # Check if any of the freezer pages have pets
-            for page in freezer_data:
-                if hasattr(page, 'pets') and page.pets and any(pet is not None for pet in page.pets):
-                    return True
-            return False
-    except Exception:
-        # If there's any error reading the file, assume no pets
-        return False
+        # Try to connect to Google's DNS server
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("8.8.8.8", 53))
+        return True
+    except (socket.timeout, socket.error, OSError):
+        pass
+    
+    # Try alternative - Cloudflare DNS
+    try:
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(("1.1.1.1", 53))
+        return True
+    except (socket.timeout, socket.error, OSError):
+        pass
+    
+    return False
 
 
 #=====================================================================
@@ -60,30 +72,8 @@ class SceneBoot:
         else:
             self.logo = sprite_load_percent(constants.OMNIPET_LOGO_PATH, percent=100, keep_proportion=True, base_on="width")
 
-        # --- Platform detection ---
-        is_batocera = os.path.exists("/usr/share/batocera") or os.path.exists("/etc/batocera-release")
-        is_rpi = False
-        try:
-            with open("/proc/device-tree/model") as f:
-                is_rpi = "raspberry pi" in f.read().lower()
-        except Exception:
-            pass
-
-        if platform.system() == "Windows" or runtime_globals.IS_ANDROID:
-            image_path = constants.CONTROLLERS_PC_PATH
-        elif is_batocera:
-            image_path = constants.CONTROLLERS_BATO_PATH  # Or a Batocera-specific image if you have one
-        elif is_rpi:
-            image_path = constants.CONTROLLERS_PI_PATH
-        else:
-            image_path = constants.CONTROLLERS_JOY_PATH  # Fallback for other Linux
-
-        # Use "Fit" method for controller images for both landscape and portrait devices
-        if runtime_globals.SCREEN_WIDTH >= runtime_globals.SCREEN_HEIGHT:
-            self.controller_sprite = sprite_load_percent(image_path, percent=100, keep_proportion=True, base_on="height")
-        else:
-            self.controller_sprite = sprite_load_percent(image_path, percent=100, keep_proportion=True, base_on="width")
-        self.boot_timer = int(150 * (constants.FRAME_RATE / 30)) 
+        self.boot_timer = int(120 * (game_globals.configuration.frame_rate / 30))
+        self.f12_press_count = 0  # Track F12 presses for debug toggle
         runtime_globals.game_console.log("[SceneBoot] Initialized")
 
     def update(self) -> None:
@@ -100,49 +90,129 @@ class SceneBoot:
         Draws the boot background.
         """
         self.background.draw(surface)
-        if self.boot_timer <= 80 * (constants.FRAME_RATE / 30) and not runtime_globals.IS_ANDROID:
-            # Center the controller sprite on screen
-            sprite_rect = self.controller_sprite.get_rect(center=(runtime_globals.SCREEN_WIDTH // 2, runtime_globals.SCREEN_HEIGHT // 2))
-            blit_with_cache(surface, self.controller_sprite, sprite_rect)
-        else:
-            # Old way: blit_with_cache(surface, self.logo, ((runtime_globals.SCREEN_WIDTH - self.logo.get_width()) // 2, 0))
-            # Center the logo image as well
-            sprite_rect = self.logo.get_rect(center=(runtime_globals.SCREEN_WIDTH // 2, runtime_globals.SCREEN_HEIGHT // 2))
-            blit_with_cache(surface, self.logo, sprite_rect)
+        # Center the logo image
+        sprite_rect = self.logo.get_rect(center=(runtime_globals.SCREEN_WIDTH // 2, runtime_globals.SCREEN_HEIGHT // 2))
+        blit_with_cache(surface, self.logo, sprite_rect)
 
     def handle_event(self, event) -> None:
-        """
-        Handles key press events, allowing early skip with ENTER.
-        """
+        """Handle key press events. A/B/START/LCLICK skips boot. F12 x3 toggles debug."""
         event_type, event_data = event
 
         if event_type in ["A", "B", "START", "LCLICK"]:
-            runtime_globals.game_console.log("[SceneBoot] Skipped boot timer with ENTER")
+            runtime_globals.game_sound.play("menu")
+            runtime_globals.game_console.log("[SceneBoot] Skipped boot timer")
             self.boot_timer = 0
+        elif event_type == "F12":
+            self.f12_press_count += 1
+            runtime_globals.game_console.log(f"[SceneBoot] F12 pressed ({self.f12_press_count}/3)")
+            if self.f12_press_count >= 3:
+                game_globals.configuration.debug_mode = not game_globals.configuration.debug_mode
+                status = "enabled" if game_globals.configuration.debug_mode else "disabled"
+                runtime_globals.game_sound.play("attack_fail")
+                runtime_globals.game_console.log(f"[SceneBoot] Debug mode {status}")
+                self.f12_press_count = 0
 
     def transition_to_next_scene(self) -> None:
+        """Route to the appropriate next scene based on game state.
+
+        Priority:
+            1. No game mode → setup
+            2. Setup flags → setup
+            3. Progress Mode + device key → validate on server
+            4. No modules + no internet → error
+            5. Refresh pets → route_to_next_scene
         """
-        Decides whether to transition to Main Game or Egg Selection based on saved pets.
+        # 1. No game mode chosen yet → first-time setup
+        if not game_globals.has_game_mode_preference():
+            change_scene("setup")
+            runtime_globals.game_console.log("[SceneBoot] → Setup (no game mode)")
+            return
+
+        # 2. Setup flags still pending (input or graphics)
+        if game_globals.setup_input or game_globals.setup_graphics:
+            change_scene("setup")
+            runtime_globals.game_console.log("[SceneBoot] → Setup (setup flags)")
+            return
+
+        # 3. Progress Mode: validate device credentials with server
+        if game_globals.is_progress_mode() and navigation_utils.has_device_key():
+            self._validate_progress_mode()
+            return
+
+        # 4. No modules + no internet → error
+        if not navigation_utils.has_modules_installed():
+            if not check_internet_connection():
+                from scenes.scene_error import SceneError
+                SceneError.set_error(
+                    message="NO MODULE DETECTED",
+                    bottom_message="Connect to the internet or install a module manually"
+                )
+                change_scene("error")
+                runtime_globals.game_console.log("[SceneBoot] → Error (no modules, no internet)")
+                return
+
+        # 5. Refresh pets and route to next scene
+        self._refresh_pets()
+        navigation_utils.route_to_next_scene(check_tutorial=True)
+
+    def _validate_progress_mode(self) -> None:
+        """Validate server credentials for Progress Mode.
+
+        On success, syncs player_id and continues to normal routing.
+        On failure, shows SceneError with retry / switch-to-free-mode options.
         """
-        if game_globals.pet_list:
-            change_scene("game")
-            runtime_globals.game_console.log("[SceneBoot] Transitioning to MainGame (pets found)")
-            for pet in game_globals.pet_list:
-                # Refresh evolution data from module
-                module = get_module(pet.module)
-                pet_data = module.get_monster(pet.name, pet.version)
-                if pet_data:
-                    pet.evolve = pet_data.get("evolve", [])
-                pet.begin_position()
-                if pet.state not in ["dead", "hatch", "nap"]:
-                    pet.set_state("idle")
-                pet.patch()
-            distribute_pets_evenly()
+        from core.service.omninet_service import omninet_service
+
+        runtime_globals.game_console.log("[SceneBoot] Validating device credentials")
+        success, message, user_info = omninet_service.validate_device()
+
+        if success:
+            # Sync player_id into game_globals (server may have refreshed it)
+            server_id = omninet_service.get_player_id()
+            if server_id:
+                game_globals.set_player_id(server_id)
+            runtime_globals.game_console.log("[SceneBoot] Server validation OK")
+
+            # Still check modules
+            if not navigation_utils.has_modules_installed():
+                if not check_internet_connection():
+                    from scenes.scene_error import SceneError
+                    SceneError.set_error(
+                        message="NO MODULE DETECTED",
+                        bottom_message="Connect to the internet or install a module manually"
+                    )
+                    change_scene("error")
+                    return
+
+            self._refresh_pets()
+            navigation_utils.route_to_next_scene(check_tutorial=True)
         else:
-            # No active pets, check if there are pets in the freezer
-            if has_freezer_pets():
-                change_scene("freezer")
-                runtime_globals.game_console.log("[SceneBoot] Transitioning to Freezer (pets found in freezer)")
-            else:
-                change_scene("egg")
-                runtime_globals.game_console.log("[SceneBoot] Transitioning to EggSelection (no pets)")
+            runtime_globals.game_console.log(
+                f"[SceneBoot] Server validation failed: {message}")
+            from scenes.scene_error import SceneError
+            SceneError.set_error(
+                message=f"SERVER: {message}",
+                action_a=("boot", "Retry"),
+                action_b=("switch_free", "Free Mode"),
+            )
+            change_scene("error")
+
+    def _refresh_pets(self) -> None:
+        """Refresh pet data from modules before entering the game scene.
+
+        Reloads evolution data, resets positions and states, and distributes
+        pets evenly.  Only meaningful at boot before SceneGame.
+        """
+        if not game_globals.pet_list:
+            return
+
+        for pet in game_globals.pet_list:
+            module = get_module(pet.module)
+            pet_data = module.get_monster(pet.name, pet.version)
+            if pet_data:
+                pet.evolve = pet_data.get("evolve", [])
+            pet.begin_position()
+            if pet.state not in ["dead", "hatch", "nap"]:
+                pet.set_state("idle")
+            pet.patch()
+        distribute_pets_evenly()

@@ -1,0 +1,18 @@
+{
+  "enemies": [
+    {
+      "name": "Agumon",
+      "power": 1,
+      "attribute": "",
+      "hp": 0,
+      "area": 1,
+      "round": 1,
+      "version": 1,
+      "handicap": 0,
+      "atk_main": 2,
+      "atk_alt": 0,
+      "atk_alt_2": 0,
+      "stage": 2
+    }
+  ]
+}

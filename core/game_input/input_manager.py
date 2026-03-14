@@ -14,10 +14,8 @@ Raspberry Pi Accelerometer Support:
 
 import pygame
 import platform
-import json
 import os
 
-from core.utils.asset_utils import open_json
 from core.game_input.input_event import (
     InputEventType,
     create_simple_event,
@@ -37,26 +35,86 @@ except ImportError:
     Button = None
     HAS_GPIO = False
 
-CONFIG_PATH = "config/input_config.json"
+# Custom pygame event types for GPIO (posted from gpiozero background threads).
+# Using USEREVENT slots keeps them in the normal pygame event queue so they
+# reach handle_raw_pygame_event in SceneSetup just like keyboard/joystick.
+GPIO_PRESS_EVENT = pygame.USEREVENT + 1
+GPIO_RELEASE_EVENT = pygame.USEREVENT + 2
 
 def load_input_config():
-    # Load and parse the config file    from core.utils.asset_utils import open_json
-    with open_json(CONFIG_PATH) as f:
-        config = json.load(f)
-    # Keyboard: convert string to pygame constant
-    key_map = {}
-    for action, key_str in config.get("keyboard", {}).items():
-        if key_str.startswith("K_"):
-            key_map[getattr(pygame, key_str)] = action
-    # Add debug keys (F1-F12)
-    for i in range(1, 13):
-        key_map[getattr(pygame, f"K_F{i}")] = f"F{i}"
-    reverse_key_map = {v: k for k, v in key_map.items()}
-    # GPIO: pin to action
-    pin_map = {int(pin): action for pin, action in config.get("gpio", {}).items()}
-    # Joystick: button index to action
-    joystick_button_map = {int(btn): action for btn, action in config.get("joystick", {}).items()}
-    return key_map, reverse_key_map, pin_map, joystick_button_map
+    """Load input configuration from GameConfiguration.
+    Returns key_map, reverse_key_map, pin_map, joystick_button_map
+    
+    Falls back to hardcoded defaults if GameConfiguration isn't available yet
+    (e.g., during initial import when runtime_globals loads before game_globals).
+    """
+    # Try to load from GameConfiguration
+    try:
+        from core import game_globals
+        config = game_globals.configuration
+        
+        # Keyboard: convert string to pygame constant
+        key_map = config.get_keyboard_pygame_map()
+        
+        # Add debug keys (F1-F12) - these are always available
+        for i in range(1, 13):
+            key_map[getattr(pygame, f"K_F{i}")] = f"F{i}"
+        
+        reverse_key_map = {v: k for k, v in key_map.items()}
+        
+        # GPIO: pin to action
+        pin_map = dict(config.gpio_map)
+        
+        # Joystick: button index to action
+        joystick_button_map = dict(config.joystick_map)
+        
+        return key_map, reverse_key_map, pin_map, joystick_button_map
+        
+    except (ImportError, AttributeError):
+        # GameConfiguration not available yet, use hardcoded defaults
+        # These match GameConfiguration.DEFAULT_* values
+        default_keyboard = {
+            "LEFT": "K_LEFT", "RIGHT": "K_RIGHT", "UP": "K_UP", "DOWN": "K_DOWN",
+            "A": "K_RETURN", "START": "K_BACKSPACE", "X": "K_LCTRL", "Y": "K_SPACE",
+            "R": "K_LSHIFT", "B": "K_ESCAPE", "SELECT": "K_TAB"
+        }
+        
+        key_map = {}
+        for action, key_str in default_keyboard.items():
+            if key_str.startswith("K_"):
+                key_map[getattr(pygame, key_str)] = action
+        
+        # Add debug keys
+        for i in range(1, 13):
+            key_map[getattr(pygame, f"K_F{i}")] = f"F{i}"
+        
+        reverse_key_map = {v: k for k, v in key_map.items()}
+        
+        pin_map = {
+            16: "LEFT", 13: "RIGHT", 5: "UP", 6: "DOWN",
+            21: "A", 20: "B", 15: "X", 12: "Y",
+            23: "L", 14: "R", 26: "START", 19: "SELECT"
+        }
+        
+        joystick_button_map = {
+            0: "A", 1: "B", 2: "Y", 3: "X", 4: "SELECT", 6: "START",
+            9: "L", 10: "R", 11: "UP", 12: "DOWN", 13: "LEFT", 14: "RIGHT", 15: "UP"
+        }
+        
+        return key_map, reverse_key_map, pin_map, joystick_button_map
+
+
+def reload_input_mappings(input_manager):
+    """Reload input mappings from configuration into an InputManager instance."""
+    key_map, reverse_key_map, pin_map, joystick_button_map = load_input_config()
+    input_manager.key_map = key_map
+    input_manager.reverse_key_map = reverse_key_map
+    input_manager.pin_map = pin_map
+    input_manager.default_joystick_button_map = joystick_button_map
+    
+    # Update joystick maps for connected joysticks
+    for jid in input_manager.joystick_button_maps:
+        input_manager.joystick_button_maps[jid] = dict(joystick_button_map)
 
 class InputManager:
     """
@@ -123,6 +181,7 @@ class InputManager:
         # --- State tracking sets (GPIO + joystick + mouse unified) ---
         self.just_pressed_gpio = set()
         self.active_gpio_inputs = set()
+        self._gpio_last_fire = {}   # action -> timestamp for release-cooldown debounce
 
         self.joystick_just_pressed = set()
         self.joystick_active_inputs = set()
@@ -138,16 +197,20 @@ class InputManager:
 
         # GPIO setup
         self.buttons = {}
-        if self.device == "Pi" and HAS_GPIO:
-            for pin, action in self.pin_map.items():
-                try:
-                    btn = Button(pin, pull_up=True, bounce_time=0.05)
-                    btn.when_pressed = self.make_gpio_handler(action, True)
-                    btn.when_released = self.make_gpio_handler(action, False)
-                    self.buttons[pin] = btn
-                except Exception:
-                    pass  # ignore missing pins
-
+        if self.device == "Pi":
+            if not HAS_GPIO:
+                print("[Input] GPIO unavailable: gpiozero not installed or import failed")
+            else:
+                for pin, action in self.pin_map.items():
+                    try:
+                        btn = Button(pin, pull_up=True, bounce_time=0.02)
+                        btn.when_pressed = self.make_gpio_handler(action, pin, True)
+                        btn.when_released = self.make_gpio_handler(action, pin, False)
+                        self.buttons[pin] = btn
+                    except Exception as e:
+                        print(f"[Input] GPIO pin {pin} ({action}) setup failed: {e}")
+                print(f"[Input] GPIO: {len(self.buttons)}/{len(self.pin_map)} buttons registered")
+    
     def _detect_mouse_support(self):
         """Auto-detect mouse/touch support"""
         try:
@@ -168,32 +231,24 @@ class InputManager:
                 print("[Input] Mouse support detected: macOS platform")
                 return True  # macOS always has mouse support
             elif platform.system() == "Linux":
-                # Check for desktop environment or touch device
+                # Always check for actual mouse/pointer devices first.
+                # /dev/input/mouse* symlinks are created exclusively for mice and
+                # trackpads — NOT for keyboards, GPIO, or other event devices.
+                # We do NOT short-circuit on DISPLAY/WAYLAND being set because those
+                # only indicate a rendering surface (e.g. X11 on a Pi), not a pointer.
                 import subprocess
                 try:
-                    # Check if running on desktop with display
-                    display = os.environ.get('DISPLAY')
-                    wayland = os.environ.get('WAYLAND_DISPLAY')
-                    if display or wayland:
-                        print(f"[Input] Mouse support detected: Linux desktop (DISPLAY={display}, WAYLAND={wayland})")
-                        return True
-                    
-                    # Check for touch devices
-                    result = subprocess.run(['find', '/dev/input', '-name', 'event*'], 
+                    result = subprocess.run(['find', '/dev/input', '-name', 'mouse*'],
                                          capture_output=True, text=True, timeout=2)
-                    if result.returncode == 0 and result.stdout:
-                        print("[Input] Touch/mouse input devices detected on Linux")
+                    if result.returncode == 0 and result.stdout.strip():
+                        display = os.environ.get('DISPLAY')
+                        wayland = os.environ.get('WAYLAND_DISPLAY')
+                        print(f"[Input] Mouse support detected: Linux (DISPLAY={display}, WAYLAND={wayland})")
                         return True
-                except:
+                except Exception:
                     pass
-                    
-                # Default for Pi: check if it's not headless
-                has_config = os.path.exists("/boot/config.txt")
-                has_ssh = os.path.exists("/boot/ssh")
-                if has_config and not has_ssh:
-                    print("[Input] Touch support detected: Raspberry Pi with display")
-                    return True
-                print("[Input] No mouse/touch support detected: headless Linux")
+
+                print("[Input] No mouse/touch support detected: no pointer devices found")
                 return False
             else:
                 print(f"[Input] Unknown platform {platform.system()}, defaulting to no mouse")
@@ -205,18 +260,21 @@ class InputManager:
     # ------------------------------------------------------------------
     # GPIO helpers
     # ------------------------------------------------------------------
-    def make_gpio_handler(self, action, pressed):
+    def make_gpio_handler(self, action, pin, pressed):
+        """Create a gpiozero callback that posts a custom pygame event.
+        Bridging through the pygame event queue means GPIO reaches
+        handle_raw_pygame_event in SceneSetup (for input mapping) and
+        process_event (for normal gameplay) through the same pipeline
+        as keyboard and joystick.
+        """
+        event_type = GPIO_PRESS_EVENT if pressed else GPIO_RELEASE_EVENT
         def handler():
-            self.handle_gpio_input(action, pressed)
+            try:
+                evt = pygame.event.Event(event_type, action=action, gpio_pin=pin)
+                pygame.event.post(evt)
+            except Exception:
+                pass  # pygame not initialised yet — shouldn't happen during gameplay
         return handler
-
-    def handle_gpio_input(self, action, pressed):
-        if pressed:
-            if action not in self.active_gpio_inputs:
-                self.just_pressed_gpio.add(action)
-            self.active_gpio_inputs.add(action)
-        else:
-            self.active_gpio_inputs.discard(action)
 
     # ------------------------------------------------------------------
     # Joystick init + mapping
@@ -445,6 +503,33 @@ class InputManager:
                 # Process the keyboard action after ending drag
                 return create_simple_event(action)
             return create_simple_event(action)
+
+        # --- GPIO (custom pygame events posted from gpiozero background threads) ---
+        if event.type == GPIO_PRESS_EVENT:
+            # Record that the button is physically held — don't fire yet.
+            # Firing on press causes double-fire from contact bounce.
+            self.active_gpio_inputs.add(event.action)
+            from core import runtime_globals
+            if not runtime_globals.INPUT_MODE_FORCED:
+                runtime_globals.INPUT_MODE = runtime_globals.GPIO_MODE
+            return None
+
+        if event.type == GPIO_RELEASE_EVENT:
+            action = event.action
+            # Only fire if we saw the matching press (guards stray release events)
+            if action in self.active_gpio_inputs:
+                self.active_gpio_inputs.discard(action)
+                # 150 ms cooldown — drops any bounce release that slips through
+                import time as _time
+                now = _time.time()
+                if (now - self._gpio_last_fire.get(action, 0)) < 0.15:
+                    return None
+                self._gpio_last_fire[action] = now
+                self.just_pressed_gpio.add(action)
+                from core import runtime_globals
+                runtime_globals.game_console.log(f"[Input] GPIO: {action} (pin {event.gpio_pin})")
+                return create_simple_event(action)
+            return None
 
         # --- Joystick Buttons ---
         if event.type == pygame.JOYBUTTONDOWN:

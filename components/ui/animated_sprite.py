@@ -411,6 +411,33 @@ class AnimatedSprite(UIComponent):
         self.is_playing = True
         self.current_frame = 0
     
+    def setup_countdown_ready_bw(self):
+        """Set up countdown ready mode for BW (black and white) sprites - Combat_ReadyBW_1."""
+        sprites = self._load_combat_sprites("ReadyBW")
+        backgrounds = [self.COMBAT_BLUE]
+        self.set_animation_data(sprites, backgrounds)
+        self.manual_mode = True
+        self.is_playing = True
+        self.current_frame = 0
+    
+    def setup_countdown_count_bw(self):
+        """Set up countdown count mode for BW (black and white) sprites - Combat_CountBW_1."""
+        sprites = self._load_combat_sprites("CountBW")
+        backgrounds = [self.COMBAT_BLUE]
+        self.set_animation_data(sprites, backgrounds)
+        self.manual_mode = True
+        self.is_playing = True
+        self.current_frame = 0
+    
+    def setup_countdown_classic(self):
+        """Set up countdown classic mode - Combat_CountClassic_1."""
+        sprites = self._load_combat_sprites("CountClassic")
+        backgrounds = [self.COMBAT_BLUE]
+        self.set_animation_data(sprites, backgrounds)
+        self.manual_mode = True
+        self.is_playing = True
+        self.current_frame = 0
+    
     def next_countdown_frame(self):
         """Advance to the next frame in countdown mode."""
         if self.manual_mode and self.sprites:

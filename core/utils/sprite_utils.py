@@ -6,7 +6,7 @@ import zipfile
 import pygame
 import io
 from typing import Dict, List
-from core import runtime_globals
+from core import runtime_globals, game_globals
 from core.utils.asset_utils import image_load, resolve_path
 
 
@@ -190,7 +190,7 @@ def load_pet_sprites(pet_name: str, module_path: str, name_format: str = "$_dmc"
     sprites = {}
     
     # Determine sprite resolution preference
-    preference = getattr(runtime_globals, 'sprite_resolution_preference', 0)
+    preference = getattr(game_globals.configuration, 'sprite_resolution_preference', 0)
     #preference = 2
     
     def try_load_sprites(sprite_folder: str, log_suffix: str) -> Dict[str, pygame.Surface]:

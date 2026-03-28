@@ -126,8 +126,20 @@
                             <span class="attribute-value ">Age, Weight, Hunger, Strength, Effort and 6 more</span>
                         </li>
                         <li class="attribute-item">
-                            <span class="attribute-label tooltip">High Definition Sprites:
-                                <span class="tooltiptext">When enabled, the module uses high-definition sprite variants when available. Sprites are loaded from monsters_hidef folder instead of monsters folder for enhanced visual quality.</span>
+                            <span class="attribute-label tooltip">Primary Sprite Format:
+                                <span class="tooltiptext">The primary sprite format to load. Color uses 'monsters', Dot uses 'monsters_dot', HD uses 'monsters_hidef'. Falls back to secondary then the remaining format.</span>
+                            </span>
+                            <span class="attribute-value">Dot</span>
+                        </li>
+                        <li class="attribute-item">
+                            <span class="attribute-label tooltip">Secondary Sprite Format:
+                                <span class="tooltiptext">The secondary sprite format to try if primary is not found. Falls back to the remaining unselected format last.</span>
+                            </span>
+                            <span class="attribute-value">Color</span>
+                        </li>
+                        <li class="attribute-item">
+                            <span class="attribute-label tooltip">Enable Special Attack Sprite:
+                                <span class="tooltiptext">When enabled, critical attacks will use the 'Special' frame effect.</span>
                             </span>
                             <span class="attribute-value boolean-false">No</span>
                         </li>
@@ -218,6 +230,18 @@
                             <span class="attribute-value ">Next and Reset</span>
                         </li>
                         <li class="attribute-item">
+                            <span class="attribute-label tooltip">Battle Cost Type:
+                                <span class="tooltiptext">Which resource is required to battle.</span>
+                            </span>
+                            <span class="attribute-value">DP</span>
+                        </li>
+                        <li class="attribute-item">
+                            <span class="attribute-label tooltip">Battle Cost Amount:
+                                <span class="tooltiptext">The amount of the battle resource will be consumed when battling.</span>
+                            </span>
+                            <span class="attribute-value ">1</span>
+                        </li>
+                        <li class="attribute-item">
                             <span class="attribute-label tooltip">Base Sick Chance Win:
                                 <span class="tooltiptext">Base percentage chance of getting sick after winning a battle. Modified by protein overdose and disturbance penalties. Minimum 5%, maximum 50%.</span>
                             </span>
@@ -244,6 +268,12 @@
                         <li class="attribute-item">
                             <span class="attribute-label tooltip">Sequential Rounds:
                                 <span class="tooltiptext">Controls battle area progression mechanics. When enabled, battles progress through rounds sequentially rather than allowing random round selection.</span>
+                            </span>
+                            <span class="attribute-value boolean-false">No</span>
+                        </li>
+                        <li class="attribute-item">
+                            <span class="attribute-label tooltip">Enable Feeding:
+                                <span class="tooltiptext">This will allow the player to feed the pets after 3 battles (if area has exactly 5 rounds) or after 4 battles (if area has 6 or more rounds) following the DMX/PENZ pattern. Requires Battle Sequential Rounds to work.</span>
                             </span>
                             <span class="attribute-value boolean-false">No</span>
                         </li>
@@ -330,7 +360,7 @@
                             <span class="attribute-label tooltip">99g Effect:
                                 <span class="tooltiptext">Defines what happens when a pet reaches 99g of weight.</span>
                             </span>
-                            <span class="attribute-value ">Skull</span>
+                            <span class="attribute-value boolean-false">Nothing</span>
                         </li>
                         <li class="attribute-item">
                             <span class="attribute-label tooltip">Poop Sickness Count:
@@ -339,10 +369,22 @@
                             <span class="attribute-value ">4</span>
                         </li>
                         <li class="attribute-item">
+                            <span class="attribute-label tooltip">Poop Sickness Effect:
+                                <span class="tooltiptext">Defines the visual effect when the pet gets sick from poop.</span>
+                            </span>
+                            <span class="attribute-value">Skull</span>
+                        </li>
+                        <li class="attribute-item">
                             <span class="attribute-label tooltip">Block Actions When Sleeping:
                                 <span class="tooltiptext">When the pet is sleepy or asleep, it won't be possible to battle, feed or train.</span>
                             </span>
                             <span class="attribute-value boolean-true">Yes</span>
+                        </li>
+                        <li class="attribute-item">
+                            <span class="attribute-label tooltip">Can Battle While Sick:
+                                <span class="tooltiptext">When enabled, the pet can battle even while sick. When disabled, battling is blocked until the pet is healed.</span>
+                            </span>
+                            <span class="attribute-value boolean-false">No</span>
                         </li>
                     </ul>
                 </div>

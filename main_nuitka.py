@@ -1,7 +1,7 @@
 """
 Omnipet Virtual Pet Game - Main Entry Point for Nuitka Builds
 Handles pygame initialization with explicit video driver setup for embedded/low-power devices.
-The game logic is handled by the VirtualPetGame class in game/vpet.py
+The game logic is handled by the VirtualPetGame class in src/vpet.py
 """
 
 import sys
@@ -176,7 +176,7 @@ def setup_display():
 
     pygame.display.set_caption(f"Omnipet {VERSION}")
     pygame.mouse.set_visible(False)
-    from core.game_input.input_manager import GPIO_PRESS_EVENT, GPIO_RELEASE_EVENT
+    from input.input_manager import GPIO_PRESS_EVENT, GPIO_RELEASE_EVENT
     pygame.event.set_allowed([
         pygame.QUIT,
         pygame.KEYDOWN,
@@ -214,7 +214,7 @@ def main():
         
         # Build module documentation
         try:
-            from core.utils.document_utils import build_module_documentation
+            from utils.document_utils import build_module_documentation
             project_root = os.path.dirname(__file__)
             logging.info("[Init] Building module documentation...")
             build_module_documentation(project_root)
@@ -338,59 +338,28 @@ if __name__ == "__main__":
     # Add base directory for top-level imports
     sys.path.insert(0, base_dir)
     
-    # For Nuitka, we need to check multiple possible locations for the game directory
-    possible_game_dirs = [
-        os.path.join(base_dir, 'game'),
-        # Nuitka might extract to a subdirectory
-        os.path.join(base_dir, 'main_nuitka.dist', 'game'),
-        # Or to a temporary directory we haven't found yet
-    ]
-    
-    # Also try to find the game directory in sys.path or Python's import system
-    try:
-        game_module_path = __file__
-        if game_module_path:
-            game_dir = os.path.dirname(game_module_path)
-            possible_game_dirs.insert(0, game_dir)
-            print(f"[Import] Found game module at: {game_dir}")
-    except ImportError:
-        print(f"[Import] Could not import game module to find location")
-    
-    game_dir = None
-    for potential_dir in possible_game_dirs:
-        if os.path.exists(potential_dir):
-            game_dir = potential_dir
-            print(f"[Path] Found game directory: {game_dir}")
-            break
-    
-    if game_dir:
-        # CRITICAL FIX: Add the parent directory of game/, not game/ itself
-        # This allows 'import game.core' to work correctly
-        game_parent_dir = os.path.dirname(game_dir)
-        sys.path.insert(0, game_parent_dir)
-        print(f"[Path] Added game parent directory: {game_parent_dir}")
-        
-        # For backward compatibility and relative imports inside game package,
-        # also add the game directory itself
-        sys.path.insert(0, game_dir)
-        print(f"[Path] Added game directory: {game_dir}")
-        
-        # Add the game/core directory to support 'from core import' style imports
-        # (though these should be converted to absolute imports)
-        core_dir = os.path.join(game_dir, 'core')
-        if os.path.exists(core_dir):
-            sys.path.insert(0, core_dir)
-            print(f"[Path] Added core directory: {core_dir}")
-        else:
-            print(f"[Warning] Core directory not found: {core_dir}")
+    # Add src directory so internal imports (core, components, scenes, vpet) resolve
+    src_dir = os.path.join(base_dir, 'src')
+    if os.path.exists(src_dir):
+        sys.path.insert(0, src_dir)
+        print(f"[Path] Added src directory: {src_dir}")
     else:
-        print(f"[Error] Could not find game directory in any of these locations:")
-        for potential_dir in possible_game_dirs:
-            print(f"[Error]   - {potential_dir}")
+        # For Nuitka, check alternative locations
+        possible_src_dirs = [
+            os.path.join(base_dir, 'main_nuitka.dist', 'src'),
+            os.path.dirname(__file__),
+        ]
+        for potential_dir in possible_src_dirs:
+            if os.path.exists(potential_dir) and os.path.exists(os.path.join(potential_dir, 'core')):
+                sys.path.insert(0, potential_dir)
+                print(f"[Path] Added src directory (fallback): {potential_dir}")
+                break
+        else:
+            print(f"[Error] Could not find src directory with core/ in any expected location")
     
     # Debug output for troubleshooting
     print(f"[Debug] Working directory: {os.getcwd()}")
-    print(f"[Debug] Python path entries: {[p for p in sys.path if 'game' in p or p == base_dir]}")
+    print(f"[Debug] Python path entries: {[p for p in sys.path if 'src' in p or p == base_dir]}")
 
     # Setup logging
     log_dir = os.path.join(base_dir, 'logs')

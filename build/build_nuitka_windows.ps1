@@ -72,21 +72,30 @@ try {
     Push-Location $PROJECT_ROOT
     
     # Set PYTHONPATH for Nuitka compilation
-    $env:PYTHONPATH = $PROJECT_ROOT
+    $env:PYTHONPATH = "$PROJECT_ROOT;$PROJECT_ROOT\src"
     Write-Status "Temporarily setting PYTHONPATH for Nuitka: $env:PYTHONPATH"
 
     # Nuitka build command for Windows
     python -m nuitka `
         --output-dir="$TEMP_DIR" `
         --output-filename="omnipet" `
-        --include-package="game" `
-        --include-package="game.core" `
-        --include-package="game.core.combat" `
-        --include-package="game.core.input" `
-        --include-package="game.core.utils" `
-        --include-package="game.scenes" `
-        --include-package="game.components" `
-        --include-package-data="game" `
+        --include-package="src" `
+        --include-package="src.core" `
+        --include-package="src.models" `
+        --include-package="src.ui" `
+        --include-package="src.ui.components" `
+        --include-package="src.ui.windows" `
+        --include-package="src.ui.minigames" `
+        --include-package="src.input" `
+        --include-package="src.battle" `
+        --include-package="src.battle.dcom" `
+        --include-package="src.battle.sim" `
+        --include-package="src.training" `
+        --include-package="src.services" `
+        --include-package="src.data" `
+        --include-package="src.utils" `
+        --include-package="src.scenes" `
+        --include-package-data="src" `
         --include-module="json" `
         --include-module="psutil" `
         --include-module="platform" `

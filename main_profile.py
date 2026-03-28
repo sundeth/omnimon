@@ -1,7 +1,7 @@
 """
 Omnipet Virtual Pet Game - Main Entry Point with Performance Profiling
 Handles pygame initialization, video/audio setup, and display management.
-The game logic is handled by the VirtualPetGame class in game/vpet.py
+The game logic is handled by the VirtualPetGame class in src/vpet.py
 
 This version includes cProfile performance profiling to identify bottlenecks.
 Run with: python main_profile.py
@@ -18,12 +18,12 @@ import io
 
 import sys, os
 
-from core import game_globals, runtime_globals
-from core.utils.document_utils import build_module_documentation
-# sys.stderr = open(os.devnull, 'w')  # Commented out to allow error stack traces
+# Add src directory to Python path so internal imports (core, components, scenes, vpet) resolve
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# Add game directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'game'))
+from core import game_globals, runtime_globals
+from utils.document_utils import build_module_documentation
+# sys.stderr = open(os.devnull, 'w')  # Commented out to allow error stack traces
 
 from vpet import VirtualPetGame
 
@@ -188,7 +188,7 @@ def setup_display():
 
     pygame.display.set_caption(f"Omnipet {VERSION} [PROFILING]")
     pygame.mouse.set_visible(False)
-    from core.game_input.input_manager import GPIO_PRESS_EVENT, GPIO_RELEASE_EVENT
+    from input.input_manager import GPIO_PRESS_EVENT, GPIO_RELEASE_EVENT
     pygame.event.set_allowed([
         pygame.QUIT,
         pygame.KEYDOWN,

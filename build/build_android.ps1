@@ -14,13 +14,21 @@ $WSLBuildDir = "~/omnipet_build"
 $BuildType = if ($Release) { "release" } else { "debug" }
 
 Write-Host "[1/4] Preparing build directory..." -ForegroundColor Yellow
-wsl bash -c "mkdir -p $WSLBuildDir/{core,components,scenes,assets,modules,config,save}"
+wsl bash -c "mkdir -p $WSLBuildDir/{src/core,src/models,src/ui,src/ui/components,src/ui/windows,src/ui/minigames,src/input,src/battle,src/battle/dcom,src/battle/sim,src/training,src/services,src/data,src/data/protocols,src/data/attack_patterns,src/utils,src/scenes,assets,modules,config,save}"
 
 Write-Host "[2/4] Syncing files to WSL..." -ForegroundColor Yellow
-wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/core/ $WSLBuildDir/core/"
-wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/components/ $WSLBuildDir/components/"
-wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/scenes/ $WSLBuildDir/scenes/"
-wsl bash -c "cp /mnt/e/Omnipet/vpet.py $WSLBuildDir/vpet.py"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/core/ $WSLBuildDir/src/core/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/models/ $WSLBuildDir/src/models/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/ui/ $WSLBuildDir/src/ui/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/input/ $WSLBuildDir/src/input/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/battle/ $WSLBuildDir/src/battle/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/training/ $WSLBuildDir/src/training/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/services/ $WSLBuildDir/src/services/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/data/ $WSLBuildDir/src/data/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/utils/ $WSLBuildDir/src/utils/"
+wsl bash -c "rsync -avu --delete --exclude='__pycache__' --exclude='*.pyc' /mnt/e/Omnipet/src/scenes/ $WSLBuildDir/src/scenes/"
+wsl bash -c "cp /mnt/e/Omnipet/src/vpet.py $WSLBuildDir/src/vpet.py"
+wsl bash -c "cp /mnt/e/Omnipet/src/__init__.py $WSLBuildDir/src/__init__.py"
 wsl bash -c "rsync -avu --delete /mnt/e/Omnipet/assets/ $WSLBuildDir/assets/"
 wsl bash -c "rsync -avu --delete /mnt/e/Omnipet/modules/ $WSLBuildDir/modules/"
 wsl bash -c "rsync -avu --delete /mnt/e/Omnipet/config/ $WSLBuildDir/config/"

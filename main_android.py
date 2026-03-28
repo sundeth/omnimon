@@ -4,6 +4,9 @@ Omnipet Virtual Pet - Android Entry Point
 import sys
 import os
 
+# Add src directory to Python path so internal imports (core, components, scenes, vpet) resolve
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
 os.environ["SDL_RENDER_SCALE_QUALITY"] = "0"
 import pygame
 

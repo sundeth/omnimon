@@ -346,8 +346,8 @@ class BattleEncounterDCom(BattleEncounter):
         enemy.sick = opp.sick if opp else 0
         enemy.traited = bool(opp.traited) if opp else False
         enemy.shook = bool(opp.egg_shake) if opp else False
-        enemy.module = self.module
-        
+        enemy.module = self.module.name
+
         # Load sprite for the enemy
         enemy.load_sprite(enemy.module, boss=False)
         

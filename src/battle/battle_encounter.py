@@ -18,7 +18,7 @@ from ui.components.animated_sprite import AnimatedSprite
 from ui.components.hp_bar import HPBar
 from ui.components.label import Label
 from ui.components.label_value import LabelValue
-from ui.components.menu import Menu
+
 from ui import ui_constants
 from core import game_globals, runtime_globals
 from models.animation import PetFrame
@@ -27,7 +27,7 @@ from battle.sim.models import Digimon, BattleProtocol
 from models.game_module import sprite_load
 from utils.module_utils import get_module
 from utils.pet_utils import distribute_pets_evenly, get_battle_targets
-from utils.pygame_utils import blit_with_cache, get_font, load_attack_sprites, module_attack_sprites, sprite_load_percent
+from utils.pygame_utils import blit_with_cache, get_font, load_attack_sprites, load_crit_attack_sprites, module_attack_sprites, module_crit_attack_sprites, sprite_load_percent
 from utils.scene_utils import change_scene
 from utils.utils_unlocks import unlock_item
 from utils import inventory_utils
@@ -52,14 +52,15 @@ class BattleEncounter:
     # Region: Setup & State
     #========================
 
-    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False, is_random_encounter=False):
+    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False, is_special_encounter=False):
         """
         Initializes the BattleEncounter, loading graphics and setting initial state.
         """
         # Load module-specific attack sprites for pets and enemies
         self.pvp_mode = pvp_mode
-        self.is_random_encounter = is_random_encounter
+        self.is_special_encounter = is_special_encounter
         self.module_attack_sprites = {}
+        self.module_crit_attack_sprites = {}
         self.module = get_module(module)
         self.set_initial_state(area, round, version)
 
@@ -100,7 +101,8 @@ class BattleEncounter:
         # Note: All sprites now handled by AnimatedSprite component
 
         self.attack_sprites = load_attack_sprites()
-        
+        self.crit_attack_sprites = load_crit_attack_sprites()
+
         self.load_module_attack_sprites()
         
         self.hit_animation_frames = self.load_hit_animation()
@@ -290,6 +292,7 @@ class BattleEncounter:
         self.shake_punch = None
         self.xai_roll = None
         self.xai_bar = None
+        self._xai_pending_stop = False
 
     def get_battle_effect(self, effect_name, default=None):
         """
@@ -343,7 +346,7 @@ class BattleEncounter:
                 version=1,  # Default version
                 atk_main=pet_data["atk_main"],
                 atk_alt=pet_data["atk_alt"],
-                atk_alt_2=pet_data.get("atk_alt2", 0),
+                atk_alt_2=pet_data.get("atk_alt_2", 0),
                 handicap=0,  # No handicap in PvP
                 id=i,  # Use index as ID
                 stage=pet_data["stage"],
@@ -526,7 +529,7 @@ class BattleEncounter:
         Loads enemy data for the current area and round, sets up enemy positions and health.
         """
         selected_pets = get_battle_targets()
-        version_range = self.module.get_enemy_versions(self.area, self.round)
+        version_range = self.module.get_enemy_versions(self.area, self.round, special_encounter=self.is_special_encounter)
         versions = []
         for p in selected_pets:
             if not version_range:
@@ -536,7 +539,7 @@ class BattleEncounter:
             else:
                 versions.append(p.version)
 
-        self.enemies = self.module.get_enemies(self.area, self.round, versions)
+        self.enemies = self.module.get_enemies(self.area, self.round, versions, special_encounter=self.is_special_encounter)
         if self.boss:
             # If it's a boss, ensure we have only one enemy
             self.enemies = [self.enemies[0]] if self.enemies else []
@@ -583,24 +586,116 @@ class BattleEncounter:
         # Add module from enemies (they use the same module as the battle area)
         modules_to_load.add(self.module.name)
         
-        # Load sprites for each unique module
+        # Load sprites for each unique module (atk and atk_crit folders)
         for module_name in modules_to_load:
             self.module_attack_sprites[module_name] = module_attack_sprites(module_name)
+            self.module_crit_attack_sprites[module_name] = module_crit_attack_sprites(module_name)
+
+    def _is_dot_entity(self, entity):
+        """Return True if this entity is currently rendered using dot sprites."""
+        enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
+        if not enable_old:
+            return False
+        module_name = getattr(entity, 'module', self.module.name)
+        mod = get_module(module_name)
+        if mod is None:
+            return False
+        primary = getattr(mod, 'primary_sprite_format', 'Color')
+        secondary = getattr(mod, 'secondary_sprite_format', 'HD')
+        return primary == 'Dot' or secondary == 'Dot'
 
     def get_attack_sprite(self, entity, attack_id):
         """
         Get attack sprite for a pet or enemy, preferring module-specific sprites over defaults.
+        Dot variants are selected only for entities currently rendered as dot (enable_old + Dot format).
         """
         module_name = getattr(entity, 'module', self.module.name)
-        
-        # First try module-specific attack sprites
+        is_dot = self._is_dot_entity(entity)
+
         if module_name in self.module_attack_sprites:
-            module_sprite = self.module_attack_sprites[module_name].get(str(attack_id))
-            if module_sprite:
-                return module_sprite
-        
-        # Fall back to default attack sprites
+            module_dict = self.module_attack_sprites[module_name]
+            if is_dot:
+                dot_sprite = module_dict.get(f"{attack_id}_dot")
+                if dot_sprite:
+                    return dot_sprite
+            sprite = module_dict.get(str(attack_id))
+            if sprite:
+                return sprite
+
+        if is_dot:
+            dot_sprite = self.attack_sprites.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
         return self.attack_sprites.get(str(attack_id))
+
+    def get_crit_attack_sprite(self, entity, attack_id):
+        """
+        Get a critical-attack sprite for a critical hit.
+        Priority: module-specific atk_crit folder → global assets/atk_crit folder.
+        Returns None if nothing found — callers should fall back to normal atk + scale2x.
+        Dot variants are selected only for entities currently rendered as dot.
+        """
+        module_name = getattr(entity, 'module', self.module.name)
+        is_dot = self._is_dot_entity(entity)
+
+        crit_dict = self.module_crit_attack_sprites.get(module_name, {})
+        if is_dot:
+            dot_sprite = crit_dict.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
+        sprite = crit_dict.get(str(attack_id))
+        if sprite:
+            return sprite
+
+        if is_dot:
+            dot_sprite = self.crit_attack_sprites.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
+        return self.crit_attack_sprites.get(str(attack_id))
+
+    def _get_advanced_atk_id(self, entity, anim_hits):
+        """
+        Get attack sprite ID for DMX/PENZ/INTERNAL_PVE protocols based on hit count.
+        
+        Strike mapping:
+        1: 1 atk_main sprite
+        2: 2 atk_main sprites
+        3: 1 atk_alt sprite (fallback: atk_main)
+        4: 2 atk_alt sprites (fallback: atk_main)
+        5: 1 atk_alt2 sprite double size (fallback: atk_alt double, then atk_main double)
+        """
+        atk_alt = getattr(entity, "atk_alt", None)
+        atk_alt2 = getattr(entity, "atk_alt_2", None)
+        has_alt = atk_alt is not None and atk_alt > 0
+        has_alt2 = atk_alt2 is not None and atk_alt2 > 0
+
+        if anim_hits >= 5:
+            if has_alt2:
+                return str(atk_alt2)
+            elif has_alt:
+                return str(atk_alt)
+            else:
+                return str(getattr(entity, "atk_main", 30))
+        elif anim_hits >= 3:
+            if has_alt:
+                return str(atk_alt)
+            else:
+                return str(getattr(entity, "atk_main", 30))
+        else:
+            return str(getattr(entity, "atk_main", 30))
+
+    def _has_special_frame(self, entity):
+        """Check if a pet/enemy has a valid SPECIAL frame (index 15)."""
+        try:
+            return entity.get_sprite(PetFrame.SPECIAL.value) is not None
+        except Exception:
+            return False
+
+    def _is_critical_attack(self, entity, anim_hits):
+        """Check if this attack should use the special/critical animation."""
+        return (anim_hits >= 5 and 
+                self.module.enable_special_attack_sprite and 
+                self._has_special_frame(entity))
 
     #========================
     # Region: Update Methods
@@ -820,8 +915,12 @@ class BattleEncounter:
                     )
                     self.xai_bar.start()
             elif self.xai_phase == 2 and self.xai_bar:
-                self.xai_bar.update()
-        
+                if self._xai_pending_stop:
+                    self._xai_pending_stop = False
+                    self._do_xai_bar_stop()
+                else:
+                    self.xai_bar.update()
+
         # Check if minigame time is up and transition to battle
         time_up = False
         if minigame == "None":
@@ -839,7 +938,6 @@ class BattleEncounter:
             self.frame_counter = 0
             self.animated_sprite.stop()
             self.battle_player.reset_frame_counters()
-            self.battle_player.reset_jump_and_forward()
             # Reset projectile delta-time trackers for the new battle phase
             self._last_pet_proj_tick = pygame.time.get_ticks()
             self._last_enemy_proj_tick = pygame.time.get_ticks()
@@ -848,6 +946,13 @@ class BattleEncounter:
             elif minigame == "Count Match (Z)" and self.count_match_z:
                 self.minigame_result = self.count_match_z.calculate_result()
             self.calculate_combat_for_pairs()
+
+    def _do_xai_bar_stop(self):
+        """Freeze the XAI bar, record strength, and advance to the attack phase."""
+        self.xai_bar.stop()
+        self.strength = self.xai_bar.get_result() or 1
+        self.xai_phase = 3
+        self.bar_timer = pygame.time.get_ticks()
 
     def calculate_results(self):
         self.correct_color = self.get_first_pet_attribute()
@@ -928,7 +1033,7 @@ class BattleEncounter:
             self.battle_player.bonus = 0
             # Call finish_battle here to update DP, battle number, and win rate for a loss.
             for i, pet in enumerate(self.battle_player.team1):
-                pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_random_encounter=self.is_random_encounter)
+                pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_special_encounter=self.is_special_encounter)
             return
 
         # If victory, calculate XP for winners and bonus
@@ -954,7 +1059,7 @@ class BattleEncounter:
             else:
                 self.battle_player.level_up[i] = False
 
-            pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_random_encounter=self.is_random_encounter)
+            pet.finish_battle(self.victory_status == "Victory", self.battle_player.team2[0], self.area, (self.boss or not self.module.battle_sequential_rounds), is_special_encounter=self.is_special_encounter)
 
         # --- Prize logic for Victory ---
         self.prize_item = None
@@ -1110,7 +1215,16 @@ class BattleEncounter:
         # Choose attack sprite based on protocol/ruleset
         # Cap hits at 5 for animation (bonuses don't affect animation)
         anim_hits = min(5, hits)
-        
+
+        # Critical/slide-in is now driven by the simulator's `critical` flag on
+        # the AttackLog (set when the BASE pattern damage equals 5, before
+        # buffs/level bonuses). The pet still needs a SPECIAL frame and a
+        # module that allows the slide visual.
+        is_crit = (bool(getattr(attack_entry, "critical", False))
+                   and self.module.enable_special_attack_sprite
+                   and self._has_special_frame(pet))
+        self.battle_player.special_attack[pet_index] = is_crit
+
         if self.module.battle_damage_limit < 3:
             # DM20/PEN20/DM/DMC: 1-2 attack types, 70% atk_main / 30% atk_alt random
             if getattr(pet, "atk_alt", 0) > 0 and random.random() < 0.3:
@@ -1118,33 +1232,20 @@ class BattleEncounter:
             else:
                 atk_id = str(pet.atk_main)
         else:
-            # DMX/PENZ/INTERNAL_PVE: 1-5 attack types
-            # 1-2 = atk_main, 3-4 = atk_alt (fallback to atk_main), 5 = atk_alt2 (fallback to atk_alt/atk_main)
-            if anim_hits >= 5:
-                if getattr(pet, "atk_alt2", 0) > 0:
-                    atk_id = str(pet.atk_alt2)
-                elif getattr(pet, "atk_alt", 0) > 0:
-                    atk_id = str(pet.atk_alt)
-                else:
-                    atk_id = str(pet.atk_main)
-            elif anim_hits >= 3:
-                if getattr(pet, "atk_alt", 0) > 0:
-                    atk_id = str(pet.atk_alt)
-                else:
-                    atk_id = str(pet.atk_main)
-            else:
-                atk_id = str(pet.atk_main)
+            # DMX/PENZ/INTERNAL_PVE: sprite selection based on hit count
+            # 1-2: atk_main, 3-4: atk_alt (fallback atk_main), 5: atk_alt2 (fallback atk_alt double/atk_main double)
+            atk_id = self._get_advanced_atk_id(pet, anim_hits)
         atk_sprite = self.get_attack_sprite(pet, atk_id)
 
-        # Start position
-        y = self.get_y(pet_index, len(self.battle_player.team1)) + atk_sprite.get_height() // 2
+        # Start position — store as character center Y so any sprite size is drawn centered
+        y = self.get_y(pet_index, len(self.battle_player.team1)) + runtime_globals.PET_HEIGHT // 2
         x = self.get_team1_x(pet_index)
 
         # Target position
         if defender_idx < len(self.battle_player.team2):
             target_enemy = self.battle_player.team2[defender_idx]
             target_x = self.get_team2_x(defender_idx) + (runtime_globals.PET_WIDTH * constants.BOSS_MULTIPLIER if self.boss else runtime_globals.PET_WIDTH) // 2
-            target_y = self.get_y(defender_idx, len(self.battle_player.team2)) + atk_sprite.get_height() // 2
+            target_y = self.get_y(defender_idx, len(self.battle_player.team2)) + runtime_globals.PET_HEIGHT // 2
         else:
             target_x, target_y = x, y
 
@@ -1156,40 +1257,65 @@ class BattleEncounter:
 
         self.battle_player.team1_projectiles[pet_index] = []
         s = runtime_globals.UI_SCALE
-        base_pos = [x, y]
-        base_tgt = [target_x, target_y]
         if self.module.battle_damage_limit < 3:
             # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
             if anim_hits >= 2:
                 rotated_sprite = pygame.transform.scale2x(rotated_sprite.copy())
-            self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, y], [target_x, target_y], attack_entry])
+            by = y - rotated_sprite.get_height() // 2
+            bty = target_y - rotated_sprite.get_height() // 2
+            self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, by], [target_x, bty], attack_entry])
         else:
-            # DMX/PENZ/INTERNAL_PVE: multi-sprite attacks combined into single surface
-            if anim_hits >= 5:
-                # Critical: double size sprite
-                rotated_sprite = pygame.transform.scale2x(rotated_sprite.copy())
-                self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, y], [target_x, target_y], attack_entry])
+            # DMX/PENZ/INTERNAL_PVE: projectile patterns matching new sprite rules.
+            # The crit projectile is gated on the simulator's `critical` flag —
+            # not on dealt damage — so a buff-inflated dmg=5 doesn't accidentally
+            # use the crit sprite when the base pattern roll wasn't the max.
+            if bool(getattr(attack_entry, "critical", False)):
+                # Critical attack: prefer a dedicated atk_crit sprite (no scale2x needed).
+                # Fall back to the normal atk sprite scaled 2x when no crit sprite exists.
+                atk_alt2 = getattr(pet, "atk_alt_2", 0)
+                crit_sprite = self.get_crit_attack_sprite(pet, atk_alt2) if atk_alt2 and atk_alt2 > 0 else None
+                if crit_sprite:
+                    crit_sprite = pygame.transform.flip(crit_sprite, True, True)
+                    rotated_sprite = pygame.transform.rotate(crit_sprite, angle)
+                else:
+                    rotated_sprite = pygame.transform.scale2x(rotated_sprite.copy())
+                by = y - rotated_sprite.get_height() // 2
+                bty = target_y - rotated_sprite.get_height() // 2
+                self.battle_player.team1_projectiles[pet_index].append([rotated_sprite, [x, by], [target_x, bty], attack_entry])
             elif anim_hits == 4:
-                # Double strong: 2 sprites combined (or 3 if no atk_alt)
+                # 2 atk_alt sprites, fallback: 3 atk_main sprites
                 if getattr(pet, "atk_alt", 0) > 0:
                     offsets = [(0, 0), (-20*s, -10*s)]
                 else:
                     offsets = [(0, 0), (-20*s, -10*s), (-40*s, 10*s)]
+                base_pos = [x, y - rotated_sprite.get_height() // 2]
+                base_tgt = [target_x, target_y - rotated_sprite.get_height() // 2]
                 self.battle_player.team1_projectiles[pet_index].append(
                     self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
             elif anim_hits == 3:
+                # 1 atk_alt sprite, fallback: 3 atk_main sprites
                 if getattr(pet, "atk_alt", 0) > 0:
-                    self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, y], [target_x, target_y], attack_entry])
+                    by = y - rotated_sprite.get_height() // 2
+                    bty = target_y - rotated_sprite.get_height() // 2
+                    self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, by], [target_x, bty], attack_entry])
                 else:
-                    offsets = [(0, 0), (-20*s, -10*s)]
+                    offsets = [(0, 0), (-20*s, -10*s), (-40*s, 10*s)]
+                    base_pos = [x, y - rotated_sprite.get_height() // 2]
+                    base_tgt = [target_x, target_y - rotated_sprite.get_height() // 2]
                     self.battle_player.team1_projectiles[pet_index].append(
                         self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
             elif anim_hits == 2:
+                # 2 atk_main sprites
                 offsets = [(0, 0), (-20*s, -10*s)]
+                base_pos = [x, y - rotated_sprite.get_height() // 2]
+                base_tgt = [target_x, target_y - rotated_sprite.get_height() // 2]
                 self.battle_player.team1_projectiles[pet_index].append(
                     self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
             else:
-                self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, y], [target_x, target_y], attack_entry])
+                # 1 atk_main sprite
+                by = y - rotated_sprite.get_height() // 2
+                bty = target_y - rotated_sprite.get_height() // 2
+                self.battle_player.team1_projectiles[pet_index].append([rotated_sprite.copy(), [x, by], [target_x, bty], attack_entry])
 
     def setup_enemy_attack(self, enemy):
         """
@@ -1246,6 +1372,18 @@ class BattleEncounter:
         # Cap hits at 5 for animation (bonuses don't affect animation)
         anim_hits = min(5, hits)
         
+        # Critical/slide-in is now driven by the simulator's `critical` flag on
+        # the AttackLog (set when the BASE pattern damage equals 5, before
+        # buffs/level bonuses). Pet must also have a SPECIAL frame and the
+        # module must allow the slide visual.
+        if enemy_index < len(self.battle_player.special_attack_enemy):
+            entry_is_crit = bool(any(getattr(a, "critical", False) for a in attack_entries))
+            self.battle_player.special_attack_enemy[enemy_index] = (
+                entry_is_crit
+                and self.module.enable_special_attack_sprite
+                and self._has_special_frame(enemy)
+            )
+        
         # Update debug battle log for enemy attacks (affects the defender pet)
         if game_globals.configuration.debug_mode and attack_entries:
             for attack_entry in attack_entries:
@@ -1264,27 +1402,12 @@ class BattleEncounter:
             else:
                 atk_id = str(getattr(enemy, "atk_main", 30))
         else:
-            # DMX/PENZ/INTERNAL_PVE: 1-5 attack types
-            atk_alt = getattr(enemy, "atk_alt", None)
-            atk_alt2 = getattr(enemy, "atk_alt2", None)
-            if anim_hits >= 5:
-                if atk_alt2 is not None and atk_alt2 > 0:
-                    atk_id = str(atk_alt2)
-                elif atk_alt is not None and atk_alt > 0:
-                    atk_id = str(atk_alt)
-                else:
-                    atk_id = str(getattr(enemy, "atk_main", 30))
-            elif anim_hits >= 3:
-                if atk_alt is not None and atk_alt > 0:
-                    atk_id = str(atk_alt)
-                else:
-                    atk_id = str(getattr(enemy, "atk_main", 30))
-            else:
-                atk_id = str(getattr(enemy, "atk_main", 30))
+            # DMX/PENZ/INTERNAL_PVE: sprite selection based on hit count
+            atk_id = self._get_advanced_atk_id(enemy, anim_hits)
         base_sprite = self.get_attack_sprite(enemy, atk_id)
         base_sprite = pygame.transform.flip(base_sprite, True, False)
 
-        y = self.get_y(enemy_index, len(self.battle_player.team2)) + base_sprite.get_height() // 2
+        y = self.get_y(enemy_index, len(self.battle_player.team2)) + runtime_globals.PET_HEIGHT // 2
         x = self.get_team2_x(enemy_index) + (runtime_globals.PET_WIDTH * constants.BOSS_MULTIPLIER if self.boss else runtime_globals.PET_WIDTH) // 2
 
         # For each attack entry (boss may attack multiple pets in one turn)
@@ -1294,7 +1417,7 @@ class BattleEncounter:
             # Target position
             if defender_idx < len(self.battle_player.team1):
                 target_pet_x = self.get_team1_x(defender_idx) - (runtime_globals.PET_WIDTH // 2)
-                target_pet_y = self.get_y(defender_idx, len(self.battle_player.team1)) + base_sprite.get_height() // 2
+                target_pet_y = self.get_y(defender_idx, len(self.battle_player.team1)) + runtime_globals.PET_HEIGHT // 2
             else:
                 target_pet_x, target_pet_y = x, y
 
@@ -1305,41 +1428,67 @@ class BattleEncounter:
 
             # Add projectile for this attack based on protocol/ruleset
             s = runtime_globals.UI_SCALE
-            base_pos = [x, y]
-            base_tgt = [target_pet_x, target_pet_y]
             if self.module.battle_damage_limit < 3:
                 # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
                 if anim_hits >= 2:
                     rotated_sprite = pygame.transform.scale2x(rotated_sprite)
-                self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                by = y - rotated_sprite.get_height() // 2
+                bty = target_pet_y - rotated_sprite.get_height() // 2
+                self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, by], [target_pet_x, bty], attack_entry])
             else:
-                # DMX/PENZ/INTERNAL_PVE: multi-sprite attacks combined into single surface
-                if anim_hits >= 5:
-                    # Critical: double size sprite
-                    rotated_sprite = pygame.transform.scale2x(rotated_sprite)
-                    self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                # DMX/PENZ/INTERNAL_PVE: projectile patterns matching new sprite rules.
+                # Crit sprite/scale2x is gated on the simulator's `critical`
+                # flag (set when the BASE pattern damage equals the module's
+                # max), not on dealt damage which can be inflated by buffs.
+                if bool(getattr(attack_entry, "critical", False)):
+                    # Critical attack: prefer a dedicated atk_crit sprite (no scale2x needed).
+                    # Fall back to the normal atk sprite scaled 2x when no crit sprite exists.
+                    atk_alt2 = getattr(enemy, "atk_alt_2", 0)
+                    crit_sprite = self.get_crit_attack_sprite(enemy, atk_alt2) if atk_alt2 and atk_alt2 > 0 else None
+                    if crit_sprite:
+                        crit_sprite = pygame.transform.flip(crit_sprite, True, False)
+                        rotated_sprite = pygame.transform.rotate(crit_sprite, angle)
+                    else:
+                        rotated_sprite = pygame.transform.scale2x(rotated_sprite)
+                    by = y - rotated_sprite.get_height() // 2
+                    bty = target_pet_y - rotated_sprite.get_height() // 2
+                    self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, by], [target_pet_x, bty], attack_entry])
                 elif anim_hits == 4:
+                    # 2 atk_alt sprites, fallback: 3 atk_main sprites
                     atk_alt = getattr(enemy, "atk_alt", None)
                     if atk_alt is not None and atk_alt > 0:
                         offsets = [(0, 0), (20*s, 10*s)]
                     else:
                         offsets = [(0, 0), (20*s, 10*s), (40*s, -10*s)]
+                    base_pos = [x, y - rotated_sprite.get_height() // 2]
+                    base_tgt = [target_pet_x, target_pet_y - rotated_sprite.get_height() // 2]
                     self.battle_player.team2_projectiles[defender_idx].append(
                         self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
                 elif anim_hits == 3:
+                    # 1 atk_alt sprite, fallback: 3 atk_main sprites
                     atk_alt = getattr(enemy, "atk_alt", None)
                     if atk_alt is not None and atk_alt > 0:
-                        self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                        by = y - rotated_sprite.get_height() // 2
+                        bty = target_pet_y - rotated_sprite.get_height() // 2
+                        self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, by], [target_pet_x, bty], attack_entry])
                     else:
-                        offsets = [(0, 0), (20*s, 10*s)]
+                        offsets = [(0, 0), (20*s, 10*s), (40*s, -10*s)]
+                        base_pos = [x, y - rotated_sprite.get_height() // 2]
+                        base_tgt = [target_pet_x, target_pet_y - rotated_sprite.get_height() // 2]
                         self.battle_player.team2_projectiles[defender_idx].append(
                             self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
                 elif anim_hits == 2:
+                    # 2 atk_main sprites
                     offsets = [(0, 0), (20*s, 10*s)]
+                    base_pos = [x, y - rotated_sprite.get_height() // 2]
+                    base_tgt = [target_pet_x, target_pet_y - rotated_sprite.get_height() // 2]
                     self.battle_player.team2_projectiles[defender_idx].append(
                         self._combine_projectile_sprites(rotated_sprite, offsets, base_pos, base_tgt, attack_entry))
                 else:
-                    self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, y], [target_pet_x, target_pet_y], attack_entry])
+                    # 1 atk_main sprite
+                    by = y - rotated_sprite.get_height() // 2
+                    bty = target_pet_y - rotated_sprite.get_height() // 2
+                    self.battle_player.team2_projectiles[defender_idx].append([rotated_sprite, [x, by], [target_pet_x, bty], attack_entry])
 
     def _combine_projectile_sprites(self, sprite, offsets, base_pos, base_target, attack_entry):
         """Combine a sprite rendered at multiple offsets into a single projectile entry."""
@@ -1598,7 +1747,7 @@ class BattleEncounter:
             return
         
         # Random encounters skip progression and return to game immediately
-        if self.is_random_encounter:
+        if self.is_special_encounter:
             runtime_globals.game_sound.play("happy" if self.victory_status == "Victory" else "fail")
             self.return_to_main_scene()
             return
@@ -1614,7 +1763,7 @@ class BattleEncounter:
                 else:
                     self.round += 1
                     # Check if the new round has enemies; if not, the area is cleared
-                    next_versions = self.module.get_enemy_versions(self.area, self.round)
+                    next_versions = self.module.get_enemy_versions(self.area, self.round, special_encounter=self.is_special_encounter)
                     if not next_versions:
                         # Area cleared — advance to next area
                         self.area += 1
@@ -1715,61 +1864,30 @@ class BattleEncounter:
         return False
 
     def _start_feeding_phase(self):
-        """Transition to the feeding phase with a menu."""
+        """Transition to the feeding phase — menu is managed by the view."""
         self.phase = "feeding"
         self.frame_counter = 0
-        self._feeding_menu = Menu(width=120, height=60)
-        self._feeding_menu.manager = self.ui_manager
-        if not self._feeding_menu.base_rect:
-            self._feeding_menu.base_rect = self._feeding_menu.rect.copy()
-        self._feeding_menu.rect = self.ui_manager.scale_rect(self._feeding_menu.base_rect)
-        self._feeding_menu.open(
-            ["Next", "Protein"],
-            on_select=self._on_feeding_select,
-        )
-        self.ui_manager.add_component(self._feeding_menu)
-        self.ui_manager.set_active_menu(self._feeding_menu)
         runtime_globals.game_console.log("[BattleEncounter] Feeding phase started")
 
-    def _on_feeding_select(self, index):
-        """Handle feeding menu selection."""
-        if index == 1:
-            # Protein — feed all team1 pets
-            pets = self.battle_player.team1
-            for pet in pets:
-                pet.set_eating("strength", 1)
-            runtime_globals.game_sound.play("menu")
-            runtime_globals.game_console.log("[BattleEncounter] Fed all pets protein")
-            # Re-open the menu so the player can feed again or continue
-            self._feeding_menu.open(
-                ["Next", "Protein"],
-                on_select=self._on_feeding_select,
-            )
-            self.ui_manager.set_active_menu(self._feeding_menu)
-        else:
-            # Next — proceed to next round
-            self._end_feeding_phase()
+    def feed_protein_to_team(self):
+        """Feed protein to all team1 pets (called by view on Protein selection)."""
+        for pet in self.battle_player.team1:
+            pet.set_eating("strength", 1)
+        runtime_globals.game_sound.play("menu")
+        runtime_globals.game_console.log("[BattleEncounter] Fed all pets protein")
 
-    def _end_feeding_phase(self):
-        """Clean up feeding phase and check for retire before proceeding."""
-        if hasattr(self, '_feeding_menu') and self._feeding_menu:
-            self._feeding_menu.close()
-            self.ui_manager.remove_component(self._feeding_menu)
-            if self.ui_manager.active_menu == self._feeding_menu:
-                self.ui_manager.active_menu = None
-            self._feeding_menu = None
+    def end_feeding_and_proceed(self):
+        """End the feeding phase and proceed to retire check or next round."""
         runtime_globals.game_console.log("[BattleEncounter] Feeding phase ended")
         self._check_retire_or_proceed()
 
     def update_feeding(self):
         """Update logic for the feeding phase."""
-        self.ui_manager.update()
+        pass
 
     def draw_feeding(self, surface):
-        """Draw the feeding phase — pets with the menu overlay."""
-        # Draw pets in idle animation
+        """Draw the feeding phase — pets only; menu overlay is drawn by the view."""
         total = len(self.battle_player.team1)
-        width_scale = runtime_globals.SCREEN_WIDTH / 240
         height_scale = runtime_globals.SCREEN_HEIGHT / 240
         spacing = min(
             (runtime_globals.SCREEN_WIDTH - int(30 * runtime_globals.UI_SCALE)) // max(total, 1),
@@ -1786,9 +1904,6 @@ class BattleEncounter:
             sprite = pygame.transform.scale(sprite, (runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
             x = offset_x + i * spacing
             blit_with_cache(surface, sprite, (x, y))
-
-        # Draw the menu overlay
-        self.ui_manager.draw(surface)
 
     #========================
     # Region: Retire Phase
@@ -1810,40 +1925,20 @@ class BattleEncounter:
             self.set_initial_state(round=self.round, area=self.area)
 
     def _start_retire_check_phase(self):
-        """Show a menu asking the player to Retire or Continue when some pets can't battle."""
+        """Transition to the retire_check phase — menu is managed by the view."""
         self.phase = "retire_check"
         self.frame_counter = 0
-        self._retire_menu = Menu(width=120, height=60)
-        self._retire_menu.manager = self.ui_manager
-        if not self._retire_menu.base_rect:
-            self._retire_menu.base_rect = self._retire_menu.rect.copy()
-        self._retire_menu.rect = self.ui_manager.scale_rect(self._retire_menu.base_rect)
-        self._retire_menu.open(
-            ["Retire", "Continue"],
-            on_select=self._on_retire_select,
-        )
-        self.ui_manager.add_component(self._retire_menu)
-        self.ui_manager.set_active_menu(self._retire_menu)
         runtime_globals.game_console.log("[BattleEncounter] Retire check phase started")
 
-    def _on_retire_select(self, index):
-        """Handle retire menu selection."""
-        # Clean up menu
-        if hasattr(self, '_retire_menu') and self._retire_menu:
-            self._retire_menu.close()
-            self.ui_manager.remove_component(self._retire_menu)
-            if self.ui_manager.active_menu == self._retire_menu:
-                self.ui_manager.active_menu = None
-            self._retire_menu = None
+    def do_retire(self):
+        """Player chose to retire — play retire animation and exit (called by view)."""
+        runtime_globals.game_sound.play("fail")
+        self._start_retire_animation()
 
-        if index == 0:
-            # Retire — show retire animation and exit
-            runtime_globals.game_sound.play("fail")
-            self._start_retire_animation()
-        else:
-            # Continue — proceed with remaining capable pets
-            runtime_globals.game_console.log("[BattleEncounter] Player chose to continue")
-            self.set_initial_state(round=self.round, area=self.area)
+    def do_continue_battle(self):
+        """Player chose to continue — proceed with remaining capable pets (called by view)."""
+        runtime_globals.game_console.log("[BattleEncounter] Player chose to continue")
+        self.set_initial_state(round=self.round, area=self.area)
 
     def _start_retire_animation(self):
         """Play the retire animation before returning to main scene."""
@@ -1854,7 +1949,7 @@ class BattleEncounter:
 
     def update_retire_check(self):
         """Update logic for the retire check phase."""
-        self.ui_manager.update()
+        pass
 
     def update_retire_animation(self):
         """Update logic for the retire animation phase."""
@@ -1862,7 +1957,7 @@ class BattleEncounter:
             self.return_to_main_scene()
 
     def draw_retire_check(self, surface):
-        """Draw the retire check phase — pets with non-battlers semi-transparent in LOSE frame."""
+        """Draw the retire check phase — pets only; menu overlay is drawn by the view."""
         total = len(self.battle_player.team1)
         height_scale = runtime_globals.SCREEN_HEIGHT / 240
         spacing = min(
@@ -1885,15 +1980,11 @@ class BattleEncounter:
             sprite = pygame.transform.scale(sprite, (runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
 
             if not can_fight:
-                # Draw semi-transparent
                 sprite = sprite.copy()
                 sprite.set_alpha(100)
 
             x = offset_x + i * spacing
             surface.blit(sprite, (x, y))
-
-        # Draw the menu overlay
-        self.ui_manager.draw(surface)
 
     def draw_retire_animation(self, surface):
         """Draw the retire animation using AnimatedSprite."""
@@ -1964,17 +2055,20 @@ class BattleEncounter:
         
         # Draw area/round text using scaled font
         from ui import ui_constants
-        adventure_style = getattr(self.module, 'adventure_style', 'Area Selection')
-        if adventure_style == "Next and Reset":
-            area_text = f"AREA {self.area}"
-        elif adventure_style == "Random":
-            # Show first enemy name for Random style
-            if self.enemies and self.enemies[0] and hasattr(self.enemies[0], 'name'):
-                area_text = self.enemies[0].name
+        if self.is_special_encounter:
+            area_text = "SPECIAL ENCOUNTER"
+        else:
+            adventure_style = getattr(self.module, 'adventure_style', 'Area Selection')
+            if adventure_style == "Next and Reset":
+                area_text = f"AREA {self.area}"
+            elif adventure_style == "Random":
+                # Show first enemy name for Random style
+                if self.enemies and self.enemies[0] and hasattr(self.enemies[0], 'name'):
+                    area_text = self.enemies[0].name
+                else:
+                    area_text = f"AREA {self.area}-{self.round}"
             else:
                 area_text = f"AREA {self.area}-{self.round}"
-        else:
-            area_text = f"AREA {self.area}-{self.round}"
         
         # Position: 6 pixels from left in UI space, accounting for UI offset
         text_x = self.ui_manager.ui_offset_x + int(6 * runtime_globals.UI_SCALE)
@@ -2370,12 +2464,85 @@ class BattleEncounter:
                 sprite = self.hit_animation_frames[frame_index]
                 blit_with_cache(surface, sprite, (x - sprite.get_width() // 2, y - 32))
 
+    def _compute_combatant_attack_anim(self, combatant, index, side, attack_entry=None):
+        """Resolve a combatant's attack-prep state from its cooldown.
+
+        Each pet/enemy ticks its own cooldown (game_battle.cooldowns[i]) so all
+        combatants animate independently. Cooldown counts down to 0; the shot
+        fires at 0. The shared timeline in
+        ``combat_constants.compute_attack_anim_state`` runs in the LAST
+        ATTACK_PREP_BASE_FRAMES ticks of the cooldown — anything before that
+        is treated as idle by the helper.
+
+        ``attack_entry`` is the simulator log entry for this combatant's
+        current turn. When provided, its ``critical`` flag drives the slide-in
+        directly — this avoids the one-turn lag that would otherwise occur if
+        we relied on ``special_attack[i]``, which is only set when the shot
+        fires (``setup_pet_attack``/``setup_enemy_attack``).
+
+        Args:
+            combatant: the pet/enemy object (used to query SPECIAL frame).
+            index: index into the per-pet cooldown / special-attack arrays.
+            side: "team1" (right side, slide from right edge) or "team2"
+                  (left side, slide from left edge).
+            attack_entry: the AttackLog for this turn (or None to fall back to
+                  the cached ``special_attack[i]`` flag).
+
+        Returns:
+            (frame_id, dx, dy, slide_x_or_None).
+        """
+        fps_scale = constants.FRAME_RATE / 30.0
+        cooldowns = self.battle_player.cooldowns
+        cooldown = cooldowns[index] if index < len(cooldowns) else 0
+        elapsed_30fps = combat_constants.ATTACK_PREP_BASE_FRAMES - (cooldown / fps_scale)
+
+        if attack_entry is not None:
+            entry_crit = bool(getattr(attack_entry, "critical", False))
+            is_crit = (entry_crit
+                       and self.module.enable_special_attack_sprite
+                       and self._has_special_frame(combatant))
+        else:
+            crit_arr = (self.battle_player.special_attack if side == "team1"
+                        else self.battle_player.special_attack_enemy)
+            is_crit = crit_arr[index] if index < len(crit_arr) else False
+
+        special_sprite = combatant.get_sprite(PetFrame.SPECIAL.value)
+        has_special = special_sprite is not None
+
+        frame, fwd, jmp, slide_progress = combat_constants.compute_attack_anim_state(
+            elapsed_30fps, is_crit, has_special
+        )
+
+        ui_scale = runtime_globals.UI_SCALE
+        pet_w = runtime_globals.PET_WIDTH
+        dy = -int(jmp * ui_scale)
+
+        if side == "team1":
+            dx = int(fwd * ui_scale)
+            slide_x = None
+            if slide_progress is not None:
+                special_w = pet_w * 2
+                base_x = self.get_team1_x(index)
+                target_x = float(base_x - pet_w)
+                start_x = float(runtime_globals.SCREEN_WIDTH)
+                slide_x = int(start_x + (target_x - start_x) * slide_progress)
+        else:
+            dx = -int(fwd * ui_scale)
+            slide_x = None
+            if slide_progress is not None:
+                special_w = pet_w * 2
+                base_x = self.get_team2_x(index) - self.enemy_entry_counter
+                target_x = float(base_x + int(2 * ui_scale))
+                start_x = float(-special_w)
+                slide_x = int(start_x + (target_x - start_x) * slide_progress)
+
+        return frame.value, dx, dy, slide_x
+
     def draw_enemies(self, surface: pygame.Surface):
         """
         Draws the enemy sprites on the screen, with animations based on the battle phase.
         """
         total = len(self.battle_player.team2)
-        anim_frames = 10 * ( constants.FRAME_RATE / 30)
 
         for i, enemy in enumerate(self.battle_player.team2):
             y = self.get_y(i, total)
@@ -2393,6 +2560,10 @@ class BattleEncounter:
                         None
                     )
 
+            in_attack_prep = (attack_entry
+                              and self.battle_player.phase[i] == "enemy_charge"
+                              and self.battle_player.team2_hp[i] > 0)
+
             if self.phase in ["intimidate", "entry"]:
                 frame_id = PetFrame.IDLE1.value if anim_toggle == 0 else PetFrame.ANGRY.value
             elif self.phase in ["alert", "charge"]:
@@ -2401,11 +2572,26 @@ class BattleEncounter:
                 frame_id = PetFrame.LOSE.value
             elif attack_entry and self.battle_player.phase[i] == "enemy_attack":
                 frame_id = PetFrame.ATK1.value
-            elif attack_entry and self.battle_player.phase[i] == "enemy_charge":
-                if self.battle_player.cooldowns[i] < anim_frames:
-                    frame_id = PetFrame.ATK2.value
-                else:
-                    frame_id = PetFrame.ATK1.value
+            elif in_attack_prep:
+                # Drive the pre-shot pose through the shared timeline so each
+                # enemy animates independently from its own cooldown. Pass the
+                # current turn's attack_entry so the slide-in fires on the same
+                # turn the simulator marked critical (otherwise special_attack
+                # only flips on shot-fire and the slide lags by one round).
+                frame_id, dx, dy, slide_x = self._compute_combatant_attack_anim(
+                    enemy, i, "team2", attack_entry=attack_entry
+                )
+                if slide_x is not None:
+                    special_sprite = enemy.get_sprite(PetFrame.SPECIAL.value)
+                    if special_sprite is not None:
+                        special_w = runtime_globals.PET_WIDTH * 2
+                        special_h = runtime_globals.PET_HEIGHT
+                        special_sprite_scaled = pygame.transform.scale(special_sprite, (special_w, special_h))
+                        special_sprite_scaled = pygame.transform.flip(special_sprite_scaled, True, False)
+                        blit_with_cache(surface, special_sprite_scaled, (slide_x, y))
+                        continue
+                x += dx
+                y += dy
             elif self.battle_player.phase[i] == "result":
                 if self.battle_player.winners[i] == "team1":
                     frame_id = PetFrame.LOSE.value
@@ -2415,10 +2601,6 @@ class BattleEncounter:
                 frame_id = PetFrame.IDLE1.value if anim_toggle == 0 else PetFrame.IDLE2.value
 
             sprite = enemy.get_sprite(frame_id)
-
-            if attack_entry and self.battle_player.phase[i] == "enemy_charge" and self.battle_player.team2_hp[i] > 0:
-                y -= int(self.battle_player.attack_jump[i] * runtime_globals.UI_SCALE)
-                x -= int(self.battle_player.attack_forward[i] * runtime_globals.UI_SCALE)
 
             if sprite:
                 sprite = pygame.transform.flip(sprite, True, False)
@@ -2430,7 +2612,6 @@ class BattleEncounter:
         In the result phase, pets are drawn horizontally and centered vertically.
         """
         total = len(self.battle_player.team1)
-        anim_frames = 10 * ( constants.FRAME_RATE / 30)
 
         if self.phase == "result":
             # Horizontal layout
@@ -2465,6 +2646,11 @@ class BattleEncounter:
                             None
                         )
 
+                in_attack_prep = (attack_entry
+                                  and self.battle_player.phase[i] == "pet_charge"
+                                  and self.battle_player.team1_hp[i] > 0)
+                y = self.get_y(i, total)
+
                 if self.phase in ["alert", "charge"]:
                     frame_id = PetFrame.IDLE1.value if anim_toggle == 0 else PetFrame.ANGRY.value
                 elif self.phase in ["intimidate", "entry"]:
@@ -2473,11 +2659,25 @@ class BattleEncounter:
                     frame_id = PetFrame.LOSE.value
                 elif attack_entry and self.battle_player.phase[i] == "pet_attack":
                     frame_id = PetFrame.ATK1.value
-                elif attack_entry and self.battle_player.phase[i] == "pet_charge":
-                    if self.battle_player.cooldowns[i] < anim_frames:
-                        frame_id = PetFrame.ATK2.value
-                    else:
-                        frame_id = PetFrame.ATK1.value
+                elif in_attack_prep:
+                    # Shared timeline drives the pre-shot pose; cooldown ticks
+                    # independently per pet so multiple combatants stay decoupled.
+                    # Pass attack_entry so the slide-in fires on the same turn
+                    # the simulator marked critical (special_attack only flips
+                    # on shot-fire and would otherwise lag by one round).
+                    frame_id, dx, dy, slide_x = self._compute_combatant_attack_anim(
+                        pet, i, "team1", attack_entry=attack_entry
+                    )
+                    if slide_x is not None:
+                        special_sprite = pet.get_sprite(PetFrame.SPECIAL.value)
+                        if special_sprite is not None:
+                            special_w = runtime_globals.PET_WIDTH * 2
+                            special_h = runtime_globals.PET_HEIGHT
+                            special_sprite_scaled = pygame.transform.scale(special_sprite, (special_w, special_h))
+                            blit_with_cache(surface, special_sprite_scaled, (slide_x, y))
+                            continue
+                    x += dx
+                    y += dy
                 elif self.battle_player.phase[i] == "result":
                     if self.battle_player.winners[i] == "team2":
                         frame_id = PetFrame.LOSE.value
@@ -2488,10 +2688,6 @@ class BattleEncounter:
 
                 sprite = pet.get_sprite(frame_id)
                 sprite = pygame.transform.scale(sprite, (runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
-                y = self.get_y(i, total)
-                if attack_entry and self.battle_player.phase[i] == "pet_charge" and self.battle_player.team1_hp[i] > 0:
-                    y -= int(self.battle_player.attack_jump[i] * runtime_globals.UI_SCALE)
-                    x += int(self.battle_player.attack_forward[i] * runtime_globals.UI_SCALE)
                 blit_with_cache(surface, sprite, (x, y))
 
     def draw_projectiles(self, surface):
@@ -2500,7 +2696,7 @@ class BattleEncounter:
         """
         for data in self.battle_player.team1_projectiles:
             for sprite, pos, target, dt in data:
-                blit_with_cache(surface, sprite, (pos[0], pos[1])) 
+                blit_with_cache(surface, sprite, (pos[0], pos[1]))
 
     def draw_enemy_projectiles(self, surface):
         """
@@ -2649,13 +2845,8 @@ class BattleEncounter:
         
         # Handle string actions
         if event_type == "B":
-            if self.phase == "feeding":
-                # B during feeding acts like selecting "Next"
-                self._on_feeding_select(0)
-                return
-            elif self.phase == "retire_check":
-                # B during retire check acts like selecting "Retire"
-                self._on_retire_select(0)
+            if self.phase in ("feeding", "retire_check"):
+                # B during these phases is handled by the view
                 return
             elif self.phase in ("retire_animation",):
                 # Ignore B during retire animation
@@ -2697,15 +2888,8 @@ class BattleEncounter:
                 runtime_globals.game_sound.play("cancel")
                 self.phase = "result"
                 self.frame_counter = 0
-        elif self.phase == "feeding":
-            # Delegate all events to the feeding menu
-            if hasattr(self, '_feeding_menu') and self._feeding_menu:
-                self._feeding_menu.handle_event(event)
-            return
-        elif self.phase == "retire_check":
-            # Delegate all events to the retire menu
-            if hasattr(self, '_retire_menu') and self._retire_menu:
-                self._retire_menu.handle_event(event)
+        elif self.phase in ("feeding", "retire_check"):
+            # Events for these phases are handled by the view
             return
         elif self.phase == "retire_animation":
             # Block all input during retire animation
@@ -2742,16 +2926,16 @@ class BattleEncounter:
                         self.xai_roll.stop_target_frame = 6
                         self.xai_number = 7
                     else:
-                        if not self.xai_roll.rolling:
-                            self.xai_roll.roll()
-                        elif not self.xai_roll.stopping:
+                        if self.xai_roll.rolling:
                             self.xai_roll.stop()
                             self.xai_number = self.xai_roll.get_result()
+                        else:
+                            # Roll already finished — transition to bar is imminent.
+                            # Buffer the press so the bar stops on its very first frame,
+                            # before the arrow has moved at all.
+                            self._xai_pending_stop = True
                 elif self.xai_phase == 2 and event_type in ["A", "LCLICK"] and self.xai_bar:
-                    self.xai_bar.stop()
-                    self.strength = self.xai_bar.get_result() or 1
-                    self.xai_phase = 3
-                    self.bar_timer = pygame.time.get_ticks()
+                    self._do_xai_bar_stop()
 
     #========================
     # Region: Utility Methods

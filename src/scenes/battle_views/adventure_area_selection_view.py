@@ -84,6 +84,7 @@ class AdventureAreaSelectionView:
         battle_ready_pets = get_battle_targets()
         self.pet_selector.set_pets(battle_ready_pets)
         self.pet_selector.set_interactive(False)
+        self.pet_selector.focusable = False
         self.ui_manager.add_component(self.pet_selector)
         
         # Back button (always present)

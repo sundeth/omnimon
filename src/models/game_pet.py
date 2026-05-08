@@ -83,7 +83,7 @@ class GamePet:
         self.atk_alt = data.get("atk_alt", 0)
         if self.atk_alt == 0:
             self.atk_alt = self.atk_main
-        self.atk_alt2 = data.get("atk_alt2", 0)
+        self.atk_alt_2 = data.get("atk_alt_2", 0)
         self.time = data.get("time", 0)
         self.poop_timer = data.get("poop_timer", 60)
         self.min_weight = data.get("min_weight")
@@ -232,21 +232,39 @@ class GamePet:
         
         # Get module properties
         module_path = module_obj.folder_path
-        name_format = getattr(module_obj, 'name_format', '$_dmc')  # Default format if not specified
+        name_format = getattr(module_obj, 'name_format', '$_dmc')
+        primary_format = getattr(module_obj, 'primary_sprite_format', 'Color')
+        secondary_format = getattr(module_obj, 'secondary_sprite_format', 'HD')
         
-        # Load sprites using the new utility function
-        sprites_dict = load_pet_sprites(self.name, module_path, name_format, module_high_definition_sprites=module_obj.high_definition_sprites, size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
+        # Load sprites using the new utility function with format parameters
+        sprites_dict = load_pet_sprites(
+            self.name, 
+            module_path, 
+            name_format,
+            size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT),
+            primary_sprite_format=primary_format,
+            secondary_sprite_format=secondary_format
+        )
         
         # Convert to list format expected by existing code
-        runtime_globals.pet_sprites[self] = convert_sprites_to_list(sprites_dict)
+        sprite_list = convert_sprites_to_list(sprites_dict)
+        
+        # If no sprites found at all, create fallback white squares
+        if not sprite_list or all(s is None for s in sprite_list):
+            runtime_globals.game_console.log(f"[Pet] No sprites found for {self.name}, creating fallback")
+            fallback_sprite = pygame.Surface((runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT))
+            fallback_sprite.fill((255, 255, 255))  # White square
+            sprite_list = [fallback_sprite] * 20
+        
+        runtime_globals.pet_sprites[self] = sprite_list
         
         # Apply frame swapping if needed for modules with reverse_atk_frames
         if module_obj.reverse_atk_frames:
             sprites = runtime_globals.pet_sprites[self]
-            # Swap TRAIN1 <-> ATK1 and TRAIN2 <-> ATK2
-            if len(runtime_globals.pet_sprites[self]) > 6:
-                sprites[PetFrame.TRAIN1.value], sprites[PetFrame.TRAIN2.value] = sprites[PetFrame.TRAIN2.value], sprites[PetFrame.TRAIN1.value]  # TRAIN1 ↔ TRAIN2
-                sprites[PetFrame.ATK1.value], sprites[PetFrame.ATK2.value] = sprites[PetFrame.ATK2.value], sprites[PetFrame.ATK1.value]  # ATK1 ↔ ATK2
+            # Swap TRAIN1 <-> TRAIN2 and ATK1 <-> ATK2
+            if len(sprites) > 6:
+                sprites[PetFrame.TRAIN1.value], sprites[PetFrame.TRAIN2.value] = sprites[PetFrame.TRAIN2.value], sprites[PetFrame.TRAIN1.value]
+                sprites[PetFrame.ATK1.value], sprites[PetFrame.ATK2.value] = sprites[PetFrame.ATK2.value], sprites[PetFrame.ATK1.value]
             runtime_globals.pet_sprites[self] = sprites
 
         # If pet was saved as Burpmon, restore that sprite
@@ -269,26 +287,42 @@ class GamePet:
         # Draw base pet sprite
         blit_with_cache(surface, frame, (self.x, self.y))
         
-        # Determine overlay, if any
+        # Determine overlay, if any (dead pets show no overlays)
         overlay = None
         anim_phase = (self.animation_counter // constants.FRAME_RATE) % 2  # precompute phase
 
         sick = False
 
-        if self.state == "nap":
-            overlay = runtime_globals.misc_sprites.get(f"Sleep{anim_phase + 1}")
-        elif self.state in {"happy2", "happy3"} and anim_phase == 0:
-            overlay = runtime_globals.misc_sprites.get("Cheer")
-        elif self.sick > 0 and self.state != "dead":
-            if getattr(self, 'sick_type', '') == "dots":
-                overlay = runtime_globals.misc_sprites.get(f"Dots{anim_phase + 1}")
-            else:
-                overlay = runtime_globals.misc_sprites.get(f"Sick{anim_phase + 1}")
-            sick = True
-        elif self.state == "angry":
-            overlay = runtime_globals.misc_sprites.get(f"Mad{anim_phase + 1}")
-        elif getattr(self, "dying", False) or self.death_save_b_counter > 0 or self.death_save_shake_counter > 0:
-            overlay = runtime_globals.misc_sprites.get(f"Sick{anim_phase + 1}")
+        # Dot-format modules have their own Sick/Cheer overlays (coloured pixels
+        # instead of the default black-on-transparent ones).
+        # Only use dot overlays when enable_old_sprites is active.
+        module = get_module(self.module)
+        enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
+        is_dot = enable_old and getattr(module, "primary_sprite_format", "Color") == "Dot"
+
+        def _misc(name):
+            """Return the Dot variant of a misc sprite when enabled, else the default."""
+            if is_dot:
+                dot = runtime_globals.misc_sprites.get(f"{name}_dot")
+                if dot:
+                    return dot
+            return runtime_globals.misc_sprites.get(name)
+
+        if self.state != "dead":
+            if self.state == "nap":
+                overlay = runtime_globals.misc_sprites.get(f"Sleep{anim_phase + 1}")
+            elif self.state in {"happy2", "happy3"} and anim_phase == 0:
+                overlay = _misc("Cheer")
+            elif self.sick > 0:
+                if getattr(self, 'sick_type', '') == "dots":
+                    overlay = runtime_globals.misc_sprites.get(f"Dots{anim_phase + 1}")
+                else:
+                    overlay = _misc(f"Sick{anim_phase + 1}")
+                sick = True
+            elif self.state == "angry":
+                overlay = runtime_globals.misc_sprites.get(f"Mad{anim_phase + 1}")
+            elif getattr(self, "dying", False) or self.death_save_b_counter > 0 or self.death_save_shake_counter > 0:
+                overlay = _misc(f"Sick{anim_phase + 1}")
 
         if overlay:
             x = self.x + runtime_globals.PET_WIDTH
@@ -390,10 +424,10 @@ class GamePet:
         
         # Determine if there's an overlay (same logic as in draw method)
         anim_phase = (self.animation_counter // constants.FRAME_RATE) % 2
-        has_overlay = (
+        has_overlay = self.state != "dead" and (
             self.state == "nap" or
             (self.state in {"happy2", "happy3"} and anim_phase == 0) or
-            (self.sick > 0 and self.state != "dead") or
+            self.sick > 0 or
             self.state == "angry" or
             getattr(self, "dying", False)
         )
@@ -521,6 +555,9 @@ class GamePet:
     def poop(self):
         # Get module for care settings
         module = get_module(self.module)
+        cfg = game_globals.configuration
+        module_primary_format = getattr(module, "primary_sprite_format", "Color") if module else "Color"
+        use_dot_poop_sprite = bool(getattr(cfg, "enable_old_sprites", False) and module_primary_format == "Dot")
         
         # care_poop_alarm: play sound on poop if True (default True for backwards compatibility)
         care_poop_alarm = getattr(module, 'care_poop_alarm', True)
@@ -557,17 +594,17 @@ class GamePet:
         
         # Create poop(s) based on type
         if poop_type == 0:  # Single
-            game_globals.poop_list.append(GamePoop(base_x, base_y))
+            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite))
         elif poop_type == 1:  # Double
-            game_globals.poop_list.append(GamePoop(base_x - (12 * runtime_globals.UI_SCALE), base_y))
-            game_globals.poop_list.append(GamePoop(base_x + (12 * runtime_globals.UI_SCALE), base_y))
+            game_globals.poop_list.append(GamePoop(base_x - (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x + (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
         elif poop_type == 2:  # Triple
-            game_globals.poop_list.append(GamePoop(base_x - (18 * runtime_globals.UI_SCALE), base_y))
-            game_globals.poop_list.append(GamePoop(base_x, base_y))
-            game_globals.poop_list.append(GamePoop(base_x + (18 * runtime_globals.UI_SCALE), base_y))
+            game_globals.poop_list.append(GamePoop(base_x - (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x + (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
         elif poop_type == 3:  # Giga (jumbo)
             giga_y = self.y + (runtime_globals.PET_HEIGHT - (48 * runtime_globals.UI_SCALE))
-            game_globals.poop_list.append(GamePoop(base_x, giga_y, True))
+            game_globals.poop_list.append(GamePoop(base_x, giga_y, jumbo=True, use_dot_sprite=use_dot_poop_sprite))
         
         if self.weight > self.min_weight:
             self.weight -= 1
@@ -746,7 +783,7 @@ class GamePet:
         elif food_type == "strength":
             self.check_disturbed_sleep()
             self.set_state("eat")
-            self.strength = min(4, self.strength + (module.protein_strengh_gain * amount))
+            self.strength = min(self.stomach, self.strength + (module.protein_strengh_gain * amount))
             self.protein_feedings += 1
             if self.stage > 1 and self.weight < 99:
                 self.weight = min(99, self.weight + module.protein_weight_gain)
@@ -826,10 +863,17 @@ class GamePet:
         module_obj = get_module(self.module)
         if not module_obj:
             return
+        
+        primary_format = getattr(module_obj, 'primary_sprite_format', 'Color')
+        secondary_format = getattr(module_obj, 'secondary_sprite_format', 'HD')
+        
         sprites_dict = load_pet_sprites(
-            "Burpmon", module_obj.folder_path, module_obj.name_format,
-            module_high_definition_sprites=module_obj.high_definition_sprites,
-            size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
+            "Burpmon",
+            module_obj.folder_path,
+            module_obj.name_format,
+            size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT),
+            primary_sprite_format=primary_format,
+            secondary_sprite_format=secondary_format
         )
         if sprites_dict:
             runtime_globals.pet_sprites[self] = convert_sprites_to_list(sprites_dict)
@@ -921,8 +965,11 @@ class GamePet:
             break
 
     def update_needs(self, minutes_passed):
+        # Skip hunger/strength decay when pet should be sleeping
+        sleeping = self.should_sleep() or self.state == "nap"
+
         # Hunger countdown
-        if self._cd_hunger > 0:
+        if self._cd_hunger > 0 and not sleeping:
             if self.overfeed_timer == 0:
                 self._cd_hunger -= minutes_passed
                 while self._cd_hunger <= 0:
@@ -932,7 +979,7 @@ class GamePet:
                         self.starvation_counter += 1
                     self._cd_hunger += self.hunger_loss
         # Strength countdown
-        if self._cd_strength > 0:
+        if self._cd_strength > 0 and not sleeping:
             self._cd_strength -= minutes_passed
             while self._cd_strength <= 0:
                 if self.strength > 4:
@@ -980,30 +1027,36 @@ class GamePet:
 
     def update_care_mistakes(self):
         sound_alert = False
-        #hunger call
-        if self.hunger == 0:
-            self.care_food_mistake_timer += 1
-            if self.care_food_mistake_timer == get_module(self.module).meat_care_mistake_time:
-                self.add_care_mistake("hunger")
-                sound_alert = True
+        sleeping = self.should_sleep() or self.state == "nap"
+        module = get_module(self.module)
+
+        #hunger call — only tick while pet is not in sleep window;
+        # once care mistake fires, timer caps at threshold (no repeat)
+        if self.hunger == 0 and not sleeping:
+            if self.care_food_mistake_timer < module.meat_care_mistake_time:
+                self.care_food_mistake_timer += 1
+                if self.care_food_mistake_timer == module.meat_care_mistake_time:
+                    self.add_care_mistake("hunger")
+                    sound_alert = True
         
-        #strength call
-        if self.strength == 0:
-            self.care_strength_mistake_timer += 1
-            if self.care_strength_mistake_timer == get_module(self.module).protein_care_mistake_time:
-                self.add_care_mistake("strength")
-                sound_alert = True
+        #strength call — same single-fire guard
+        if self.strength == 0 and not sleeping:
+            if self.care_strength_mistake_timer < module.protein_care_mistake_time:
+                self.care_strength_mistake_timer += 1
+                if self.care_strength_mistake_timer == module.protein_care_mistake_time:
+                    self.add_care_mistake("strength")
+                    sound_alert = True
         
-        #sick call
-        if self.sick > 0:
+        #sick call — pause timer while sleeping
+        if self.sick > 0 and not sleeping:
             self.care_sick_mistake_timer += 1
-        else:
+        elif self.sick == 0:
             self.care_sick_mistake_timer = 0
 
         #sleep call
-        if self.should_sleep():
+        if sleeping:
             self.care_sleep_mistake_timer += 1
-            if self.care_sleep_mistake_timer >= get_module(self.module).sleep_care_mistake_timer:
+            if self.care_sleep_mistake_timer >= module.sleep_care_mistake_timer:
                 self.add_care_mistake("sleep")
                 sound_alert = True
                 self.care_sleep_mistake_timer = 0
@@ -1344,7 +1397,7 @@ class GamePet:
                 if gcell_points != 0:
                     self.add_gcell_points(gcell_points)
 
-    def finish_battle(self, won, enemy, area, final = False, is_random_encounter=False):
+    def finish_battle(self, won, enemy, area, final = False, is_special_encounter=False):
         self.battles += 1
         self._deduct_battle_cost()
         self.totalBattles += 1
@@ -1356,7 +1409,7 @@ class GamePet:
             sick_chance = get_module(self.module).battle_base_sick_chance_win
 
             # Mark special encounter flag on win (enables special evolution paths)
-            if is_random_encounter:
+            if is_special_encounter:
                 self.special_encounter = True
 
             # Add battle activity for vital_values (only once)
@@ -1388,7 +1441,7 @@ class GamePet:
             # Add G-Cell points for battle win if module uses G-Cells
             module = get_module(self.module)
             if getattr(module, 'use_gcells', False):
-                if is_random_encounter:
+                if is_special_encounter:
                     # Random encounter win
                     gcell_points = getattr(module, 'gcell_random_encounter_win', 0)
                 else:
@@ -1404,7 +1457,7 @@ class GamePet:
             # Remove G-Cell points for battle loss if module uses G-Cells
             module = get_module(self.module)
             if getattr(module, 'use_gcells', False):
-                if is_random_encounter:
+                if is_special_encounter:
                     # Random encounter loss
                     gcell_points = getattr(module, 'gcell_random_encounter_loose', 0)
                 else:
@@ -1607,8 +1660,9 @@ class GamePet:
             self.death_save_immunity = 0
         if not hasattr(self, "bonus_stats"):
             self.bonus_stats = [0, 0, 0]
-        if not hasattr(self, "atk_alt2"):
-            self.atk_alt2 = 0
+        if not hasattr(self, "atk_alt_2"):
+            # Migrate old saves that stored the field without underscore
+            self.atk_alt_2 = getattr(self, "atk_alt2", 0)
         if not hasattr(self, "evolution_history"):
             self.evolution_history = []
         # Migrate / repair real-time timer attributes

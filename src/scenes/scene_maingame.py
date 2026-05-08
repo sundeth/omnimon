@@ -6,6 +6,7 @@ import platform
 import random
 import pygame
 import datetime
+import math
 import os
 import time
 
@@ -108,6 +109,7 @@ class SceneMainGame:
         # Event system variables
         self.event_stage = 0  # 0 = no event, 1 = alert/choice, 2 = animation
         self.event_alert_blink = 0  # Counter for blinking alert icon
+        self.event_alert_timeout = 0  # Frame counter for 1-minute timeout
         self.event_gift_x = -100  # X position for gift animation
         self.event_gift_timer = 0  # Timer for gift animation phases
         self.event_sound_played = False  # Track if alert sound was played
@@ -272,6 +274,7 @@ class SceneMainGame:
             if game_globals.event:
                 self.event_stage = 1  # Move to alert stage
                 self.event_sound_played = False
+                self.event_alert_timeout = 0
                 runtime_globals.game_console.log(f"[Event] New event: {game_globals.event.name}")
         
         # Stage 2: Alert stage - blink alert icon and wait for player input
@@ -283,6 +286,15 @@ class SceneMainGame:
             
             # Blink counter for alert icon
             self.event_alert_blink += 1
+            
+            # 1-minute timeout: dismiss event if player doesn't respond
+            self.event_alert_timeout += 1
+            if self.event_alert_timeout >= game_globals.configuration.frame_rate * 60:
+                runtime_globals.game_console.log(f"[Event] Event timed out after 1 minute: {game_globals.event.name}")
+                game_globals.event = None
+                self.event_stage = 0
+                self.event_alert_timeout = 0
+                return
         
         # Stage 3: Animation stage - handle event execution
         elif game_globals.event is not None and self.event_stage == 2:
@@ -355,6 +367,11 @@ class SceneMainGame:
         """
         Loads the scene, preparing pets, background, and any necessary resources.
         """
+        # Reload pet sprites in case settings changed
+        for pet in getattr(game_globals, "pet_list", []):
+            if pet and pet not in runtime_globals.pet_sprites:
+                pet.load_sprite()
+        
         # Prepare food animations for pets that are eating
         self.food_anims = {}
         for pet_index, food_info in getattr(runtime_globals, "game_pet_eating", {}).items():
@@ -450,6 +467,10 @@ class SceneMainGame:
         mouse_pos = runtime_globals.game_input.get_mouse_position()
         # Ask WindowMenu for the hovered index using its authoritative hitboxes
         hovered_index = self.menu.get_menu_index_at(mouse_pos)
+        
+        # Index 9 is the call sign icon — never selectable via mouse
+        if hovered_index == 9:
+            hovered_index = -1
         
         # Update menu index based on hover (-1 if not hovering any)
         if hovered_index != runtime_globals.main_menu_index:
@@ -759,11 +780,14 @@ class SceneMainGame:
         if not cache_entry or now - cache_entry[1] > 1:
             heart_size = int(8 * runtime_globals.UI_SCALE)
             heart_surface = pygame.Surface((total_hearts * heart_size, heart_size), pygame.SRCALPHA)
+            # Round value up to nearest half-heart step so e.g. 3.25 displays as 3.5 (half heart)
+            step = factor * 0.5
+            rounded_value = math.ceil(value / step) * step if step > 0 else value
             for i in range(total_hearts):
                 heart_x = i * heart_size
-                if value >= (i + 1) * factor:
+                if rounded_value >= (i + 1) * factor:
                     heart_sprite = self.sprites["heart_full"]
-                elif value >= i * factor + (factor / 2):
+                elif rounded_value >= i * factor + (factor / 2):
                     heart_sprite = self.sprites["heart_half"]
                 else:
                     heart_sprite = self.sprites["heart_empty"]
@@ -944,13 +968,22 @@ class SceneMainGame:
         if runtime_globals.main_menu_index != -1:
             runtime_globals.main_menu_index %= (max_index + 1)  # 🔥 Ensure cyclic behavior
 
+    def _any_pet_dying_or_dead(self):
+        """Return True if any pet is dying or dead."""
+        return any(pet.state == "dead" or getattr(pet, 'dying', False) for pet in game_globals.pet_list)
+
     def handle_action_keys(self, event_type) -> None:
         """
         Handles Enter, Escape, and equivalent GPIO button actions for menu selection.
         """
         index = runtime_globals.main_menu_index
+        blocked = self._any_pet_dying_or_dead()
 
         if event_type in ["A", "LCLICK"]:
+            if blocked and index != 7:
+                # Only library (index 7) is allowed when a pet is dying/dead
+                runtime_globals.game_sound.play("cancel")
+                return
             if index == 0:
                 self.start_scene("status")
             elif index == 1:
@@ -973,6 +1006,9 @@ class SceneMainGame:
             runtime_globals.game_sound.play("cancel")
             runtime_globals.main_menu_index = -1  # Deselect menu
         elif event_type in ["START", "RCLICK"] or (platform.system() == "Windows" and event_type == "B"):  # Maps to ESC (PC) & "START" button (Pi)
+            if blocked:
+                runtime_globals.game_sound.play("cancel")
+                return
             runtime_globals.game_sound.play("cancel")
             self.start_scene("settings")
 
@@ -992,7 +1028,12 @@ class SceneMainGame:
     def start_scene(self, scene_name: str) -> None:
         """
         Helper to start a new scene.
+        Forces all non-sleeping/non-dead pets to idle before switching.
         """
+        # Force non-sleeping/dead pets to idle to cancel eating/other animations
+        for pet in game_globals.pet_list:
+            if pet.state not in ("nap", "dead") and not pet.should_sleep():
+                pet.set_state("idle")
         runtime_globals.game_sound.play("menu")
         runtime_globals.game_state = scene_name
         runtime_globals.game_state_update = True

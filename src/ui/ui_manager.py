@@ -906,8 +906,13 @@ class UIManager:
         if not candidates:
             return -1
         
-        # Sort by: priority first, then distance
-        candidates.sort(key=lambda c: (c['priority'], c['distance']))
+        # Sort by priority first, then by primary-axis distance, then secondary-axis.
+        # This ensures DOWN/UP prefers vertically close targets and LEFT/RIGHT
+        # prefers horizontally close targets, avoiding diagonal shortcuts.
+        if direction in ("DOWN", "UP"):
+            candidates.sort(key=lambda c: (c['priority'], c['dy'], c['dx']))
+        else:
+            candidates.sort(key=lambda c: (c['priority'], c['dx'], c['dy']))
         
         return candidates[0]['index']
     

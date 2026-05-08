@@ -1,6 +1,6 @@
 {
   "name": "DMX",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "A reimplementation of the Digital Monster X devices, you can find more at https://humulos.com/digimon/dmx/manual/.",
   "author": "Sundeth, Reviewed by: justintechnerd and Pepperoni Secret",
   "category": "Classics",
@@ -11,8 +11,8 @@
   "adventure_style": "Area Selection",
   "battle_cost_type": "Hunger",
   "battle_cost_amount": 0.25,
-  "primary_sprite_format": "Color",
-  "secondary_sprite_format": "Dot",
+  "primary_sprite_format": "Dot",
+  "secondary_sprite_format": "Color",
   "enable_special_attack_sprite": true,
   "high_definition_sprites": false,
   "visible_stats": "Age,Weight,Hunger,Strength,Level,Experience,Effort,Power,Battles,Win Rate,Total Win Rate,Flags",
@@ -29,7 +29,7 @@
   "care_flush_disturbance_sleep": true,
   "care_fixed_4_hearts": false,
   "care_protein_weight_gain": 2,
-  "care_protein_strengh_gain": 0.5,
+  "care_protein_strengh_gain": 1,
   "care_protein_dp_gain": 0,
   "care_protein_care_mistake_time": 10,
   "care_protein_overdose_max": 0,
@@ -165,7 +165,7 @@
       "type": "adventure",
       "version": null,
       "label": "Angewomon X",
-      "area": null,
+      "area": 23,
       "to": [],
       "amount": null,
       "list": []
@@ -916,6 +916,36 @@
       "version": null,
       "label": "Version SP",
       "area": 45,
+      "to": [],
+      "amount": null,
+      "list": []
+    },
+    {
+      "name": "WereGarurumon X",
+      "type": "adventure",
+      "version": null,
+      "label": "WereGarurumon X",
+      "area": 10,
+      "to": [],
+      "amount": null,
+      "list": []
+    },
+    {
+      "name": "Herissmon",
+      "type": "adventure",
+      "version": null,
+      "label": "Herissmon",
+      "area": 45,
+      "to": [],
+      "amount": null,
+      "list": []
+    },
+    {
+      "name": "DarkTyrannomon X",
+      "type": "adventure",
+      "version": null,
+      "label": "DarkTyrannomon X",
+      "area": 11,
       "to": [],
       "amount": null,
       "list": []

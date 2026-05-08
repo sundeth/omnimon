@@ -40,6 +40,7 @@ class AttackLog:
     defender: int  # Index of the defender (-1 if no defender)
     hit: bool
     damage: int
+    critical: bool
 
     def to_dict(self):
         return asdict(self)
@@ -119,7 +120,10 @@ def battle_result_from_serialized(serialized):
             attacker=int(d.get('attacker', -1)),
             defender=int(d.get('defender', -1)),
             hit=bool(d.get('hit', False)),
-            damage=int(d.get('damage', 0))
+            damage=int(d.get('damage', 0)),
+            # Older logs predate the field — fall back to inferring crit from
+            # the damage value so historical fights still trigger the slide.
+            critical=bool(d.get('critical', d.get('damage', 0) == 5)),
         )
 
     def _make_turn(t):

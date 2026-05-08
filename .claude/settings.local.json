@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import ast; [ast.parse\\(open\\(f\\).read\\(\\), filename=f\\) for f in ['src/training/training.py','src/training/excite_training.py','src/training/count_z_training.py','src/training/count_training.py','src/training/dummy_training.py','src/training/shake_training.py','src/training/count_classic_training.py','src/training/mogera_training.py','src/training/head_training.py']]; print\\('ok'\\)\")",
+      "Bash(python3)"
+    ]
+  }
+}

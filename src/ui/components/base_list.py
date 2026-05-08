@@ -418,19 +418,27 @@ class BaseList(UIComponent):
         # Handle directional inputs
         if self.orientation == "horizontal":
             if event_type == "LEFT":
+                if self.selected_index <= 0:
+                    return False  # At boundary — let UIManager move focus out
                 self.select_previous()
                 runtime_globals.game_sound.play("menu")
                 return True
             elif event_type == "RIGHT":
+                if self.selected_index >= len(self.items) - 1:
+                    return False  # At boundary — let UIManager move focus out
                 self.select_next()
                 runtime_globals.game_sound.play("menu")
                 return True
         else:  # vertical
             if event_type == "UP":
+                if self.selected_index <= 0:
+                    return False  # At boundary — let UIManager move focus out
                 self.select_previous()
                 runtime_globals.game_sound.play("menu")
                 return True
             elif event_type == "DOWN":
+                if self.selected_index >= len(self.items) - 1:
+                    return False  # At boundary — let UIManager move focus out
                 self.select_next()
                 runtime_globals.game_sound.play("menu")
                 return True

@@ -137,10 +137,10 @@ class MogeraTraining(Training):
         
         elif self.phase == "wait_attack":
             self.update_wait_attack_phase()
-        
+
         elif self.phase == "attack_move":
-            self.move_attacks()
-        
+            self.update_attack_move_phase()
+
         elif self.phase == "impact":
             self.update_impact_phase()
         
@@ -262,8 +262,8 @@ class MogeraTraining(Training):
         self.draw_pets(surface)
     
     def draw_attack_ready(self, surface):
-        """Draw pets ready to attack"""
-        self.draw_pets(surface, PetFrame.ATK1)
+        """20-frame idle pause; per-wave prep handles the actual pre-shot anim."""
+        self.draw_pets(surface, PetFrame.IDLE1)
 
     def handle_event(self, event):
         """Handle input events"""
@@ -309,6 +309,12 @@ class MogeraTraining(Training):
 
     def draw_attack_move(self, surface):
         """Draw the attack movement phase"""
+        if self._wave_in_prep:
+            # Pre-shot animation runs through base draw_pets prep path; the
+            # projectiles haven't fired yet so don't render them.
+            self.draw_pets(surface)
+            return
+
         if self.attack_phase == 1:
             # Show pets attacking
             if self.frame_counter < int(10 * (constants.FRAME_RATE / 30)):
@@ -319,7 +325,7 @@ class MogeraTraining(Training):
             # Show Mogera being targeted
             mogera_sprite = self.mogera1
             blit_with_shadow(surface, mogera_sprite, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - mogera_sprite.get_height() // 2))
-        
+
         # Draw attack projectiles
         for sprite, (x, y) in self.attack_positions:
             blit_with_shadow(surface, sprite, (int(x), int(y)))
@@ -388,6 +394,7 @@ class MogeraTraining(Training):
                 atk_sprite = self.get_attack_sprite(pet, pet.atk_main)
             x = runtime_globals.SCREEN_WIDTH - int(48 * s) - int(70 * s)
             y = start_y + i * spacing
+            center_y = y + atk_sprite.get_height() // 2
 
             if attack_count == 1:
                 self.attack_positions.append((atk_sprite, (x, y)))
@@ -397,7 +404,7 @@ class MogeraTraining(Training):
                 self.attack_positions.append((combined, (x, y)))
             elif attack_count == 3:
                 scaled_sprite = pygame.transform.scale2x(atk_sprite)
-                self.attack_positions.append((scaled_sprite, (x, y)))
+                self.attack_positions.append((scaled_sprite, (x, center_y - scaled_sprite.get_height() // 2)))
 
     def get_attack_count(self):
         """Returns the number of attacks based on strength."""

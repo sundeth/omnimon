@@ -170,8 +170,7 @@ class CountMatchTraining(Training):
         new_wave = []
         all_off_screen = True
 
-        if self.frame_counter <= 1:
-            runtime_globals.game_sound.play("attack")
+        # Shot sound is played by the base class on prep-end; don't duplicate here.
 
         now = pygame.time.get_ticks()
         if not hasattr(self, '_last_atk_tick'):
@@ -192,12 +191,6 @@ class CountMatchTraining(Training):
         if all_off_screen and self.frame_counter >= int(10 * (game_globals.configuration.frame_rate / 30)):
             self.current_wave_index += 1
             self.frame_counter = 0
-
-    def draw_pets(self, surface, frame_enum=PetFrame.IDLE1):
-        """Draws pets using appropriate frame based on attack animation phase."""
-        if self.phase == "attack_move":
-            frame_enum = self.animate_attack(46)
-        super().draw_pets(surface, frame_enum)
 
     def draw_alert(self, surface):
         # Use the count match minigame to handle ready sprite drawing via AnimatedSprite

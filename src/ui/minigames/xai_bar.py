@@ -48,6 +48,10 @@ class XaiBar:
         self.arrow_anim_max = self.x + 2 + self.INNER_WIDTH - self.arrow_width // 2
         self.selected_strength = None
 
+        # Responsiveness helpers
+        self._last_update_ms = None   # For real delta-time movement
+        self._drawn_x = None          # Last position actually rendered (used by stop())
+
         # Caches
         self._bar_structures_cache = None
         self._bar_surfaces_cache = None
@@ -70,15 +74,32 @@ class XaiBar:
         self.arrow_anim_dir = 1
         self.arrow_anim_x = self.arrow_anim_min
         self.selected_strength = None
+        self._last_update_ms = None
+        self._drawn_x = None
 
     def stop(self):
         self.arrow_animating = False
+        self._last_update_ms = None
+        # Use the last-rendered position so the recorded result always matches
+        # exactly what the player saw, regardless of update/draw ordering.
+        if self._drawn_x is not None:
+            self.arrow_anim_x = self._drawn_x
         self.selected_strength = self._get_strength_from_arrow()
 
     def update(self):
         if self.arrow_animating:
-            speed = max(1, 8 - self.xai_number) * (30 / constants.FRAME_RATE)
-            self.arrow_anim_x += self.arrow_anim_dir * speed * runtime_globals.UI_SCALE
+            # Real delta-time movement: the arrow travels at a consistent pixel/sec
+            # speed regardless of whether frames are long or short.
+            now = pygame.time.get_ticks()
+            if self._last_update_ms is None:
+                self._last_update_ms = now
+            dt_ms = min(100, max(1, now - self._last_update_ms))
+            self._last_update_ms = now
+
+            speed_pps = max(1, 8 - self.xai_number) * 30 * runtime_globals.UI_SCALE
+            delta = speed_pps * dt_ms / 1000.0
+
+            self.arrow_anim_x += self.arrow_anim_dir * delta
             if self.arrow_anim_x <= self.arrow_anim_min:
                 self.arrow_anim_x = self.arrow_anim_min
                 self.arrow_anim_dir = 1
@@ -245,6 +266,7 @@ class XaiBar:
         # Draw arrow sprite at the top, centered or animating, with shadow
         if self.arrow_animating or self.selected_strength is not None:
             arrow_x = int(self.arrow_anim_x)
+            self._drawn_x = self.arrow_anim_x  # Snapshot: what we actually rendered this frame
         else:
             arrow_x = self.x + (self.WIDTH - self.arrow_width) // 2
         arrow_y = ext_y + (ext_height - self.arrow_height) // 2

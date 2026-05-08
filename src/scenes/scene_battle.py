@@ -47,7 +47,7 @@ class SceneBattle:
             runtime_globals.special_encounter = []
             from utils.module_utils import get_module
             module = get_module(module_name)
-            self._change_view("adventure_battle", module=module, area=area, round_num=round_num, is_random_encounter=True)
+            self._change_view("adventure_battle", module=module, area=area, round_num=round_num, is_special_encounter=True)
         else:
             self._change_view("main_menu")
         

@@ -435,6 +435,9 @@ class MainMenuView:
         # Update Omninet status from service
         omninet_username = omninet_service.get_username()
         
+        # Free Mode: hide Omninet connect button entirely
+        is_free = game_globals.is_free_mode()
+        
         if self._omninet_available is None:
             self.config_omninet_status_label.set_text("Status: Checking...")
             self.config_omninet_account_label.set_text("Account: None")
@@ -456,6 +459,12 @@ class MainMenuView:
             self.config_omninet_account_label.set_text("Account: None")
             self.config_omninet_button.set_text("CONNECT")
             self.config_omninet_button.enabled = False
+        
+        # In Free Mode, block Omninet linking entirely
+        if is_free:
+            self.config_omninet_button.visible = False
+            self.config_omninet_button.enabled = False
+            self.config_omninet_button.focusable = False
         
         # Update Discord status
         discord_name = self.discord.get_account_name() if self.discord else None
@@ -646,8 +655,8 @@ class MainMenuView:
     
     def _on_shop_selected(self):
         """Shop button clicked."""
-        # Check if logged in to Omninet
-        if not omninet_service.is_logged_in():
+        # Free Mode: allow shop without Omninet login
+        if not game_globals.is_free_mode() and not omninet_service.is_logged_in():
             runtime_globals.game_console.log("[MainMenuView] Not logged in to Omninet, showing message")
             runtime_globals.game_sound.play("error")
             runtime_globals.tooltip = "You need to be logged in to Omninet to access the shop. Go to Config to login."

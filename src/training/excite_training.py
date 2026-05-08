@@ -20,13 +20,31 @@ class ExciteTraining(Training):
 
     def __init__(self, ui_manager: UIManager) -> None:
         super().__init__(ui_manager)
+        self._pending_stop = False  # Buffers A/LCLICK pressed during the alert→charge transition frame
         self.xaibar = XaiBar(10 * runtime_globals.UI_SCALE, runtime_globals.SCREEN_HEIGHT // 2 - (18 * runtime_globals.UI_SCALE), game_globals.xai, self.pets[0])
         self.xaibar.start()
         # Remove separate sprite assignments; use self._sprite_cache from base class
 
+    def _do_xaibar_stop(self):
+        """Freeze the bar, record strength, and advance to the attack phase."""
+        runtime_globals.game_sound.play("menu")
+        self.xaibar.stop()
+        runtime_globals.game_console.log(f"XaiBar phase ended strength {self.xaibar.selected_strength}.")
+        self.phase = "wait_attack"
+        self.frame_counter = 0
+        self.prepare_attacks()
+
     def update_charge_phase(self):
+        # A/LCLICK pressed during the last alert frame is applied here, BEFORE
+        # the arrow advances for this frame — so the recorded position still
+        # matches what the player saw on screen.
+        if self._pending_stop:
+            self._pending_stop = False
+            self._do_xaibar_stop()
+            return
+
         self.xaibar.update()
-        # End phase after a certain time or on input (like bar phase)
+        # Auto-stop after the time limit
         if self.frame_counter > int(30 * 3 * (constants.FRAME_RATE / 30)):
             self.xaibar.stop()
             runtime_globals.game_console.log(f"XaiBar phase ended strength {self.xaibar.selected_strength}.")
@@ -45,8 +63,7 @@ class ExciteTraining(Training):
         new_wave = []
         all_off_screen = True
 
-        if self.frame_counter <= 1:
-            runtime_globals.game_sound.play("attack")
+        # Shot sound is played by the base class on prep-end; don't duplicate here.
 
         now = pygame.time.get_ticks()
         if not hasattr(self, '_last_atk_tick'):
@@ -83,14 +100,6 @@ class ExciteTraining(Training):
         self.xaibar.draw(surface)
         self.draw_pets(surface, PetFrame.IDLE1)
 
-    def draw_pets(self, surface, frame_enum=PetFrame.IDLE1):
-        """
-        Draws pets using appropriate frame based on attack animation phase.
-        """
-        if self.phase == "attack_move":
-            frame_enum = self.animate_attack(46)
-        super().draw_pets(surface, frame_enum)
-
     def draw_attack_move(self, surface):
         self.draw_pets(surface)
         for wave in self.attack_waves:
@@ -113,7 +122,7 @@ class ExciteTraining(Training):
             elif strength == 2:
                 self.animated_sprite.play_great(duration)
             else:
-                self.animated_sprite.play_excellent(duration)
+                self.animated_sprite.play_megahit(duration)
         
         # Draw the animated sprite
         self.animated_sprite.draw(surface)
@@ -136,36 +145,74 @@ class ExciteTraining(Training):
         # Determine super-hit pattern based on selected_strength
         strength = self.xaibar.selected_strength
         if strength == 3:
-            pattern = [4, 3, 3, 3, 3]  # 5 super-hits (megahit)
+            pattern = [5, 4, 5, 4, 4]  # megahit
         elif strength == 2:
-            pattern = [3, 3, 3, 2, 2]  # 3 super-hits, 2 normal
+            pattern = [3, 4, 3, 3, 2]  # great
         elif strength == 1:
-            pattern = [3, 2, 1, 1, 1]  # 1 super-hit, 4 normal
+            pattern = [1, 2, 1, 2, 2]  # good
         else:
-            pattern = [1] * 5  # all normal, fail
+            pattern = [1, 1, 1, 1, 1]  # fail
+
+        # Activate special attack animation if pattern includes strike 5
+        if 5 in pattern:
+            for pet in pets:
+                if self._is_critical_attack(pet, 5):
+                    self.special_attack_active = True
+                    break
+
+        # Store wave kinds for per-wave slide animation
+        self.attack_wave_kinds = pattern[:]
 
         s = runtime_globals.UI_SCALE
         for i, pet in enumerate(pets):
             main_sprite = self.get_attack_sprite(pet, pet.atk_main)
             alt_sprite = self.get_attack_sprite(pet, pet.atk_alt) if getattr(pet, "atk_alt", 0) > 0 else main_sprite
+            alt2_sprite = self.get_attack_sprite(pet, pet.atk_alt_2) if getattr(pet, "atk_alt_2", 0) > 0 else None
             if not main_sprite:
                 continue
             pet_y = start_y + i * spacing + runtime_globals.OPTION_ICON_SIZE // 2 - main_sprite.get_height() // 2
+            slot_center_y = pet_y + main_sprite.get_height() // 2
             for j, kind in enumerate(pattern):
                 x = runtime_globals.SCREEN_WIDTH - runtime_globals.OPTION_ICON_SIZE - (20 * s)
                 y = pet_y
-                if kind == 4:
-                    combined = pygame.transform.scale2x(alt_sprite)
+                if kind == 5:
+                    # Critical attack: prefer a dedicated atk_crit sprite (no scale2x needed).
+                    # Fall back to alt2/alt/main sprite scaled 2x when no crit sprite exists.
+                    # Start crit sprites at the visibility threshold (not past it) so they are
+                    # hidden during the slide-in and only appear when move_attacks() fires them.
+                    x_crit = runtime_globals.SCREEN_WIDTH - int(90 * s)
+                    atk_alt2 = getattr(pet, "atk_alt_2", 0)
+                    crit_sprite = self.get_crit_attack_sprite(pet, atk_alt2) if atk_alt2 and atk_alt2 > 0 else None
+                    if crit_sprite:
+                        self.attack_waves[j].append((crit_sprite, x_crit, slot_center_y - crit_sprite.get_height() // 2))
+                    else:
+                        sprite = alt2_sprite or alt_sprite or main_sprite
+                        scaled = pygame.transform.scale2x(sprite)
+                        self.attack_waves[j].append((scaled, x_crit, slot_center_y - scaled.get_height() // 2))
+                elif kind == 4:
+                    # 2 atk_alt sprites, fallback 3 atk_main sprites
+                    if getattr(pet, "atk_alt", 0) > 0:
+                        offsets = [(0, 0), (-int(20 * s), -int(10 * s))]
+                        combined = self._combine_sprites(alt_sprite, offsets)
+                    else:
+                        offsets = [(0, 0), (-int(20 * s), -int(10 * s)), (-int(40 * s), int(10 * s))]
+                        combined = self._combine_sprites(main_sprite, offsets)
                     self.attack_waves[j].append((combined, x, y))
                 elif kind == 3:
-                    offsets = [(0, 0), (-int(20 * s), -int(10 * s)), (-int(40 * s), int(10 * s))]
-                    combined = self._combine_sprites(alt_sprite, offsets)
-                    self.attack_waves[j].append((combined, x, y))
+                    # 1 atk_alt sprite, fallback 3 atk_main sprites
+                    if getattr(pet, "atk_alt", 0) > 0:
+                        self.attack_waves[j].append((alt_sprite, x, y))
+                    else:
+                        offsets = [(0, 0), (-int(20 * s), -int(10 * s)), (-int(40 * s), int(10 * s))]
+                        combined = self._combine_sprites(main_sprite, offsets)
+                        self.attack_waves[j].append((combined, x, y))
                 elif kind == 2:
+                    # 2 atk_main sprites
                     offsets = [(0, 0), (-int(20 * s), -int(10 * s))]
-                    combined = self._combine_sprites(alt_sprite, offsets)
+                    combined = self._combine_sprites(main_sprite, offsets)
                     self.attack_waves[j].append((combined, x, y))
                 else:
+                    # 1 atk_main sprite
                     self.attack_waves[j].append((main_sprite, x, y))
 
     def get_attack_count(self):
@@ -179,18 +226,21 @@ class ExciteTraining(Training):
 
     def handle_event(self, event):
         event_type, event_data = event
-        
-        if self.phase == "charge" and event_type in ["A", "LCLICK"]:
-            runtime_globals.game_sound.play("menu")
-            self.xaibar.stop()
-            runtime_globals.game_console.log(f"XaiBar phase ended strength {self.xaibar.selected_strength}.")
-            self.phase = "wait_attack"
-            self.frame_counter = 0
-            self.prepare_attacks()
+
+        if event_type in ["A", "LCLICK"]:
+            if self.phase == "charge":
+                self._do_xaibar_stop()
+            elif self.phase == "alert":
+                # The charge bar may appear this very frame (phase switches in update(),
+                # which runs after handle_event).  Buffer the press so update_charge_phase
+                # applies it immediately at the start of the first charge frame, before
+                # the arrow moves at all.
+                self._pending_stop = True
         elif self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
             runtime_globals.game_sound.play("cancel")
             self.animated_sprite.stop()
             self.phase = "result"
         elif self.phase in ["alert", "charge"] and event_type == "B":
+            self._pending_stop = False  # Cancel any pending stop on exit
             runtime_globals.game_sound.play("cancel")
             change_scene("game")

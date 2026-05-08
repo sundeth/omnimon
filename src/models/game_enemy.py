@@ -26,6 +26,7 @@ class GameEnemy:
     unlock: str
     prize: str
     mini_game: int = 0
+    special_encounter: bool = False
 
     def load_sprite(self, module_path: str, boss: bool = False):
         """
@@ -39,13 +40,17 @@ class GameEnemy:
         module_name = module_path
         module_path = os.path.join("modules", module_name)
         
-        # Try to get module object to access name_format
+        # Try to get module object to access name_format and sprite formats
         try:
             from utils.module_utils import get_module
             module_obj = get_module(module_name)
             name_format = getattr(module_obj, 'name_format', '$_dmc') if module_obj else '$_dmc'
+            primary_format = getattr(module_obj, 'primary_sprite_format', 'Color') if module_obj else 'Color'
+            secondary_format = getattr(module_obj, 'secondary_sprite_format', 'HD') if module_obj else 'HD'
         except:
             name_format = '$_dmc'  # Default fallback
+            primary_format = 'Color'
+            secondary_format = 'HD'
         
         # Calculate size based on boss status
         if boss:
@@ -54,7 +59,14 @@ class GameEnemy:
             size = (runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
         
         # Load sprites using the new utility function
-        sprites_dict = load_enemy_sprites(self.name, module_path, name_format, size=size)
+        sprites_dict = load_enemy_sprites(
+            self.name,
+            module_path,
+            name_format,
+            size=size,
+            primary_sprite_format=primary_format,
+            secondary_sprite_format=secondary_format
+        )
         
         # Convert to the expected format
         sprite_list = convert_sprites_to_list(sprites_dict)
@@ -63,7 +75,7 @@ class GameEnemy:
         max_index = max(frame.value for frame in PetFrame)
         self.frames = [None] * (max_index + 1)
         
-        # Populate frames array with loaded sprites
+        # Populate frames array with loaded sprites (keeping None for missing frames)
         for i, sprite in enumerate(sprite_list):
             if i < len(self.frames):
                 self.frames[i] = sprite

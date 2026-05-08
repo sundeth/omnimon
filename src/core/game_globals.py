@@ -611,6 +611,14 @@ def load() -> None:
                         # Old format - copy values from saved object
                         configuration.from_dict(saved_config.to_dict() if hasattr(saved_config, 'to_dict') else {})
 
+                # Sprites were loaded in __setstate__ before configuration was applied.
+                # Reload them now that enable_old_sprites and sprite_resolution_preference are correct.
+                for pet in pet_list:
+                    try:
+                        pet.load_sprite()
+                    except Exception as e:
+                        print(f"[Game] Failed to reload sprite for {getattr(pet, 'name', 'unknown')}: {e}")
+
                 print(f"[Game] Successfully loaded save file: {os.path.basename(save_path)} with {len(pet_list)} valid pets")
                 return  # Successfully loaded, exit the function
                 

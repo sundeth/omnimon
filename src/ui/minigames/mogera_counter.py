@@ -6,10 +6,11 @@ import random
 import pygame
 from ui.ui_manager import UIManager
 from ui.components.button import Button
-from core import runtime_globals
+from core import game_globals, runtime_globals
 from models.animation import PetFrame
 import core.constants as constants
 from utils.pygame_utils import blit_with_shadow, load_attack_sprites, module_attack_sprites
+from utils.module_utils import get_module
 
 
 class MogeraCounter:
@@ -101,20 +102,36 @@ class MogeraCounter:
         """Generate 5 random attacks (top or bottom)"""
         return [random.choice(["top", "bottom"]) for _ in range(self.total_attacks)]
     
+    def _is_dot_pet(self):
+        enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
+        if not enable_old:
+            return False
+        mod = get_module(self.pet.module)
+        if mod is None:
+            return False
+        return getattr(mod, 'primary_sprite_format', 'Color') == 'Dot' or getattr(mod, 'secondary_sprite_format', 'HD') == 'Dot'
+
     def get_attack_sprite(self):
         """Get pet's attack sprite sized to match AntiG sprites"""
-        # Try module-specific sprite first
+        atk_id = str(self.pet.atk_main)
+        is_dot = self._is_dot_pet()
+        target_size = (self.antigrav1_sprite.get_width(), self.antigrav1_sprite.get_height())
+
         if self.module_attack_sprites:
-            module_sprite = self.module_attack_sprites.get(str(self.pet.atk_main))
-            if module_sprite:
-                # Scale to match AntiG sprite size for visual consistency
-                target_size = (self.antigrav1_sprite.get_width(), self.antigrav1_sprite.get_height())
-                return pygame.transform.scale(module_sprite, target_size)
-        # Fall back to default
-        default_sprite = self.attack_sprites.get(str(self.pet.atk_main))
+            if is_dot:
+                dot_sprite = self.module_attack_sprites.get(f"{atk_id}_dot")
+                if dot_sprite:
+                    return pygame.transform.scale(dot_sprite, target_size)
+            sprite = self.module_attack_sprites.get(atk_id)
+            if sprite:
+                return pygame.transform.scale(sprite, target_size)
+
+        if is_dot:
+            dot_sprite = self.attack_sprites.get(f"{atk_id}_dot")
+            if dot_sprite:
+                return pygame.transform.scale(dot_sprite, target_size)
+        default_sprite = self.attack_sprites.get(atk_id)
         if default_sprite:
-            # Scale to match AntiG sprite size for visual consistency
-            target_size = (self.antigrav1_sprite.get_width(), self.antigrav1_sprite.get_height())
             return pygame.transform.scale(default_sprite, target_size)
         return None
 

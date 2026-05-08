@@ -9,6 +9,7 @@ Examples:
 - Effort value 10 with factor 4 = 2.5 hearts (2 full hearts + 1 half heart)
 - Hunger value 3 with factor 1 = 3 full hearts
 """
+import math
 import pygame
 from ui.components.component import UIComponent
 from core import runtime_globals
@@ -108,13 +109,16 @@ class HeartMeter(UIComponent):
             heart_spacing = max(1, (available_width - self.max_value * heart_width) // (self.max_value - 1))
         
         # Draw hearts
+        # Round value up to nearest half-heart step so e.g. 3.25 displays as 3.5 (half heart)
+        step = self.factor * 0.5
+        render_value = math.ceil(self.value / step) * step if step > 0 else self.value
         for i in range(self.max_value):
             heart_x = heart_start_x + i * (heart_width + heart_spacing)
             heart_y = (self.rect.height - self.heart_images["empty"].get_height()) // 2
             
             # Calculate heart display based on factor
             # factor determines how many points = 1 heart
-            heart_value = (self.value / self.factor) - i
+            heart_value = (render_value / self.factor) - i
             
             # Determine heart type based on calculated heart value
             if heart_value >= 1.0:

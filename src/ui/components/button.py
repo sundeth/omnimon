@@ -521,12 +521,12 @@ class Button(UIComponent):
         """Handle input events for the button"""
         if not self.enabled:
             return False
-            
+
         event_type, event_data = event
-            
+
         if event_type in ["A", "LCLICK"]:
             return self.activate()
-                    
+
         return False
     
     def activate(self):

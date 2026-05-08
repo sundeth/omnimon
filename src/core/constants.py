@@ -194,6 +194,7 @@ MODULES_FOLDER = "modules"
 ARROW_IMAGE_PATH = "assets/Arrow.png"
 #FOOD_SHEET_PATH = "assets/FoodVitamin.png"
 ATK_FOLDER = "assets/atk"
+ATK_CRIT_FOLDER = "assets/atk_crit"
 
 #=====================================================================
 # Paths: UI Sprites

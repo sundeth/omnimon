@@ -4,17 +4,28 @@
 import pygame
 
 from ui.ui_constants import TEXT_FONT
-from core import runtime_globals
+from core import game_globals, runtime_globals
 from models.animation import PetFrame
 from ui.ui_manager import UIManager
 from ui.components.animated_sprite import AnimatedSprite
 from battle import combat_constants
 import core.constants as constants
 from utils.pet_utils import distribute_pets_evenly, get_training_targets
-from utils.pygame_utils import blit_with_shadow, load_attack_sprites, module_attack_sprites
+from utils.pygame_utils import blit_with_shadow, load_attack_sprites, load_crit_attack_sprites, module_attack_sprites, module_crit_attack_sprites
 from utils.scene_utils import change_scene
 from models.game_quest import QuestType
 from utils.quest_event_utils import update_quest_progress
+from utils.module_utils import get_module
+
+
+# Attack-prep timeline lives in battle.combat_constants and is shared with the
+# battle encounter so training and battle stay visually consistent. Re-export
+# under their old names for any subclass that imports them directly.
+from battle.combat_constants import (
+    ATTACK_PREP_BASE_FRAMES,
+    compute_attack_anim_state,
+)
+
 
 class Training:
     """
@@ -48,30 +59,84 @@ class Training:
         self.background_color = (0, 0, 0)
         self.flash_color = (255, 216, 0)
 
-        self.attack_jump = 0
-        self.attack_forward = 0
-        self.attack_frame = None
         self.attack_sprites = load_attack_sprites()
+        self.crit_attack_sprites = load_crit_attack_sprites()
         self._alert_anim_started = False
         self._impact_anim_started = False
 
         self.pets = get_training_targets()
         self.module_attack_sprites = {}
+        self.module_crit_attack_sprites = {}
         for pet in self.pets:
             self.module_attack_sprites[pet.module] = module_attack_sprites(pet.module)
+            self.module_crit_attack_sprites[pet.module] = module_crit_attack_sprites(pet.module)
+
+        # Crit-slide eligibility flags (set by subclasses in prepare_attacks).
+        self.special_attack_active = False
+        self.attack_wave_kinds = []
+        # True during the 35-frame attack-prep window (idle → slide/jump-back →
+        # move-forward → TRAIN2). False once the shot has fired and the sprite
+        # is flying. Re-armed when the next wave begins.
+        self._wave_in_prep = False
+
+    def _is_dot_pet(self, pet):
+        """Return True if this pet is currently rendered using dot sprites."""
+        enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
+        if not enable_old:
+            return False
+        module = get_module(pet.module)
+        if module is None:
+            return False
+        primary = getattr(module, 'primary_sprite_format', 'Color')
+        secondary = getattr(module, 'secondary_sprite_format', 'HD')
+        return primary == 'Dot' or secondary == 'Dot'
 
     def get_attack_sprite(self, pet, attack_id):
         """
         Get attack sprite for a pet, preferring module-specific sprites over defaults.
+        Dot variants are selected only for pets currently rendered as dot (enable_old + Dot format).
         """
-        # First try module-specific attack sprites
+        is_dot = self._is_dot_pet(pet)
+
         if pet.module in self.module_attack_sprites:
-            module_sprite = self.module_attack_sprites[pet.module].get(str(attack_id))
-            if module_sprite:
-                return module_sprite
-        
-        # Fall back to default attack sprites
+            module_dict = self.module_attack_sprites[pet.module]
+            if is_dot:
+                dot_sprite = module_dict.get(f"{attack_id}_dot")
+                if dot_sprite:
+                    return dot_sprite
+            sprite = module_dict.get(str(attack_id))
+            if sprite:
+                return sprite
+
+        if is_dot:
+            dot_sprite = self.attack_sprites.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
         return self.attack_sprites.get(str(attack_id))
+
+    def get_crit_attack_sprite(self, pet, attack_id):
+        """
+        Get a critical-attack sprite for a critical hit.
+        Priority: module-specific atk_crit folder → global assets/atk_crit folder.
+        Returns None if nothing found — callers should fall back to normal atk + scale2x.
+        Dot variants are selected only for pets currently rendered as dot.
+        """
+        is_dot = self._is_dot_pet(pet)
+
+        crit_dict = self.module_crit_attack_sprites.get(pet.module, {})
+        if is_dot:
+            dot_sprite = crit_dict.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
+        sprite = crit_dict.get(str(attack_id))
+        if sprite:
+            return sprite
+
+        if is_dot:
+            dot_sprite = self.crit_attack_sprites.get(f"{attack_id}_dot")
+            if dot_sprite:
+                return dot_sprite
+        return self.crit_attack_sprites.get(str(attack_id))
 
     def _combine_sprites(self, sprite, offsets):
         """Combine a sprite rendered at multiple offsets into a single surface."""
@@ -89,10 +154,30 @@ class Training:
             combined.blit(sprite, (int(ox - min_ox), int(oy - min_oy)))
         return combined
 
+    def _has_special_frame(self, pet):
+        """Check if a pet has a valid SPECIAL frame (PetFrame.SPECIAL = 15)."""
+        sprite_list = runtime_globals.pet_sprites.get(pet)
+        if sprite_list and len(sprite_list) > PetFrame.SPECIAL.value:
+            return sprite_list[PetFrame.SPECIAL.value] is not None
+        return False
+
+    def _get_pet_module(self, pet):
+        """Get the GameModule object for a pet."""
+        return get_module(pet.module)
+
+    def _is_critical_attack(self, pet, anim_hits):
+        """Check if this attack should use the special/critical animation."""
+        module = self._get_pet_module(pet)
+        if not module:
+            return False
+        return (anim_hits >= 5 and 
+                getattr(module, 'enable_special_attack_sprite', False) and 
+                self._has_special_frame(pet))
+
     def update(self):
         # Update animated sprite component
         self.animated_sprite.update()
-        
+
         if self.phase == "alert":
             self.update_alert_phase()
         elif self.phase == "charge":
@@ -100,7 +185,7 @@ class Training:
         elif self.phase == "wait_attack":
             self.update_wait_attack_phase()
         elif self.phase == "attack_move":
-            self.move_attacks()
+            self.update_attack_move_phase()
         elif self.phase == "impact":
             self.update_impact_phase()
         elif self.phase == "result":
@@ -120,46 +205,89 @@ class Training:
         pass
 
     def update_wait_attack_phase(self):
-        self.attack_frame = self.animate_attack(20)
+        """20-frame idle pause between charge and the first attack burst.
+
+        Applies uniformly to wave-based modes (count/count_z/excite) and
+        single-shot modes (dummy/shake/count_classic/mogera). Pets stay in
+        IDLE1 for the duration; the per-wave prep inside ``attack_move`` then
+        plays the full pre-shot animation (slide/jump → forward → TRAIN2).
+        """
         if self.frame_counter >= combat_constants.WAIT_ATTACK_READY_FRAMES:
-            self.attack_frame = None
             self.phase = "attack_move"
             self.frame_counter = 0
-            runtime_globals.game_sound.play("attack")
+            self._wave_in_prep = True
 
-    def animate_attack(self, delay=0):
-        appear_frame = int(delay * (constants.FRAME_RATE / 30))
-        anim_window = int(20 * (constants.FRAME_RATE / 30))
-        anim_start = appear_frame - anim_window
-        anim_end = appear_frame
+    def update_attack_move_phase(self):
+        """Run the per-burst animation prep, then defer to ``move_attacks``.
 
-        progress = 0
-        if anim_start <= self.frame_counter < anim_end:
-            progress = (self.frame_counter - anim_start) / max(1, (anim_end - anim_start))
-            if progress < 0.5:
-                self.attack_forward += 1 * (30 / constants.FRAME_RATE)
-                if progress < 0.25:
-                    self.attack_jump += 1 * (30 / constants.FRAME_RATE)
-                else:
-                    self.attack_jump -= 1 * (30 / constants.FRAME_RATE)
-            else:
-                self.attack_forward -= 1 * (30 / constants.FRAME_RATE)
-        else:
-            self.attack_forward = 0
-            self.attack_jump = 0
+        Wave-based modes get one prep window per wave (re-armed when
+        ``move_attacks`` advances ``current_wave_index``). Single-shot modes
+        get one prep window before their first sprite begins moving and then
+        run as before.
+        """
+        if self._wave_in_prep:
+            if self.frame_counter >= self._prep_total_frames():
+                self._wave_in_prep = False
+                self.frame_counter = 0
+                # Shot fires NOW — play the attack sound regardless of subclass
+                # so single-shot modes (dummy/shake/count_classic/mogera) get it
+                # too. Adventure mode keeps its silent shot in battle_encounter.
+                runtime_globals.game_sound.play("attack")
+            return
 
-        train2_frames = int(6 * (constants.FRAME_RATE / 30))
-        if delay == 20:
-            if self.frame_counter > anim_end - train2_frames:
-                frame_enum = PetFrame.TRAIN2
-            else:
-                frame_enum = PetFrame.TRAIN1
-        else:
-            if (self.frame_counter > anim_end - train2_frames) or (self.frame_counter < train2_frames):
-                frame_enum = PetFrame.TRAIN2
-            else:
-                frame_enum = PetFrame.TRAIN1
-        return frame_enum
+        # All waves done (wave-based) — let move_attacks transition to result.
+        if self.attack_waves and self.current_wave_index >= len(self.attack_waves):
+            self.move_attacks()
+            return
+
+        prev_idx = self.current_wave_index
+        self.move_attacks()
+        if (self.attack_waves
+                and self.current_wave_index != prev_idx
+                and self.current_wave_index < len(self.attack_waves)):
+            self._wave_in_prep = True
+
+    def _prep_total_frames(self):
+        """Total frames in the per-wave prep window, scaled to the active FPS."""
+        return int(ATTACK_PREP_BASE_FRAMES * (constants.FRAME_RATE / 30))
+
+    def _is_current_wave_crit(self):
+        """True if the current wave should trigger the special slide-in."""
+        idx = self.current_wave_index
+        return (
+            self.special_attack_active
+            and idx < len(self.attack_wave_kinds)
+            and self.attack_wave_kinds[idx] == 5
+        )
+
+    def _compute_pet_attack_anim(self, pet, is_crit_wave):
+        """Resolve a pet's prep-frame state at the current ``frame_counter``.
+
+        Thin training-side adapter around the shared timeline in
+        ``combat_constants.compute_attack_anim_state``. Translates the abstract
+        ``slide_progress`` into the concrete on-screen slide x for the
+        right-anchored pet roster.
+
+        Returns ``(frame_enum, forward_offset, jump_offset, slide_x_or_None)``.
+        """
+        fps_scale = constants.FRAME_RATE / 30.0
+        f = self.frame_counter / fps_scale if fps_scale > 0 else float(self.frame_counter)
+
+        frame, fwd, jmp, slide_progress = compute_attack_anim_state(
+            f, is_crit_wave, self._has_special_frame(pet)
+        )
+        if slide_progress is None:
+            return frame, fwd, jmp, None
+
+        sprite_w = runtime_globals.OPTION_ICON_SIZE * 2
+        start_x = float(runtime_globals.SCREEN_WIDTH - sprite_w * 3 // 4)
+        target_x = float(
+            runtime_globals.SCREEN_WIDTH
+            - sprite_w
+            - int(2 * runtime_globals.UI_SCALE)
+        )
+        slide_x = start_x + (target_x - start_x) * slide_progress
+        return frame, fwd, jmp, int(slide_x)
 
     def update_impact_phase(self):
         self.flash_frame += 1
@@ -229,42 +357,91 @@ class Training:
     def _init_pet_sprite_cache(self):
         """
         Pre-scales all pet sprites for each frame_enum and caches them.
+        Also pre-scales the SPECIAL frame at 2× width for the critical-attack
+        entrance animation.
         """
-        runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] Initializing cache for {len(self.pets)} pets")
         self._pet_sprite_cache = {}
+        self._special_sprite_cache = {}  # pet → Surface at (OPTION_ICON_SIZE*2, OPTION_ICON_SIZE)
         for pet in self.pets:
             self._pet_sprite_cache[pet] = {}
-            runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] Pet {pet.name}: pet_sprites has {len(runtime_globals.pet_sprites.get(pet, []))} frames")
+            frames = runtime_globals.pet_sprites.get(pet, [])
             for frame_enum in PetFrame:
-                sprite = runtime_globals.pet_sprites[pet][frame_enum.value]
-                runtime_globals.game_console.log(f"[Training._init_pet_sprite_cache] {pet.name} {frame_enum.name}: sprite id={id(sprite)}, size={sprite.get_size()}")
+                if frame_enum.value >= len(frames) or frames[frame_enum.value] is None:
+                    self._pet_sprite_cache[pet][frame_enum] = None
+                    continue
+                sprite = frames[frame_enum.value]
                 scaled_sprite = pygame.transform.scale(sprite, (runtime_globals.OPTION_ICON_SIZE, runtime_globals.OPTION_ICON_SIZE))
                 self._pet_sprite_cache[pet][frame_enum] = scaled_sprite
 
-    def draw_pets(self, surface, frame_enum=PetFrame.IDLE1):
-        # Initialize cache if not present or pets changed
-        # Cache the pets tuple to avoid expensive set comparisons every frame
-        current_pets = tuple(self.pets)  # tuple for hashable comparison
-        if (not hasattr(self, '_pet_sprite_cache') or 
-            not hasattr(self, '_cached_pets_tuple') or 
-            self._cached_pets_tuple != current_pets):
+            # Pre-scale SPECIAL frame at double width for the slide-in animation
+            special_idx = PetFrame.SPECIAL.value
+            special_raw = frames[special_idx] if special_idx < len(frames) else None
+            if special_raw is not None:
+                special_w = runtime_globals.OPTION_ICON_SIZE * 2
+                special_h = runtime_globals.OPTION_ICON_SIZE
+                self._special_sprite_cache[pet] = pygame.transform.scale(
+                    special_raw, (special_w, special_h)
+                )
+            else:
+                self._special_sprite_cache[pet] = None
+
+    def draw_pets(self, surface, frame_enum=None):
+        """Draw the pet roster.
+
+        ``frame_enum`` controls the sprite frame in non-prep contexts. If
+        omitted (``None``):
+          * during the attack_move post-prep window (sprite is flying), pets
+            hold ``TRAIN2`` at the rest position;
+          * elsewhere they show ``IDLE1``.
+        Subclasses that want a specific pose during charge or after the shot
+        (e.g. single-shot modes alternating ``ATK1``/``ATK2``) pass it
+        explicitly.
+        """
+        current_pets = tuple(self.pets)
+        if (not hasattr(self, '_pet_sprite_cache')
+                or not hasattr(self, '_cached_pets_tuple')
+                or self._cached_pets_tuple != current_pets):
             self._init_pet_sprite_cache()
             self._cached_pets_tuple = current_pets
 
-        # Use the correct frame_enum for animation
-        if self.attack_frame:
-            frame_enum = self.attack_frame
+        in_attack_prep = (self.phase == "attack_move" and self._wave_in_prep)
+        is_crit_wave = in_attack_prep and self._is_current_wave_crit()
+
+        if frame_enum is None:
+            frame_enum = (PetFrame.TRAIN2 if self.phase == "attack_move"
+                          else PetFrame.IDLE1)
         self.pet_state = frame_enum
 
         total_pets = len(self.pets)
         available_height = runtime_globals.SCREEN_HEIGHT
-        spacing = min(available_height // total_pets, runtime_globals.OPTION_ICON_SIZE + int(20 * runtime_globals.UI_SCALE))
+        spacing = min(available_height // total_pets,
+                      runtime_globals.OPTION_ICON_SIZE + int(20 * runtime_globals.UI_SCALE))
         start_y = (runtime_globals.SCREEN_HEIGHT - (spacing * total_pets)) // 2
+        base_x = (runtime_globals.SCREEN_WIDTH
+                  - runtime_globals.OPTION_ICON_SIZE
+                  - int(16 * runtime_globals.UI_SCALE))
+        ui_scale = runtime_globals.UI_SCALE
 
         for i, pet in enumerate(self.pets):
-            pet_sprite = self._pet_sprite_cache[pet][frame_enum]
-            x = runtime_globals.SCREEN_WIDTH - runtime_globals.OPTION_ICON_SIZE - int(16 * runtime_globals.UI_SCALE) + int(self.attack_forward * runtime_globals.UI_SCALE)
-            y = start_y + i * spacing - int(self.attack_jump * runtime_globals.UI_SCALE)
+            y_base = start_y + i * spacing
+
+            if in_attack_prep:
+                pet_frame, fwd, jmp, slide_x = self._compute_pet_attack_anim(pet, is_crit_wave)
+                if slide_x is not None:
+                    special_sprite = self._special_sprite_cache.get(pet)
+                    if special_sprite is not None:
+                        blit_with_shadow(surface, special_sprite, (slide_x, y_base))
+                        continue
+                pet_sprite = (self._pet_sprite_cache[pet].get(pet_frame)
+                              or self._pet_sprite_cache[pet].get(PetFrame.IDLE1))
+                x = base_x + int(fwd * ui_scale)
+                y = y_base - int(jmp * ui_scale)
+            else:
+                pet_sprite = (self._pet_sprite_cache[pet].get(frame_enum)
+                              or self._pet_sprite_cache[pet].get(PetFrame.IDLE1))
+                x = base_x
+                y = y_base
+
             blit_with_shadow(surface, pet_sprite, (x, y))
 
     def draw_alert(self, screen):
@@ -280,7 +457,8 @@ class Training:
             self.animated_sprite.draw(screen)
 
     def draw_attack_ready(self, surface):
-        self.draw_pets(surface, PetFrame.ATK1)
+        # 20-frame idle pause; per-wave prep drives the actual pre-shot animation.
+        self.draw_pets(surface, PetFrame.IDLE1)
 
     def draw_charge(self, surface):
         pass

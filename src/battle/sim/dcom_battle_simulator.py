@@ -828,12 +828,12 @@ class DComBattleSimulator:
                 device1_status=[DigimonStatus(name=opponent.name, hp=opponent_hp, alive=opponent_hp > 0)],
                 device2_status=[DigimonStatus(name=player.name, hp=player_hp, alive=player_hp > 0)],
                 attacks=[
-                    AttackLog(turn=turn+1, device="device1", attacker=0, defender=0, hit=bool(opponent_hit), damage=opponent_attack),
-                    AttackLog(turn=turn+1, device="device2", attacker=0, defender=0, hit=bool(player_hit), damage=player_attack)
-                ]                    
+                    AttackLog(turn=turn+1, device="device1", attacker=0, defender=0, hit=bool(opponent_hit), damage=opponent_attack, critical=(opponent_attack == 5)),
+                    AttackLog(turn=turn+1, device="device2", attacker=0, defender=0, hit=bool(player_hit), damage=player_attack, critical=(player_attack == 5))
+                ]
             )
             battle_log.append(turn_log)
-            
+
             # End battle if one is defeated (but still complete current turn's log entry)
             if player_hp == 0 or opponent_hp == 0:
                 runtime_globals.game_console.log(f"[DComBattleSimulator] Battle ended after turn {turn+1}")
@@ -986,9 +986,13 @@ class DComBattleSimulator:
                 device1_status=[DigimonStatus(name=opponent.name, hp=opponent_hp, alive=opponent_hp > 0)],
                 device2_status=[DigimonStatus(name=player.name, hp=player_hp, alive=player_hp > 0)],
                 attacks=[
-                    AttackLog(turn=turn+1, device="device1", attacker=0, defender=0, hit=bool(opponent_hit), damage=opponent_attack_type),
-                    AttackLog(turn=turn+1, device="device2", attacker=0, defender=0, hit=bool(player_hit), damage=player_attack_type)
-                ]                    
+                    # `damage` here stores the attack-type id (used by the
+                    # encounter to pick the projectile sprite). `critical` is
+                    # decided by the BASE attack pattern value (1..5) before
+                    # buffs/bonuses, which is what the slide-in trigger needs.
+                    AttackLog(turn=turn+1, device="device1", attacker=0, defender=0, hit=bool(opponent_hit), damage=opponent_attack_type, critical=(opponent_pattern[turn] == 5 if turn < len(opponent_pattern) else False)),
+                    AttackLog(turn=turn+1, device="device2", attacker=0, defender=0, hit=bool(player_hit), damage=player_attack_type, critical=(player_pattern[turn] == 5 if turn < len(player_pattern) else False))
+                ]
             )
             battle_log.append(turn_log)
             

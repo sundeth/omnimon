@@ -8,8 +8,7 @@ from models import game_console
 from utils.asset_utils import image_load
 from utils.module_utils import get_module
 
-shadow_cache = {}
-composite_shadow_cache = {}  # Cache for pre-rendered sprite+shadow composites
+shadow_cache = {}  # {id(surface): shadow_surface} — validated by size on retrieval
 
 def get_surface_hash(surface):
     """Generate a hash using the surface's memory address (instant, unique per object).
@@ -20,81 +19,45 @@ def get_surface_hash(surface):
     return id(surface)
 
 def get_shadow(sprite, shadow_color=(0, 0, 0, 100)):
-    key = id(sprite)  # Use object identity directly for instant lookup
-    if key not in shadow_cache:
-        shadow = sprite.copy()
-        shadow.fill(shadow_color, special_flags=pygame.BLEND_RGBA_MULT)
-        shadow_cache[key] = shadow
-    return shadow_cache[key]
+    """Return a darkened copy of sprite, cached by object identity.
 
-def get_composite_shadow(sprite, offset=(2, 2), shadow_color=(0, 0, 0, 100)):
-    """Get or create a pre-rendered composite surface with shadow + sprite.
-    
-    This reduces 2 blits (shadow + sprite) to 1 blit (composite).
-    
-    DISABLED: Cache disabled temporarily - creating new surfaces (via transform.scale/flip)
-    every frame was causing cache misses and flickering. Now just renders shadow directly.
+    Guard against Python id() reuse: if the cached shadow's size doesn't match
+    the current sprite's size, the old entry belongs to a different (now-freed)
+    surface that happened to land at the same address — regenerate it.
+    Transient surfaces (font renders, transform results) that share the same size
+    as a recycled id are still a theoretical edge case, but size mismatch catches
+    the vast majority of real-world stale-cache hits.
     """
-    # Cache disabled - just render shadow directly each frame
-    # The overhead of 2 blits is less than the cache miss overhead
-    
-    # Create composite surface large enough for sprite + shadow offset
-    width = sprite.get_width() + abs(offset[0])
-    height = sprite.get_height() + abs(offset[1])
-    composite = pygame.Surface((width, height), pygame.SRCALPHA)
-    composite.fill((0, 0, 0, 0))  # Transparent background
-    
-    # Get or create shadow (shadow cache is fine since base sprites don't change)
-    shadow = get_shadow(sprite, shadow_color)
-    
-    # Blit shadow and sprite onto composite
-    composite.blit(shadow, (offset[0], offset[1]))
-    composite.blit(sprite, (0, 0))
-    
-    return composite
-    
-    # OLD CACHED VERSION (disabled):
-    # Cache key includes sprite ID and offset
-    # key = (id(sprite), offset[0], offset[1])
-    # 
-    # if key not in composite_shadow_cache:
-    #     # Create composite surface large enough for sprite + shadow offset
-    #     width = sprite.get_width() + abs(offset[0])
-    #     height = sprite.get_height() + abs(offset[1])
-    #     composite = pygame.Surface((width, height), pygame.SRCALPHA)
-    #     composite.fill((0, 0, 0, 0))  # Transparent background
-    #     
-    #     # Get or create shadow
-    #     shadow = get_shadow(sprite, shadow_color)
-    #     
-    #     # Blit shadow and sprite onto composite
-    #     composite.blit(shadow, (offset[0], offset[1]))
-    #     composite.blit(sprite, (0, 0))
-    #     
-    #     composite_shadow_cache[key] = composite
-    # 
-    # return composite_shadow_cache[key]
+    key = id(sprite)
+    cached = shadow_cache.get(key)
+    if cached is not None and cached.get_size() == sprite.get_size():
+        return cached
+    shadow = sprite.copy()
+    shadow.fill(shadow_color, special_flags=pygame.BLEND_RGBA_MULT)
+    shadow_cache[key] = shadow
+    return shadow
 
-def blit_with_shadow(surface, sprite, pos, offset=(2, 2)):
-    """
-    Blits a sprite with a shadow effect using a pre-rendered composite (1 blit instead of 2).
+def blit_with_shadow(surface, sprite, pos, offset=(2, 2), shadow_color=(0, 0, 0, 100)):
+    """Blit a sprite with a drop-shadow using two direct blits.
+
+    Two direct blits to the target surface are cheaper than building a
+    composite surface on every call (which also caused the wrong-shadow bug
+    because the composite cache was disabled while the shadow cache was not).
     """
     if game_globals.configuration.debug_mode and game_globals.configuration.debug_blit_logging:
         global _blit_shadow_calls, _last_log_time
 
-        # Increment the counter
         _blit_shadow_calls += 1
 
-        # Log the count every second
         current_time = time.time()
         if current_time - _last_log_time >= 1:
             runtime_globals.game_console.log(f"blit_with_shadow calls per second: {_blit_shadow_calls}")
             _blit_shadow_calls = 0
             _last_log_time = current_time
 
-    # Use pre-rendered composite (reduces 2 blits to 1)
-    composite = get_composite_shadow(sprite, offset)
-    surface.blit(composite, pos)
+    shadow = get_shadow(sprite, shadow_color)
+    surface.blit(shadow, (pos[0] + offset[0], pos[1] + offset[1]))
+    surface.blit(sprite, pos)
 
 def get_font(size=24):
     from utils.asset_utils import font_load
@@ -168,53 +131,106 @@ def load_attack_sprites():
             attack_sprites[atk_id] = sprite
     return attack_sprites
 
-def module_attack_sprites(module):
+
+def load_crit_attack_sprites():
+    """Load all sprites from the global assets/atk_crit folder.
+
+    Returns a dict keyed by filename stem (e.g. '30', '30_dot').
+    Callers should use _dot-aware lookup just like get_attack_sprite does:
+      - Dot-format module: try f'{id}_dot' first, then f'{id}'
+      - Other formats:     look up str(id) directly
     """
-    Returns a dictionary of attack sprites for the given module.
-    Returns empty dict if module not found or no atk folder exists.
+    crit_sprites = {}
+    folder = constants.ATK_CRIT_FOLDER
+    if not os.path.isdir(folder):
+        return crit_sprites
+    target_height = 48 * runtime_globals.UI_SCALE  # 2× normal attack sprite size
+    for filename in os.listdir(folder):
+        if filename.endswith(".png"):
+            path = os.path.join(folder, filename)
+            try:
+                sprite = image_load(path).convert_alpha()
+                orig_w, orig_h = sprite.get_width(), sprite.get_height()
+                if orig_h > 0:
+                    target_width = int(orig_w * (target_height / orig_h))
+                    sprite = pygame.transform.scale(sprite, (target_width, target_height))
+                atk_id = filename.split(".")[0]
+                crit_sprites[atk_id] = sprite
+            except Exception as e:
+                runtime_globals.game_console.log(f"[!] Error loading crit sprite {filename}: {e}")
+    return crit_sprites
+
+def _load_module_sprites_from_folder(module, folder_name):
+    """
+    Shared loader: returns a dict of attack sprites from `<module_folder>/<folder_name>/`.
+    Loads ALL png files (both normal and _dot variants) under their exact filename stem.
+    Dot vs. non-dot selection happens at lookup time based on the pet's current sprite type.
+    Returns an empty dict if the module or folder doesn't exist.
     """
     mod = get_module(module)
     if not mod:
-        game_console.log(f"[!] Module {module} not found for attack sprites.")
+        game_console.log(f"[!] Module {module} not found for attack sprites ({folder_name}).")
         return {}
-    
-    attack_sprites = {}
-    atk_folder = os.path.join(mod.folder_path, "atk")
-    
-    # Check if atk folder exists
-    if not os.path.exists(atk_folder):
+
+    folder = os.path.join(mod.folder_path, folder_name)
+    if not os.path.exists(folder):
         return {}
-    
-    # Scale to half pet height, maintaining aspect ratio
-    target_height = runtime_globals.PET_HEIGHT // 2
+
+    # atk_crit sprites are displayed at 2× the normal attack size
+    target_height = runtime_globals.PET_HEIGHT if folder_name == "atk_crit" else runtime_globals.PET_HEIGHT // 2
+
+    def _load_and_scale(path):
+        sprite = image_load(path).convert_alpha()
+        orig_w, orig_h = sprite.get_width(), sprite.get_height()
+        if orig_h > 0:
+            sprite = pygame.transform.scale(sprite, (int(orig_w * (target_height / orig_h)), target_height))
+        return sprite
+
+    result = {}
     try:
-        for filename in os.listdir(atk_folder):
-            if filename.endswith(".png"):
-                path = os.path.join(atk_folder, filename)
-                sprite = image_load(path).convert_alpha()
-                # Calculate proportional width based on target height
-                original_width = sprite.get_width()
-                original_height = sprite.get_height()
-                if original_height > 0:
-                    target_width = int(original_width * (target_height / original_height))
-                    sprite = pygame.transform.scale(sprite, (target_width, target_height))
-                atk_id = filename.split(".")[0]
-                attack_sprites[atk_id] = sprite
-    except (OSError, pygame.error) as e:
-        game_console.log(f"[!] Error loading attack sprites for module {module}: {e}")
+        for filename in os.listdir(folder):
+            if not filename.endswith(".png"):
+                continue
+            stem = filename[:-4]
+            path = os.path.join(folder, filename)
+            try:
+                result[stem] = _load_and_scale(path)
+            except Exception as e:
+                game_console.log(f"[!] Error loading sprite {filename} from {folder}: {e}")
+
+    except OSError as e:
+        game_console.log(f"[!] Error loading sprites from {folder}: {e}")
         return {}
-    
-    return attack_sprites
+
+    return result
+
+
+def module_attack_sprites(module):
+    """Returns attack sprites for the module from its 'atk' folder."""
+    return _load_module_sprites_from_folder(module, "atk")
+
+
+def module_crit_attack_sprites(module):
+    """Returns critical-attack sprites for the module from its 'atk_crit' folder.
+    Returns an empty dict if the module has no atk_crit folder.
+    """
+    return _load_module_sprites_from_folder(module, "atk_crit")
+
 
 def load_misc_sprites():
     global misc_sprites
     sprite_files = [
-        "Cheer.png", "Mad1.png", "Mad2.png",
-        "Sick1.png", "Sick2.png", "Sleep1.png",
-    "Sleep2.png", "Poop1.png", "Poop2.png",
-    "JumboPoop1.png", "JumboPoop2.png", "Wash.png",
-    "CallSignInverted.png", "SickInverted.png", "PoopInverted.png",
-    "Dots1.png", "Dots2.png"
+        "Cheer.png", "Cheer_dot.png",
+        "Mad1.png", "Mad2.png",
+        "Sick1.png", "Sick2.png",
+        "Sick1_dot.png", "Sick2_dot.png",
+        "Sleep1.png", "Sleep2.png",
+        "Poop1.png", "Poop2.png",
+        "Poop1_dot.png", "Poop2_dot.png",
+        "JumboPoop1.png", "JumboPoop2.png",
+        "JumboPoop1_dot.png", "JumboPoop2_dot.png",
+        "Wash.png", "CallSignInverted.png", "SickInverted.png", "PoopInverted.png",
+        "Dots1.png", "Dots2.png",
     ]
     misc_sprites = {}
     for filename in sprite_files:

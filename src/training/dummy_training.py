@@ -136,6 +136,12 @@ class DummyTraining(Training):
             self.phase = "result"
 
     def draw_attack_move(self, surface):
+        if self._wave_in_prep:
+            # Pre-shot animation runs through the base draw_pets prep path; the
+            # projectile hasn't fired yet so don't render it.
+            self.draw_pets(surface)
+            return
+
         if self.attack_phase == 1:
             if self.frame_counter < int(10 * (constants.FRAME_RATE / 30)):
                 self.draw_pets(surface, PetFrame.ATK2)
@@ -203,6 +209,7 @@ class DummyTraining(Training):
                 atk_sprite = self.get_attack_sprite(pet, pet.atk_main)
             x = runtime_globals.SCREEN_WIDTH - int(48 * s) - int(70 * s)
             y = start_y + i * spacing
+            center_y = y + atk_sprite.get_height() // 2
 
             if attack_count == 1:
                 self.attack_positions.append((atk_sprite, (x, y)))
@@ -212,7 +219,7 @@ class DummyTraining(Training):
                 self.attack_positions.append((combined, (x, y)))
             elif attack_count == 3:
                 scaled_sprite = pygame.transform.scale2x(atk_sprite)
-                self.attack_positions.append((scaled_sprite, (x, y)))
+                self.attack_positions.append((scaled_sprite, (x, center_y - scaled_sprite.get_height() // 2)))
 
     def get_attack_count(self):
         """Returns the number of attacks based on strength."""

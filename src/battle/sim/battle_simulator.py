@@ -108,7 +108,7 @@ class BattleSimulator:
                 if attack.device == "device1":
                     attacker_name = result.device1_final[attack.attacker].name
                     defender_name = result.device2_final[attack.defender].name if attack.defender >= 0 else "?"
-                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage}")
+                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage} crit={attack.critical}")
 
             # Device 2 attacks
             print(" Device 2 attacks:")
@@ -116,7 +116,7 @@ class BattleSimulator:
                 if attack.device == "device2":
                     attacker_name = result.device2_final[attack.attacker].name
                     defender_name = result.device1_final[attack.defender].name if attack.defender >= 0 else "?"
-                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage}")
+                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage} crit={attack.critical}")
 
             # Print status of both devices
             device1_status = [f"{status.name}({status.hp})" for status in turn_data.device1_status]
@@ -384,7 +384,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=True,
-                        damage=attacker_damage
+                        damage=attacker_damage,
+                        critical=(attacker_damage == 5),
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -392,12 +393,13 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=True,
-                        damage=defender_damage
+                        damage=defender_damage,
+                        critical=(defender_damage == 5),
                     )
                 ]
             )
             battle_log.append(turn_log)
-        
+
         winner = "device1" if attacker_wins else "device2"
         
         result = BattleResult(
@@ -503,7 +505,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=True,
-                        damage=winner_damage
+                        damage=winner_damage,
+                        critical=(winner_damage == 5),
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -511,7 +514,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=True,
-                        damage=loser_damage
+                        damage=loser_damage,
+                        critical=(loser_damage == 5),
                     )
                 ]
             )
@@ -694,7 +698,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device1_hit),
-                        damage=device1_attack  # Pattern value, not dealt damage
+                        damage=device1_attack,  # Pattern value, not dealt damage
+                        critical=(device1_attack == 5),
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -702,7 +707,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device2_hit),
-                        damage=device2_attack  # Pattern value, not dealt damage
+                        damage=device2_attack,  # Pattern value, not dealt damage
+                        critical=(device2_attack == 5),
                     )
                 ]
             )
@@ -903,7 +909,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device1_hit),
-                        damage=device1_attack  # Pattern value, not dealt damage
+                        damage=device1_attack,  # Pattern value, not dealt damage
+                        critical=(device1_attack == 5),
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -911,7 +918,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device2_hit),
-                        damage=device2_attack  # Pattern value, not dealt damage
+                        damage=device2_attack,  # Pattern value, not dealt damage
+                        critical=(device2_attack == 5),
                     )
                 ]
             )
@@ -1069,7 +1077,11 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device1_hit),
-                        damage=defender_damage
+                        damage=defender_damage,
+                        # Crit is decided by the BASE attack pattern (1..5), not
+                        # by dealt damage — bonuses (level, etc.) can push damage
+                        # above 5 and would otherwise mask the slide-in trigger.
+                        critical=(device1_attack == 5),
                     ),
                     AttackLog(
                         turn=turn + 1,
@@ -1077,7 +1089,8 @@ class BattleSimulator:
                         attacker=0,
                         defender=0,
                         hit=bool(device2_hit),
-                        damage=attacker_damage
+                        damage=attacker_damage,
+                        critical=(device2_attack == 5),
                     )
                 ]
             )

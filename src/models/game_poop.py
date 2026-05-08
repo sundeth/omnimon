@@ -12,7 +12,7 @@ class GamePoop:
     Represents a poop entity that can be drawn and animated on screen.
     """
 
-    def __init__(self, x: int, y: int, jumbo = False) -> None:
+    def __init__(self, x: int, y: int, jumbo=False, use_dot_sprite: bool = False) -> None:
         """
         Initializes the poop object at the given (x, y) position.
 
@@ -27,6 +27,7 @@ class GamePoop:
         self.frame_index = 0
         self.dirty = False
         self.jumbo = jumbo
+        self.use_dot_sprite = use_dot_sprite
 
     def update(self) -> None:
         """
@@ -48,8 +49,14 @@ class GamePoop:
             surface: The Pygame surface where the poop is drawn.
         """
         
-        sprite_key = f"JumboPoop{self.frame_index + 1}" if self.jumbo else f"Poop{self.frame_index + 1}"
+        base_key = f"JumboPoop{self.frame_index + 1}" if self.jumbo else f"Poop{self.frame_index + 1}"
+        sprite_key = f"{base_key}_dot" if self.use_dot_sprite else base_key
         sprite = runtime_globals.misc_sprites.get(sprite_key)
+        if sprite is None:
+            # Safety fallback to colored sprite if dot variant is unavailable.
+            sprite = runtime_globals.misc_sprites.get(base_key)
+        if sprite is None:
+            return
         #surface.blit(sprite, (self.x, self.y))
         blit_with_cache(surface, sprite, (self.x, self.y))
 
@@ -63,4 +70,8 @@ class GamePoop:
             self.current_frame = 0
         if not hasattr(self, "dirty"):
             self.dirty = False
+        if not hasattr(self, "jumbo"):
+            self.jumbo = False
+        if not hasattr(self, "use_dot_sprite"):
+            self.use_dot_sprite = False
 

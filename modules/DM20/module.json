@@ -1,6 +1,6 @@
 {
   "name": "DM20",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "A reimplementation of the Digital Monster Color devices, you can find more at https://humulos.com/digimon/dmc/manual/.",
   "author": "Sundeth, Reviewed by: justintechnerd and Pepperoni Secret",
   "category": "Classics",
@@ -45,6 +45,7 @@
   "care_poop_alarm": false,
   "care_99g_effect": "Nothing",
   "care_poop_sickness_count": 4,
+  "care_poop_sickness_effect": "Skull",
   "care_block_actions_when_sleeping": true,
   "care_can_battle_while_sick": false,
   "training_effort_gain": 1,
@@ -61,6 +62,7 @@
   "battle_atribute_advantage": 5,
   "battle_global_hit_points": 4,
   "battle_sequential_rounds": false,
+  "battle_enable_feeding": false,
   "death_max_injuries": 15,
   "death_care_mistake": 0,
   "death_sick_timer": 360,
@@ -169,7 +171,7 @@
       "list": []
     },
     {
-      "name": "breakdrak",
+      "name": "breakdra",
       "type": "digidex",
       "version": null,
       "label": "Breakdra",

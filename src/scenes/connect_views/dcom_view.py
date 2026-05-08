@@ -57,6 +57,7 @@ class DComView:
         self.dcom_xai_roll = None
         self.dcom_xai_bar = None
         self.dcom_xai_number = 1
+        self._dcom_xai_pending_stop = False
         
         # Communication state
         self.dcom_communicating = False
@@ -990,13 +991,18 @@ class DComView:
                     )
                     self.dcom_xai_bar.start()
             elif self.dcom_xai_phase == 2 and self.dcom_xai_bar:
-                self.dcom_xai_bar.update()
+                if self._dcom_xai_pending_stop:
+                    self._dcom_xai_pending_stop = False
+                    self._do_dcom_xai_bar_stop()
+                else:
+                    self.dcom_xai_bar.update()
             elif self.dcom_xai_phase == 3:
                 runtime_globals.game_console.log(f"[DComView] DMX minigame complete: {self.dcom_minigame_result}")
                 # Add delay to prevent button spam from clicking next view's components
                 self.minigame_complete_time = time.time()
                 self.waiting_after_minigame = True
                 self.dcom_xai_phase = 0  # Reset phase
+                self._dcom_xai_pending_stop = False
         
         # PENZ minigame updates (Count Match Z)
         if self.phase == "minigame_penz" and self.dcom_minigame:
@@ -1117,27 +1123,17 @@ class DComView:
         if self.phase == "minigame_dmx":
             if event_type in ["A", "LCLICK"]:
                 if self.dcom_xai_phase == 1 and self.dcom_xai_roll:
-                    if not self.dcom_xai_roll.rolling:
-                        self.dcom_xai_roll.roll()
-                        runtime_globals.game_console.log("[DComView] XAI roll started")
-                    elif not self.dcom_xai_roll.stopping:
+                    if not self.dcom_xai_roll.rolling and not self.dcom_xai_roll.stopping:
+                        # Roll already finished — bar transition is imminent.
+                        # Buffer the press so the bar stops on its very first frame.
+                        self._dcom_xai_pending_stop = True
+                    elif self.dcom_xai_roll.rolling and not self.dcom_xai_roll.stopping:
                         self.dcom_xai_roll.stop()
                         self.dcom_xai_number = self.dcom_xai_roll.current_frame + 1
                         runtime_globals.game_console.log(f"[DComView] XAI roll stopped at: {self.dcom_xai_number}")
+                    # else: stopping animation in progress — ignore input
                 elif self.dcom_xai_phase == 2 and self.dcom_xai_bar:
-                    self.dcom_xai_bar.stop()
-                    strength = self.dcom_xai_bar.get_result() or 1
-                    # Map strength to attack value
-                    if strength <= 5:
-                        self.dcom_minigame_result = 0
-                    elif strength <= 10:
-                        self.dcom_minigame_result = 1
-                    elif strength <= 15:
-                        self.dcom_minigame_result = 2
-                    else:
-                        self.dcom_minigame_result = 3
-                    self.dcom_xai_phase = 3
-                    runtime_globals.game_console.log(f"[DComView] XAI bar stopped! Strength={strength}, Attack={self.dcom_minigame_result}")
+                    self._do_dcom_xai_bar_stop()
                 return
             elif event_type == "ESC":
                 runtime_globals.game_console.log("[DComView] Minigame cancelled")
@@ -1145,6 +1141,21 @@ class DComView:
                 self._on_cancel()
                 return
     
+    def _do_dcom_xai_bar_stop(self):
+        """Freeze the XAI bar, record result, and advance to the complete phase."""
+        self.dcom_xai_bar.stop()
+        strength = self.dcom_xai_bar.get_result() or 1
+        if strength <= 5:
+            self.dcom_minigame_result = 0
+        elif strength <= 10:
+            self.dcom_minigame_result = 1
+        elif strength <= 15:
+            self.dcom_minigame_result = 2
+        else:
+            self.dcom_minigame_result = 3
+        self.dcom_xai_phase = 3
+        runtime_globals.game_console.log(f"[DComView] XAI bar stopped! Strength={strength}, Attack={self.dcom_minigame_result}")
+
     def cleanup(self):
         """Cleanup when view is destroyed."""
         self._cleanup_dcom()

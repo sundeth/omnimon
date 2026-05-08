@@ -75,8 +75,8 @@ class GlobalBattleSimulator:
 
                 # Calculate attack
                 pattern = pet.attack_pattern
-                dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
-                dmg += pet.buff
+                base_dmg = min(pattern[turn % len(pattern)], self.damage_limit)
+                dmg = base_dmg + pet.buff
                 adv = self._attribute_advantage(pet.attribute, target.attribute)
                 handicap = pet.handicap
                 hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
@@ -93,7 +93,11 @@ class GlobalBattleSimulator:
                     attacker=i,
                     defender=device2.index(target),
                     hit=hit,
-                    damage=actual_dmg
+                    damage=actual_dmg,
+                    # Crit fires on the highest base damage the pattern can roll
+                    # (pre-buff/level) so cosmetic damage stacking doesn't change
+                    # which attacks trigger the slide-in.
+                    critical=(base_dmg == 5),
                 ))
 
             # Team 2 attacks (boss logic included)
@@ -105,8 +109,8 @@ class GlobalBattleSimulator:
                 if len(device2) == 1 and not self.pvp_mode:
                     for target in [t for t in device1 if t.alive]:  # Filter only alive pets
                         pattern = pet.attack_pattern
-                        dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
-                        dmg += pet.buff
+                        base_dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
+                        dmg = base_dmg + pet.buff
                         adv = self._attribute_advantage(pet.attribute, target.attribute)
                         handicap = pet.handicap
                         hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
@@ -123,7 +127,8 @@ class GlobalBattleSimulator:
                             attacker=i,
                             defender=device1.index(target),
                             hit=hit,
-                            damage=actual_dmg
+                            damage=actual_dmg,
+                            critical=(base_dmg == 5),
                         ))
                 else:
                     # Regular attack logic for non-boss enemies
@@ -138,8 +143,8 @@ class GlobalBattleSimulator:
 
                     # Calculate attack
                     pattern = pet.attack_pattern
-                    dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
-                    dmg += pet.buff
+                    base_dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
+                    dmg = base_dmg + pet.buff
                     adv = self._attribute_advantage(pet.attribute, target.attribute)
                     handicap = pet.handicap
                     hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
@@ -156,7 +161,8 @@ class GlobalBattleSimulator:
                         attacker=i,
                         defender=device1.index(target),
                         hit=hit,
-                        damage=actual_dmg
+                        damage=actual_dmg,
+                        critical=(base_dmg == 5),
                     ))
 
             # Log the state for this turn
@@ -234,7 +240,7 @@ class GlobalBattleSimulator:
                 if attack.device == "device1":
                     attacker_name = result.device1_final[attack.attacker].name
                     defender_name = result.device2_final[attack.defender].name if attack.defender >= 0 else "?"
-                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage}")
+                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage} crit={attack.critical}")
 
             # Device 2 attacks
             print(" Device 2 attacks:")
@@ -242,7 +248,7 @@ class GlobalBattleSimulator:
                 if attack.device == "device2":
                     attacker_name = result.device2_final[attack.attacker].name
                     defender_name = result.device1_final[attack.defender].name if attack.defender >= 0 else "?"
-                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage}")
+                    print(f"   {attacker_name} -> {defender_name}: hit={attack.hit} dmg={attack.damage} crit={attack.critical}")
 
             # Print status of both devices
             device1_status = [f"{status.name}({status.hp})" for status in turn_data.device1_status]

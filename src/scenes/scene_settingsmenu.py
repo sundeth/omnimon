@@ -37,7 +37,7 @@ def _get_sections():
     cfg = game_globals.configuration
 
     _SCREEN_TIMEOUT_CHOICES = [0, 10, 20, 30, 60, 120]
-    _SPRITE_LABELS = {0: "Default", 1: "Dot", 2: "HiDef"}
+    _SPRITE_LABELS = {0: "Default", 1: "Color", 2: "HD"}
 
     def _cycle_timeout(increase):
         cur = cfg.screen_timeout
@@ -77,6 +77,16 @@ def _get_sections():
     def _cycle_sprite_pref(increase):
         v = cfg.sprite_resolution_preference + (1 if increase else -1)
         cfg.sprite_resolution_preference = v % 3
+        # Clear sprite cache when preference changes so new sprites will reload
+        runtime_globals.pet_sprites = {}
+        runtime_globals.game_console.log("[Settings] Sprite preference changed, cache cleared")
+    
+    def _toggle_old_sprites(increase):
+        """Toggle between old sprite loading (with fallback) and new priority-based loading."""
+        cfg.enable_old_sprites = not cfg.enable_old_sprites
+        # Clear sprite cache when setting changes so new sprites will reload
+        runtime_globals.pet_sprites = {}
+        runtime_globals.game_console.log(f"[Settings] Old sprites set to {cfg.enable_old_sprites}, cache cleared")
 
     def _fmt_time(t):
         if t is None:
@@ -167,6 +177,9 @@ def _get_sections():
                 {"key": "sprite_pref",   "label": "Sprites",       "type": "cycle",
                  "get": lambda: _SPRITE_LABELS.get(cfg.sprite_resolution_preference, "Default"),
                  "set": _cycle_sprite_pref},
+                {"key": "old_sprites",   "label": "Old Sprites",    "type": "toggle",
+                 "get": lambda: "ON" if cfg.enable_old_sprites else "OFF",
+                 "set": _toggle_old_sprites},
             ],
         },
         {

@@ -158,8 +158,18 @@ class GameModule:
 
                     self.backgrounds = data.get("backgrounds", [])
 
-                    # Add missing attributes
-                    self.high_definition_sprites = bool(data.get("high_definition_sprites", False))
+                    # Sprite format settings (replaces old high_definition_sprites boolean)
+                    # Valid values: "Dot", "Color", "HD"
+                    self.primary_sprite_format = data.get("primary_sprite_format", "Color")
+                    self.secondary_sprite_format = data.get("secondary_sprite_format", "HD")
+                    
+                    # Backward compatibility: if old high_definition_sprites field exists, use it to set formats
+                    if "high_definition_sprites" in data and "primary_sprite_format" not in data:
+                        is_hd = bool(data.get("high_definition_sprites", False))
+                        self.primary_sprite_format = "HD" if is_hd else "Color"
+                        self.secondary_sprite_format = "Color" if is_hd else "HD"
+                    
+                    self.enable_special_attack_sprite = bool(data.get("enable_special_attack_sprite", False))
 
                     visible_stats_raw = data.get("visible_stats", "")
                     if isinstance(visible_stats_raw, str):
@@ -407,7 +417,7 @@ class GameModule:
             runtime_globals.game_console.log(f"⚠️ Failed to parse {path}: {e}")
             return []
 
-    def get_enemies(self, area: int, round: int, versions: List[int]) -> List[Optional[GameEnemy]]:
+    def get_enemies(self, area: int, round: int, versions: List[int], special_encounter: bool = False) -> List[Optional[GameEnemy]]:
         battle_path = os.path.join(self.folder_path, "battle.json")
         all_enemies = self._parse_battle_json(battle_path)
         if not all_enemies:
@@ -421,7 +431,8 @@ class GameModule:
                 (e for e in all_enemies
                  if int(e.get("area", -1)) == int(area)
                  and int(e.get("round", -1)) == int(round)
-                 and int(e.get("version", -1)) == int(v)),
+                 and int(e.get("version", -1)) == int(v)
+                 and bool(e.get("special_encounter", False)) == special_encounter),
                 None
             )
             if match:
@@ -444,7 +455,7 @@ class GameModule:
                 selected.append(None)
         return selected
 
-    def get_enemy_versions(self, area: int, round_: int) -> list[int]:
+    def get_enemy_versions(self, area: int, round_: int, special_encounter: bool = False) -> list[int]:
         battle_path = os.path.join(self.folder_path, "battle.json")
         all_enemies = self._parse_battle_json(battle_path)
         if not all_enemies:
@@ -452,7 +463,9 @@ class GameModule:
             return []
         versions = set()
         for entry in all_enemies:
-            if int(entry.get("area", -1)) == int(area) and int(entry.get("round", -1)) == int(round_):
+            if (int(entry.get("area", -1)) == int(area)
+                    and int(entry.get("round", -1)) == int(round_)
+                    and bool(entry.get("special_encounter", False)) == special_encounter):
                 v = entry.get("version")
                 if v is not None:
                     versions.add(v)

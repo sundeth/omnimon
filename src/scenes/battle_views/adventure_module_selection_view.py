@@ -103,8 +103,9 @@ class AdventureModuleSelectionView:
             cut_corners={},
             decorators=["Battle_BattleGo"]
         )
+        self._make_navigable(self.go_button)
         self.ui_manager.add_component(self.go_button)
-        
+
         # Module selection background image
         self.module_selection_image = Image(0, 99, 240, 89)
         adventure_selection_sprite = self.ui_manager.load_sprite_integer_scaling("Battle", "ModuleSelection", "")
@@ -137,16 +138,18 @@ class AdventureModuleSelectionView:
             try:
                 battle_icon_path = module.folder_path + "/BattleIcon.png"
                 battle_icon = image_load(battle_icon_path).convert_alpha()
-                
-                sprite_scale = self.ui_manager.get_sprite_scale()
-                scaled_size = (48 * sprite_scale, 48 * sprite_scale)
-                scaled_icon = pygame.transform.scale(battle_icon, scaled_size)
-                
+
+                ui_scale = self.ui_manager.ui_scale
+                icon_size = (button_size - 4) * ui_scale
+                scaled_icon = pygame.transform.scale(battle_icon, (icon_size, icon_size))
+
                 module_button.icon_sprite = scaled_icon
             except Exception as e:
                 runtime_globals.game_console.log(f"[AdventureModuleSelectionView] Failed to load BattleIcon for {module.name}: {e}")
                 module_button.icon_sprite = None
-            
+
+            self._make_navigable(module_button)
+
             # Initially hide all buttons (will be shown based on page)
             # Keep focusable=True so they're added to focusable_components list
             module_button.visible = False
@@ -284,6 +287,44 @@ class AdventureModuleSelectionView:
                 )
             runtime_globals.game_console.log(f"[AdventureModuleSelectionView] Module selected: {self.selected_module.name}")
     
+    def _make_navigable(self, button):
+        """Patch a button instance so LEFT/RIGHT cycle modules instead of moving focus."""
+        original = button.handle_event
+        def _handle(event):
+            event_type, _ = event
+            if event_type == "LEFT":
+                self._navigate_module(-1)
+                return True
+            if event_type == "RIGHT":
+                self._navigate_module(1)
+                return True
+            return original(event)
+        button.handle_event = _handle
+
+    def _navigate_module(self, direction):
+        """Navigate to prev/next module cyclically, changing pages as needed."""
+        if not self.module_buttons:
+            return
+
+        total = len(self.module_buttons)
+        current_index = self.current_page * self.modules_per_page
+        for i, btn in enumerate(self.module_buttons):
+            if btn.module == self.selected_module:
+                current_index = i
+                break
+
+        new_index = (current_index + direction) % total
+        new_page = new_index // self.modules_per_page
+
+        if new_page != self.current_page:
+            self.current_page = new_page
+            self._update_page_visibility()
+
+        new_button = self.module_buttons[new_index]
+        new_button.set_toggled(True)
+        self.ui_manager.set_focused_component(new_button)
+        runtime_globals.game_sound.play("menu")
+
     def _on_go(self):
         """Handle GO button press."""
         if not self.selected_module:

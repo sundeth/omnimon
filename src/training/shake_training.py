@@ -132,6 +132,10 @@ class ShakeTraining(Training):
             self.shake_punch.draw(surface)
 
     def draw_attack_move(self, surface):
+        if self._wave_in_prep:
+            self.draw_pets(surface)
+            return
+
         if self.attack_phase == 1:
             if self.frame_counter < int(10 * (constants.FRAME_RATE / 30)):
                 self.draw_pets(surface, PetFrame.ATK2)

@@ -513,12 +513,17 @@ class SceneTraining:
         if self.phase == "menu":
             self.handle_menu_input(event)
         elif self.mode:
-            # Handle training exit button through UI manager for proper scaling
+            # Only route click events to the UIManager when the click actually lands
+            # on the exit button's rect.  Routing all events (including A keypresses
+            # and off-target clicks) would let the focused exit button steal inputs
+            # that should go to the active training minigame.
             if self.training_exit_button and (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE or runtime_globals.INPUT_MODE == runtime_globals.TOUCH_MODE):
-                # Let UI manager handle the button event
-                if self.ui_manager.handle_event(event):
-                    return  # Button was clicked
-            
+                event_type, event_data = event
+                if event_type == "LCLICK" and event_data and "pos" in event_data:
+                    if self.training_exit_button.rect.collidepoint(event_data["pos"]):
+                        if self.ui_manager.handle_event(event):
+                            return  # Exit button consumed the click
+
             # Pass event to training mode
             self.mode.handle_event(event)
 

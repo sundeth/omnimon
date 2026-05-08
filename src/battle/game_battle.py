@@ -42,7 +42,8 @@ class GameBattle:
         self.level_up = [False] * len(self.team1)  # Track if pets level up
         self.reset_frame_counters()
         self.reset_cooldowns()
-        self.reset_jump_and_forward()
+        self.special_attack = [False] * len(self.team1)  # Track if pet is doing a special/critical attack
+        self.special_attack_enemy = [False] * len(self.team2)  # Track if enemy is doing a special attack
 
     def get_hp(self, team, team_hp, buff=0):
         """
@@ -158,16 +159,11 @@ class GameBattle:
             if self.cooldowns[i] > 0:
                 self.cooldowns[i] -= 1
 
-    def reset_jump_and_forward(self):
-        """
-        Resets the attack jump and forward distance for each pet in the player's team.
-        """
-        self.attack_jump = [0] * len(self.team1)
-        self.attack_forward = [0] * len(self.team1)
-
     def update(self):
         """
-        Updates the player's team state, including frame counters and attack jump/forward.
+        Updates the player's team state, including frame counters and per-pet
+        cooldowns. Pre-shot pet offsets are computed at draw time directly from
+        each pet's remaining cooldown by ``battle_encounter._compute_combatant_attack_anim``.
         """
         self.decrement_cooldowns()
         self.update_bar_counters()
@@ -175,19 +171,14 @@ class GameBattle:
             if self.turns[i] > 12:
                 self.phase[i] = "result"
                 continue
-            
+
             if self.phase[i] in ["result"]:
                 continue
-            
-            if (self.phase[i] == "pet_charge" and self.team1_hp[i] > 0) or (self.phase[i] == "enemy_charge" and self.team2_hp[i] > 0):
-                self.update_charge(i)
 
             if self.cooldowns[i] <= 0:
                 if self.phase[i] == "pet_attack" and (self.shot_wait[i] or self.team1_hp[i] <= 0):
                     self.shot_wait[i] = False
                     self.phase[i] = "enemy_charge"
-                    self.attack_forward[i] = 0
-                    self.attack_jump[i] = 0
                     # For enemy_first mode, increment turn AFTER pet attacks (end of round)
                     if self.enemy_first:
                         self.turns[i] += 1
@@ -199,8 +190,6 @@ class GameBattle:
                 elif self.phase[i] == "enemy_attack" and (self.shot_wait[i] or self.team2_hp[i] <= 0):
                     self.shot_wait[i] = False
                     self.phase[i] = "pet_charge"
-                    self.attack_forward[i] = 0
-                    self.attack_jump[i] = 0
                     # For normal mode (pet first), increment turn AFTER enemy attacks (end of round)
                     if not self.enemy_first:
                         self.turns[i] += 1
@@ -213,22 +202,6 @@ class GameBattle:
                 if not self.shot_wait[i]:
                     self.cooldowns[i] = self.calculate_deterministic_cooldown(i)
                     self.frame_counters[i] = 0
-
-    def update_charge(self, index):
-        """
-        Updates the charge state for each pet in the player's team.
-        """
-        if self.cooldowns[index] <= 9 * int(constants.FRAME_RATE / 30):
-            self.attack_forward[index] -= 1 * (30 / constants.FRAME_RATE)
-        elif self.cooldowns[index] <= 18 * int(constants.FRAME_RATE / 30):
-            self.attack_forward[index] += 1 * (30 / constants.FRAME_RATE)
-            if self.cooldowns[index] < 14 * int(constants.FRAME_RATE / 30):
-                self.attack_jump[index] -= 1 * (30 / constants.FRAME_RATE)
-            elif self.cooldowns[index] > 14 * int(constants.FRAME_RATE / 30):
-                self.attack_jump[index] += 1 * (30 / constants.FRAME_RATE)
-        else:
-            self.attack_forward[index] = 0
-            self.attack_jump[index] = 0
 
     def update_bar_counters(self):
         """

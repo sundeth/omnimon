@@ -51,6 +51,24 @@ def main():
         from vpet import VirtualPetGame
         game = VirtualPetGame()
         
+        # Background service controller: lets us hand off pet ticking to
+        # a python-for-android service when the app is paused / closed.
+        from services import android_background_service as bg_service
+
+        # If a previous session left the service running, stop it now that
+        # the foreground app has taken over -- otherwise we'd double-tick.
+        bg_service.stop_service()
+
+        # Ask for POST_NOTIFICATIONS at runtime (Android 13+). Without it,
+        # the background service can't show per-event status-bar alerts.
+        bg_service.request_notification_permission()
+
+        # SDL2 lifecycle events on Android. Their integer ids depend on
+        # pygame version; we resolve them defensively at runtime.
+        APP_DIDENTERBACKGROUND = getattr(pygame, "APP_DIDENTERBACKGROUND", None)
+        APP_WILLENTERFOREGROUND = getattr(pygame, "APP_WILLENTERFOREGROUND", None)
+        APP_TERMINATING = getattr(pygame, "APP_TERMINATING", None)
+
         # Main game loop
         clock = pygame.time.Clock()
         running = True
@@ -60,9 +78,33 @@ def main():
                     running = False
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
+                elif APP_DIDENTERBACKGROUND is not None and event.type == APP_DIDENTERBACKGROUND:
+                    # App backgrounded: hand off to the service so pets
+                    # keep ticking and we can fire status-bar notifications.
+                    try:
+                        game.save()
+                    except Exception:
+                        pass
+                    bg_service.start_service()
+                elif APP_WILLENTERFOREGROUND is not None and event.type == APP_WILLENTERFOREGROUND:
+                    # Resuming: tell the service to stop so we don't
+                    # double-tick the same save, then refresh in-memory
+                    # state from disk because the service may have
+                    # advanced the world while we were paused.
+                    bg_service.stop_service()
+                    bg_service.reload_state_from_disk()
+                elif APP_TERMINATING is not None and event.type == APP_TERMINATING:
+                    # OS is killing us -- start the service so the pets
+                    # don't freeze the moment we die.
+                    try:
+                        game.save()
+                    except Exception:
+                        pass
+                    bg_service.start_service()
+                    running = False
                 else:
                     game.handle_event(event)
-            
+
             game.update()
 
             # Render the game into the offscreen (half-res) surface
@@ -82,7 +124,14 @@ def main():
             clock.tick(game_globals.configuration.frame_rate)
         
         game.save()
-        
+
+        # Foreground loop is exiting (user quit or OS terminating). Hand
+        # ticking off to the background service so pets keep advancing.
+        try:
+            bg_service.start_service()
+        except Exception as bg_exc:
+            print(f"[main_android] Failed to start background service on exit: {bg_exc}")
+
     except Exception as e:
         # Show error screen with crash info
         import traceback

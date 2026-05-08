@@ -325,9 +325,26 @@ class SceneSleep:
         return self.pets_can_wake_list(ignore_selection=False)
 
     def pets_can_wake_list(self, ignore_selection=False):
-        """Helper to get list of eligible wakers."""
+        """Helper to get list of eligible wakers.
+        
+        Rules:
+        - care_block_actions_when_sleeping == False: can always wake
+        - care_block_actions_when_sleeping == True:
+            - During normal sleep hours (should_sleep): cannot wake
+            - Outside normal sleep hours: can wake
+        """
+        from utils.module_utils import get_module
         all_pets = get_selected_pets()
-        eligible = [pet for pet in all_pets if pet.state == "nap"]
+        eligible = []
+        for pet in all_pets:
+            if pet.state != "nap":
+                continue
+            module = get_module(pet.module)
+            block = getattr(module, 'care_block_actions_when_sleeping', True)
+            # If blocking is on and pet is in its normal sleep window, cannot wake
+            if block and pet.should_sleep():
+                continue
+            eligible.append(pet)
         
         # Optionally filter by current selection in the pet selector
         if not ignore_selection and self.pet_selector:

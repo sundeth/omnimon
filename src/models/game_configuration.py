@@ -101,7 +101,8 @@ class GameConfiguration:
         self.sleep_time = None
         
         # Graphics settings
-        self.sprite_resolution_preference = 0  # 0=auto, 1=low, 2=high
+        self.sprite_resolution_preference = 0  # 0=Default, 1=Color, 2=HD
+        self.enable_old_sprites = False  # True = use old sprites with fallback, False = use modern priority
         
         # Input mappings (copy defaults, can be overridden by user)
         self.keyboard_map = dict(self.DEFAULT_KEYBOARD_MAP)
@@ -261,6 +262,7 @@ class GameConfiguration:
             "wake_time": self.wake_time,
             "sleep_time": self.sleep_time,
             "sprite_resolution_preference": self.sprite_resolution_preference,
+            "enable_old_sprites": self.enable_old_sprites,
             "keyboard_map": self.keyboard_map,
             "gpio_map": self.gpio_map,
             "joystick_map": self.joystick_map,

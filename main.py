@@ -90,9 +90,17 @@ def setup_pygame():
         pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=128)
 
     pygame.init()
-    
+
     if not IS_PYGAME2:
         pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=128)
+
+    # Enable pygame TEXTINPUT events (off by default).  TextInput / CodeEntry
+    # listen to these for physical-keyboard typing on PC; Android opens the
+    # native IME which also uses TEXTINPUT.
+    try:
+        pygame.key.start_text_input()
+    except Exception:
+        pass
 
 
 def validate_configuration():

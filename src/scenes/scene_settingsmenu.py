@@ -224,6 +224,13 @@ class SceneSettingsMenu:
         for module in runtime_globals.game_modules.values():
             for bg in get_unlocked_backgrounds(module.name, getattr(module, "backgrounds", [])):
                 self.unlocked_backgrounds.append((module.name, bg["name"], bg.get("label", bg["name"])))
+        # Shop-purchased backgrounds — surfaced through the synthetic
+        # "shop" module name so the selector can render them alongside
+        # per-module backgrounds without a deeper refactor.
+        for bg in (getattr(game_globals, 'shop_backgrounds', None) or {}).values():
+            name = bg.get('name') or bg.get('id', '')
+            label = bg.get('label', name)
+            self.unlocked_backgrounds.append(("shop", name, label))
         self.current_bg_index = self._get_current_background_index()
 
         # Persistent components
@@ -567,6 +574,8 @@ class SceneSettingsMenu:
             runtime_globals.game_sound.play("menu")
             game_globals.setup_input = False
             game_globals.setup_graphics = False
+            game_globals.setup_game_mode = True
+            game_globals.skip_tutorial_on_mode_switch = bool(game_globals.pet_list)
             change_scene("setup")
             return
         if key == "remap_input":

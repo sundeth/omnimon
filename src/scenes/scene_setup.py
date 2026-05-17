@@ -102,8 +102,13 @@ class SceneSetup:
         
         # Game mode selector (created on demand)
         self.game_mode_selector = None
-        
-        runtime_globals.game_console.log("[SceneSetup] Initialized in welcome phase")
+
+        if game_globals.setup_game_mode:
+            game_globals.setup_game_mode = False
+            runtime_globals.game_console.log("[SceneSetup] Jumping directly to mode selection")
+            self.start_game_mode_selection()
+        else:
+            runtime_globals.game_console.log("[SceneSetup] Initialized in welcome phase")
 
     def update_labels(self, title: str, subtitle: str) -> None:
         """Update the text labels."""
@@ -574,8 +579,10 @@ class SceneSetup:
         game_globals.setup_graphics = False
         game_globals.save()
 
-        # Use centralized routing
-        navigation_utils.route_to_next_scene(check_tutorial=True)
+        # If player switched modes mid-game (had pets), skip the tutorial
+        skip_tutorial = game_globals.skip_tutorial_on_mode_switch
+        game_globals.skip_tutorial_on_mode_switch = False
+        navigation_utils.route_to_next_scene(check_tutorial=not skip_tutorial)
 
     def draw(self, surface: pygame.Surface) -> None:
         """Draws the setup scene."""

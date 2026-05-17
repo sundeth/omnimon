@@ -1,4 +1,4 @@
-"""
+﻿"""
 ShopCosmeticsView - Browse and purchase cosmetic items (backgrounds, etc.)
 Shows list with small icons and larger preview in detail view.
 """
@@ -105,23 +105,67 @@ class ShopCosmeticsView:
         self.ui_manager.add_component(self.coin_icon)
     
     def _load_cosmetic_preview(self, preview_path: str) -> pygame.Surface:
-        """Load a cosmetic preview image from assets or data."""
+        """Load a cosmetic preview image from local assets only.
+
+        Returns None when no local file matches — the caller should then
+        fall back to ``_fetch_cosmetic_sprite_async`` to pull it from the
+        server.
+        """
         if not preview_path:
             return None
-        
+
         try:
             # Try loading from backgrounds folder first
             bg_path = os.path.join("assets", "ui", "backgrounds", preview_path)
             if os.path.exists(bg_path):
                 return image_load(bg_path).convert_alpha()
-            
+
             # Try direct path
             if os.path.exists(preview_path):
                 return image_load(preview_path).convert_alpha()
         except Exception as e:
-            runtime_globals.game_console.log(f"[ShopCosmeticsView] Failed to load preview {preview_path}: {e}")
-        
+            runtime_globals.game_console.log(
+                f"[ShopCosmeticsView] Failed to load preview {preview_path}: {e}")
+
         return None
+
+    def _fetch_cosmetic_sprite_async(self, item):
+        """Pull the cosmetic sprite from the server when no local file.
+
+        Server returns the full background PNG; we use the same surface
+        as both the small list thumbnail (downscaled) and the detail
+        preview / full-screen backdrop.  Cached so re-entering the shop
+        doesn't re-fetch.
+        """
+        from services.shop_image_cache import shop_image_cache
+        from services.omninet_service import omninet_service
+        if not item.id:
+            return
+        cached = shop_image_cache.get(item.id, 'preview', kind='cosmetic')
+        if cached is not None:
+            item.preview = cached
+            item.icon = self._create_thumbnail(cached, 28)
+            return
+        if getattr(item, '_sprite_fetching', False):
+            return
+        item._sprite_fetching = True
+
+        def fetch():
+            try:
+                surface = omninet_service.get_shop_sprite('cosmetic', item.id)
+                if surface is not None:
+                    shop_image_cache.put(item.id, 'preview', surface, kind='cosmetic')
+                    item.preview = surface
+                    item.icon = self._create_thumbnail(surface, 28)
+                    # If this is the currently focused detail item, repaint
+                    # so the new sprite actually appears.
+                    if (self.state == self.STATE_DETAIL
+                            and self.selected_item is item):
+                        self._setup_detail_view(item)
+            finally:
+                item._sprite_fetching = False
+
+        threading.Thread(target=fetch, daemon=True).start()
     
     def _create_thumbnail(self, preview: pygame.Surface, size: int) -> pygame.Surface:
         """Create a thumbnail from the preview image."""
@@ -160,42 +204,74 @@ class ShopCosmeticsView:
         for cosm in self.cosmetics_data:
             cosm_id = cosm.get('id', '')
             owned = game_globals.purchases.owns_cosmetic(cosm_id)
-            
-            # Load preview and create thumbnail
-            preview = self._load_cosmetic_preview(cosm.get('preview', ''))
+
+            # Server delivers the asset filename in `sprite_name`; the old
+            # local-only path used `preview` which doesn't exist in the API.
+            sprite_name = (cosm.get('sprite_name')
+                           or cosm.get('preview')
+                           or '')
+            preview = self._load_cosmetic_preview(sprite_name)
             icon = self._create_thumbnail(preview, 28) if preview else None
-            
-            items.append(ShopCosmeticItem(
+
+            new_item = ShopCosmeticItem(
                 item_id=cosm_id,
                 name=cosm.get('name', 'Unknown'),
                 price=cosm.get('price', 0),
                 owned=owned,
                 icon=icon,
                 preview=preview,
-                cosmetic_type=cosm.get('type', 'Background')
-            ))
-        
+                cosmetic_type=cosm.get('cosmetic_type') or cosm.get('type', 'Background'),
+                day_night=bool(cosm.get('day_night', True)),
+                high_res=bool(cosm.get('high_res', False)),
+                sprite_name=sprite_name,
+            )
+            new_item._sprite_fetching = False
+            items.append(new_item)
+
         self.shop_list.set_items(items)
         self.ui_manager.add_component(self.shop_list)
-        
+
+        # Anything missing a local preview gets pulled from the server.
+        for it in items:
+            if it.preview is None:
+                self._fetch_cosmetic_sprite_async(it)
+
         self.state = self.STATE_LIST
     
     def _setup_detail_view(self, item: ShopCosmeticItem):
         """Setup the detail view for a selected cosmetic."""
         self._clear_detail_components()
-        
+
         # Hide list
         if self.shop_list:
             self.shop_list.visible = False
-        
+        if self.back_button:
+            self.back_button.visible = False
+
+        # Kick off / re-trigger the server fetch if we still don't have a
+        # preview surface — the worker calls _setup_detail_view again on
+        # completion so the new image lands in this view.
+        if item.preview is None:
+            self._fetch_cosmetic_sprite_async(item)
+
+        # For Background-type cosmetics, render the preview full-screen
+        # behind the rest of the UI by attaching it to self.background.
+        # Dim it slightly so the foreground labels remain readable.
+        is_background_type = (item.cosmetic_type or '').lower() == 'background'
+        if is_background_type and item.preview and self.background:
+            self.background.set_image(item.preview, alpha=200)
+        elif self.background:
+            self.background.clear_image()
+
         padding = 10
         y_offset = 35
-        
-        # Large preview image
-        if item.preview:
+
+        # Large preview image (skip for background type — we already use it
+        # as the full-screen backdrop above)
+        if item.preview and not is_background_type:
             preview_size = 120
             preview_x = (BASE_RESOLUTION - preview_size) // 2
-            
+
             # Create preview surface
             preview_scaled = pygame.transform.scale(item.preview, (preview_size, preview_size))
             preview_image = Image(preview_x, y_offset, preview_size, preview_size)
@@ -214,35 +290,74 @@ class ShopCosmeticsView:
         type_label = Label(0, y_offset, f"Type: {item.cosmetic_type}", is_title=False)
         self.ui_manager.add_component(type_label)
         self.detail_components.append(type_label)
-        y_offset += 20
-        
-        # Price display
+        y_offset += 16
+
+        # Day/Night + HD support badges (background-only fields)
+        if (item.cosmetic_type or '').lower() == 'background':
+            badges = []
+            if getattr(item, 'day_night', True):
+                badges.append("Day/Night")
+            if getattr(item, 'high_res', False):
+                badges.append("HD")
+            if badges:
+                badge_label = Label(0, y_offset,
+                                    "Supports: " + " + ".join(badges),
+                                    is_title=False,
+                                    color_override=(120, 220, 255))
+                self.ui_manager.add_component(badge_label)
+                self.detail_components.append(badge_label)
+                y_offset += 14
+
+        # Price display — yellow Price + coin icon + value (2*scale margin)
+        scale = self.ui_manager.ui_scale if self.ui_manager else 1
+        price_x = max(2, int(2))  # 2 base px
+        coins = getattr(game_globals, 'coins', 0)
         if item.owned:
-            price_text = "Already Owned"
+            price_label = Label(price_x, y_offset, "Already Owned",
+                                is_title=False, color_override=(120, 220, 120))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+        elif item.price <= 0:
+            price_label = Label(price_x, y_offset, "Free", is_title=False,
+                                color_override=(120, 220, 120))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
         else:
-            price_text = f"Price: {item.price} coins"
-        price_label = Label(0, y_offset, price_text, is_title=False)
-        self.ui_manager.add_component(price_label)
-        self.detail_components.append(price_label)
-        y_offset += 25
-        
+            price_label = Label(price_x, y_offset, "Price:",
+                                is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+            coin_x = price_x + 50
+            coin_icon = Image(coin_x, y_offset - 1, 14, 14,
+                              image_path="assets/ui/Shop_Coin_1.png")
+            self.ui_manager.add_component(coin_icon)
+            self.detail_components.append(coin_icon)
+            val_label = Label(coin_x + 18, y_offset, str(item.price),
+                              is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(val_label)
+            self.detail_components.append(val_label)
+        y_offset += 18
+
         # Buttons
         btn_width = 80
         btn_height = 28
         btn_y = BASE_RESOLUTION - btn_height - 10
-        
-        # Buy/Download button
+
+        # Buy/Download button — disabled when player can't afford
         if item.owned:
             action_text = "Download"
             action_callback = lambda: self._on_download(item)
+            action_enabled = True
         else:
             action_text = "Buy"
             action_callback = lambda: self._on_buy(item)
+            action_enabled = item.price <= 0 or coins >= item.price
         
         action_button = Button(
             BASE_RESOLUTION - btn_width - padding, btn_y, btn_width, btn_height,
             action_text, action_callback,
-            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+            enabled=action_enabled,
         )
         self.ui_manager.add_component(action_button)
         self.detail_components.append(action_button)
@@ -298,8 +413,8 @@ class ShopCosmeticsView:
         coins = getattr(game_globals, 'coins', 0)
         
         if coins < item.price:
-            runtime_globals.game_sound.play("error")
-            runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
+            runtime_globals.game_sound.play("cancel")
+            # (suppressed) runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
             return
         
         runtime_globals.game_sound.play("menu")
@@ -313,47 +428,95 @@ class ShopCosmeticsView:
                     game_globals.save()
                     
                     item.owned = True
-                    runtime_globals.game_message.add_slide("Purchase successful!", (0, 231, 58), 90)
+                    # Purchase confirmation handled via in-view label, not game_message, 90)
                     self._setup_detail_view(item)
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide(message or "Purchase failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
+                    # Failure shown via in-view label below; suppress global slide, 90)
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopCosmeticsView] Purchase error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Purchase failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # Failure shown via in-view label below; suppress global slide, 90)
         
         threading.Thread(target=do_purchase, daemon=True).start()
     
     def _on_download(self, item: ShopCosmeticItem):
-        """Handle download button click."""
+        """Download a purchased cosmetic.
+
+        For background cosmetics: decode the sprite bytes from the server,
+        save them under ``save/cosmetics/backgrounds/<name>.png`` and
+        register the cosmetic in ``game_globals.shop_backgrounds`` so the
+        settings background selector can list it.
+        """
         runtime_globals.game_sound.play("menu")
-        runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
-        
+
         def do_download():
             try:
+                import base64, io, os
+                from services.shop_image_cache import shop_image_cache
                 success, data = omninet_service.download_cosmetic(item.id)
-                if success:
-                    # TODO: Save cosmetic data to appropriate folder
-                    runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
-                else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                if not success or not isinstance(data, dict):
+                    runtime_globals.game_sound.play("cancel")
+                    return
+
+                is_background = (item.cosmetic_type or '').lower() == 'background'
+                if is_background:
+                    out_dir = os.path.join("save", "cosmetics", "backgrounds")
+                    os.makedirs(out_dir, exist_ok=True)
+                    sprites = data.get('sprites') or {}
+                    saved_paths = {}
+                    for sprite_name, b64 in sprites.items():
+                        try:
+                            raw = base64.b64decode(b64)
+                        except Exception:
+                            continue
+                        out_path = os.path.join(out_dir, sprite_name)
+                        with open(out_path, 'wb') as f:
+                            f.write(raw)
+                        saved_paths[sprite_name] = out_path
+                        # Also cache the surface so the settings selector
+                        # can blit instantly without re-reading from disk.
+                        try:
+                            surf = pygame.image.load(io.BytesIO(raw)).convert_alpha()
+                            shop_image_cache.put(
+                                item.id, sprite_name, surf, kind='background')
+                        except Exception:
+                            pass
+
+                    game_globals.shop_backgrounds[item.id] = {
+                        'id': item.id,
+                        'name': item.name,
+                        'label': item.name,
+                        'sprite_name': item.sprite_name or '',
+                        'day_night': bool(item.day_night),
+                        'high_res': bool(item.high_res),
+                        'sprite_paths': saved_paths,
+                    }
+                    try:
+                        game_globals.save()
+                    except Exception:
+                        pass
             except Exception as e:
-                runtime_globals.game_console.log(f"[ShopCosmeticsView] Download error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
-        
+                runtime_globals.game_console.log(
+                    f"[ShopCosmeticsView] Download error: {e}")
+                runtime_globals.game_sound.play("cancel")
+
         threading.Thread(target=do_download, daemon=True).start()
     
     def _on_detail_back(self):
         """Go back from detail view to list view."""
         runtime_globals.game_sound.play("cancel")
         self._clear_detail_components()
-        
+
         if self.shop_list:
             self.shop_list.visible = True
-        
+        if self.back_button:
+            self.back_button.visible = True
+        # Drop the full-screen background preview so the list view returns
+        # to its plain black backdrop.
+        if self.background:
+            self.background.clear_image()
+
         self.state = self.STATE_LIST
         self.selected_item = None
     

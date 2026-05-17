@@ -140,7 +140,7 @@ class SceneError:
         is_confirm = self.state == "confirm"
         title_text = "CONFIRM" if is_confirm else "ERROR"
         self.title_label = Label(
-            x=0, y=20,
+            x=ui_width // 2, y=20,
             text=title_text,
             is_title=True,
             color_override=error_color,
@@ -155,7 +155,7 @@ class SceneError:
         # Bottom instruction
         bottom = self.confirm_bottom if is_confirm else self.bottom_text
         self.bottom_label = Label(
-            x=5, y=ui_height - 45,
+            x=ui_width // 2, y=ui_height - 45,
             text=bottom,
             color_override=dim_color,
             center=True,
@@ -191,7 +191,7 @@ class SceneError:
         self.message_labels = []
         for i, line in enumerate(lines):
             label = Label(
-                x=5, y=start_y + i * line_height,
+                x=ui_width // 2, y=start_y + i * line_height,
                 text=line,
                 color_override=text_color,
                 center=True

@@ -1,4 +1,4 @@
-"""
+﻿"""
 ShopItemsView - Browse and purchase consumable items
 Shows list of items similar to inventory with icon, name, and price.
 """
@@ -105,20 +105,51 @@ class ShopItemsView:
                                image_path="assets/ui/Shop_Coin_1.png")
         self.ui_manager.add_component(self.coin_icon)
     
-    def _load_item_icon(self, icon_name: str) -> pygame.Surface:
-        """Load an item icon from assets."""
-        if not icon_name:
+    def _load_item_icon(self, sprite_name: str) -> pygame.Surface:
+        """Load an item icon from the local assets/items folder.
+
+        Returns None when no matching local file exists — the caller then
+        falls back to fetching from the server (via _fetch_item_icon_async).
+        """
+        if not sprite_name:
             return None
-        
         try:
-            # Try loading from items folder
-            icon_path = os.path.join("assets", "items", icon_name)
+            icon_path = os.path.join("assets", "items", sprite_name)
             if os.path.exists(icon_path):
                 return image_load(icon_path).convert_alpha()
         except Exception as e:
-            runtime_globals.game_console.log(f"[ShopItemsView] Failed to load icon {icon_name}: {e}")
-        
+            runtime_globals.game_console.log(
+                f"[ShopItemsView] Failed to load icon {sprite_name}: {e}")
         return None
+
+    def _fetch_item_icon_async(self, item, server_id: str):
+        """Pull the item icon from the server when no local sprite exists.
+
+        Result is cached in shop_image_cache so re-entering the shop
+        doesn't re-fetch.
+        """
+        from services.shop_image_cache import shop_image_cache
+        from services.omninet_service import omninet_service
+        if not server_id:
+            return
+        cached = shop_image_cache.get(server_id, 'icon', kind='item')
+        if cached is not None:
+            item.icon = cached
+            return
+        if getattr(item, '_icon_fetching', False):
+            return
+        item._icon_fetching = True
+
+        def fetch():
+            try:
+                surface = omninet_service.get_shop_sprite('item', server_id)
+                if surface is not None:
+                    shop_image_cache.put(server_id, 'icon', surface, kind='item')
+                    item.icon = surface
+            finally:
+                item._icon_fetching = False
+
+        threading.Thread(target=fetch, daemon=True).start()
     
     def _setup_list_view(self):
         """Setup the list view with loaded items."""
@@ -145,11 +176,31 @@ class ShopItemsView:
             item_id = item_data.get('id', '')
             quantity = game_globals.purchases.get_item_quantity(item_id)
             owned = quantity > 0
-            
-            # Load icon
-            icon = self._load_item_icon(item_data.get('icon', ''))
-            
-            items.append(ShopInventoryItem(
+
+            # The server returns the sprite filename in `sprite_name`; the
+            # old code looked for `icon`, which silently produced no icon.
+            sprite_name = (item_data.get('sprite_name')
+                           or item_data.get('icon')
+                           or '')
+            icon = self._load_item_icon(sprite_name)
+
+            # Cache full item metadata for SceneInventory consumption.
+            # Shop items apply their effect to *all* pets (cross-module),
+            # so we tag them with cross_module=True for the consumer.
+            json_data = item_data.get('json_data') or {}
+            game_globals.shop_items_data[item_id] = {
+                'id': item_id,
+                'name': item_data.get('name', 'Unknown'),
+                'description': item_data.get('description', ''),
+                'sprite_name': sprite_name,
+                'effect': json_data.get('effect', ''),
+                'status': json_data.get('status', ''),
+                'amount': json_data.get('amount', 1),
+                'boost_time': json_data.get('boost_time', 0),
+                'cross_module': True,
+            }
+
+            new_item = ShopInventoryItem(
                 item_id=item_id,
                 name=item_data.get('name', 'Unknown'),
                 price=item_data.get('price', 0),
@@ -157,34 +208,46 @@ class ShopItemsView:
                 icon=icon,
                 description=item_data.get('description', ''),
                 quantity=quantity
-            ))
+            )
+            new_item._icon_fetching = False
+            items.append(new_item)
         
         self.shop_list.set_items(items)
         self.ui_manager.add_component(self.shop_list)
-        
+
+        # Any item without a local icon falls back to the server fetch.
+        for it in items:
+            if it.icon is None:
+                self._fetch_item_icon_async(it, it.id)
+
         self.state = self.STATE_LIST
     
     def _setup_detail_view(self, item: ShopInventoryItem):
         """Setup the detail view for a selected item."""
         self._clear_detail_components()
-        
-        # Hide list
+
+        # Hide list AND the persistent Back button so it can't intercept
+        # clicks meant for the detail's own Back button (which returns to
+        # this view's list, not the main shop).
         if self.shop_list:
             self.shop_list.visible = False
+        if self.back_button:
+            self.back_button.visible = False
         
         padding = 10
         y_offset = 35
         
-        # Item icon (larger)
+        # Item icon — 32px so the layout below (name / effect / price /
+        # action buttons) fits without overflowing into the bottom row.
         if item.icon:
-            icon_size = 64
+            icon_size = 32
             icon_x = (BASE_RESOLUTION - icon_size) // 2
-            # Create a surface to display the icon
             icon_image = Image(icon_x, y_offset, icon_size, icon_size)
-            icon_image.set_image(pygame.transform.scale(item.icon, (icon_size, icon_size)))
+            icon_image.set_image(image_surface=pygame.transform.scale(
+                item.icon, (icon_size, icon_size)))
             self.ui_manager.add_component(icon_image)
             self.detail_components.append(icon_image)
-            y_offset += icon_size + 10
+            y_offset += icon_size + 6
         
         # Item name (large)
         name_label = Label(0, y_offset, item.name, is_title=True)
@@ -209,23 +272,42 @@ class ShopItemsView:
         self.detail_components.append(desc_panel)
         y_offset += desc_height + 15
         
-        # Price display
-        price_text = f"Price: {item.price} coins"
-        price_label = Label(0, y_offset, price_text, is_title=False)
-        self.ui_manager.add_component(price_label)
-        self.detail_components.append(price_label)
-        y_offset += 25
-        
+        # Price display — yellow Price + coin icon + value; 2px left margin
+        price_x = 2  # 2 base pixels, scales via UI manager
+        coins = getattr(game_globals, 'coins', 0)
+        if item.price <= 0:
+            price_label = Label(price_x, y_offset, "Free", is_title=False,
+                                color_override=(120, 220, 120))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+        else:
+            price_label = Label(price_x, y_offset, "Price:", is_title=False,
+                                color_override=(255, 215, 80))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+            coin_x = price_x + 50
+            coin_icon = Image(coin_x, y_offset - 1, 14, 14,
+                              image_path="assets/ui/Shop_Coin_1.png")
+            self.ui_manager.add_component(coin_icon)
+            self.detail_components.append(coin_icon)
+            val_label = Label(coin_x + 18, y_offset, str(item.price),
+                              is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(val_label)
+            self.detail_components.append(val_label)
+        y_offset += 18
+
         # Buttons
         btn_width = 80
         btn_height = 28
         btn_y = BASE_RESOLUTION - btn_height - 10
-        
-        # Buy button (items can always be purchased as they stack)
+
+        # Buy button — disabled when player can't afford
+        buy_enabled = item.price <= 0 or coins >= item.price
         buy_button = Button(
             BASE_RESOLUTION - btn_width - padding, btn_y, btn_width, btn_height,
             "Buy", lambda: self._on_buy(item),
-            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+            enabled=buy_enabled,
         )
         self.ui_manager.add_component(buy_button)
         self.detail_components.append(buy_button)
@@ -281,8 +363,8 @@ class ShopItemsView:
         coins = getattr(game_globals, 'coins', 0)
         
         if coins < item.price:
-            runtime_globals.game_sound.play("error")
-            runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
+            runtime_globals.game_sound.play("cancel")
+            # (suppressed) runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
             return
         
         runtime_globals.game_sound.play("menu")
@@ -297,15 +379,15 @@ class ShopItemsView:
                     
                     item.quantity = game_globals.purchases.get_item_quantity(item.id)
                     item.owned = item.quantity > 0
-                    runtime_globals.game_message.add_slide("Purchase successful!", (0, 231, 58), 90)
+                    # Purchase confirmation handled via in-view label, not game_message, 90)
                     self._setup_detail_view(item)
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide(message or "Purchase failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
+                    # Failure shown via in-view label below; suppress global slide, 90)
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopItemsView] Purchase error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Purchase failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # Failure shown via in-view label below; suppress global slide, 90)
         
         threading.Thread(target=do_purchase, daemon=True).start()
     
@@ -313,10 +395,12 @@ class ShopItemsView:
         """Go back from detail view to list view."""
         runtime_globals.game_sound.play("cancel")
         self._clear_detail_components()
-        
+
         if self.shop_list:
             self.shop_list.visible = True
-        
+        if self.back_button:
+            self.back_button.visible = True
+
         self.state = self.STATE_LIST
         self.selected_item = None
     

@@ -1,4 +1,4 @@
-"""
+﻿"""
 OmninetLinkView - Omninet account linking dialog
 Shows code entry for linking device via pairing code from Module Editor
 """
@@ -112,7 +112,7 @@ class OmninetLinkView:
         self.cancel_button.enabled = False
         
         # Show connecting message
-        runtime_globals.game_message.add_slide("Connecting...", (255, 255, 255), 90)
+        # (suppressed) runtime_globals.game_message.add_slide("Connecting...", (255, 255, 255), 90)
         
         # Validate in background thread
         def validate_async():
@@ -133,13 +133,13 @@ class OmninetLinkView:
             username = user_info.get('nickname', 'User') if user_info else 'User'
             runtime_globals.game_console.log(f"[OmninetLinkView] Linked as: {username}")
             runtime_globals.game_sound.play("menu")
-            runtime_globals.game_message.add_slide(f"Linked as {username}!", (0, 231, 58), 120)
+            # (suppressed) runtime_globals.game_message.add_slide(f"Linked as {username}!", (0, 231, 58), 120)
             
             # Return to the config submenu
             self.change_view(self.return_view, initial_submenu="config")
         else:
             runtime_globals.game_console.log(f"[OmninetLinkView] Link failed: {message}")
-            runtime_globals.game_sound.play("error")
+            runtime_globals.game_sound.play("cancel")
             self.instruction_label.set_text(message[:32])  # Truncate long messages
     
     def _on_cancel(self):

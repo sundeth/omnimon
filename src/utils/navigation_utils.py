@@ -11,7 +11,7 @@ import pickle
 from typing import Optional
 
 from core import game_globals, runtime_globals
-from services import omninet_service
+from services.omninet_service import omninet_service
 from utils.scene_utils import change_scene
 
 
@@ -164,6 +164,22 @@ def route_to_next_scene(check_setup_flags: bool = False,
         check_setup_flags: If True, check setup_input/setup_graphics flags first.
         check_tutorial: If True, check the show_tutorial flag.
     """
+
+    # 0. Progress Mode login gate — must authenticate before anything else.
+    # Any error (network, missing service, etc.) in Progress Mode also
+    # routes to login so the user has a path to recover or switch to Free.
+    if game_globals.is_progress_mode():
+        try:
+            authenticated = omninet_service.is_logged_in()
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[Navigation] Login check failed: {exc}; routing to login")
+            authenticated = False
+        if not authenticated:
+            change_scene("login")
+            runtime_globals.game_console.log(
+                "[Navigation] Routing to Login (Progress Mode, not authenticated)")
+            return
 
     # 1. Setup flags (input or graphics configuration still needed)
     if check_setup_flags:

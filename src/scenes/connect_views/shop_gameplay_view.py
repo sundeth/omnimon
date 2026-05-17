@@ -1,4 +1,4 @@
-"""
+﻿"""
 ShopGameplayView - Browse and purchase gameplay features
 Shows list of available gameplay items with details view.
 """
@@ -146,6 +146,8 @@ class ShopGameplayView:
         # Hide list
         if self.shop_list:
             self.shop_list.visible = False
+        if self.back_button:
+            self.back_button.visible = False
         
         padding = 10
         y_offset = 35
@@ -173,33 +175,55 @@ class ShopGameplayView:
         self.detail_components.append(desc_panel)
         y_offset += desc_height + 15
         
-        # Price display
+        # Price display — yellow Price + coin icon + value; 2px left margin
+        price_x = 2
+        coins = getattr(game_globals, 'coins', 0)
         if item.owned:
-            price_text = "Already Owned"
+            price_label = Label(price_x, y_offset, "Already Owned",
+                                is_title=False, color_override=(120, 220, 120))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+        elif item.price <= 0:
+            price_label = Label(price_x, y_offset, "Free",
+                                is_title=False, color_override=(120, 220, 120))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
         else:
-            price_text = f"Price: {item.price} coins"
-        price_label = Label(0, y_offset, price_text, is_title=False)
-        self.ui_manager.add_component(price_label)
-        self.detail_components.append(price_label)
-        y_offset += 25
-        
+            price_label = Label(price_x, y_offset, "Price:",
+                                is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(price_label)
+            self.detail_components.append(price_label)
+            coin_x = price_x + 50
+            coin_icon = Image(coin_x, y_offset - 1, 14, 14,
+                              image_path="assets/ui/Shop_Coin_1.png")
+            self.ui_manager.add_component(coin_icon)
+            self.detail_components.append(coin_icon)
+            val_label = Label(coin_x + 18, y_offset, str(item.price),
+                              is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(val_label)
+            self.detail_components.append(val_label)
+        y_offset += 18
+
         # Buttons
         btn_width = 80
         btn_height = 28
         btn_y = BASE_RESOLUTION - btn_height - 10
-        
-        # Buy/Download button
+
+        # Buy/Download button — Buy disabled when player can't afford
         if item.owned:
             action_text = "Download"
             action_callback = lambda: self._on_download(item)
+            action_enabled = True
         else:
             action_text = "Buy"
             action_callback = lambda: self._on_buy(item)
-        
+            action_enabled = item.price <= 0 or coins >= item.price
+
         action_button = Button(
             BASE_RESOLUTION - btn_width - padding, btn_y, btn_width, btn_height,
             action_text, action_callback,
-            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+            enabled=action_enabled,
         )
         self.ui_manager.add_component(action_button)
         self.detail_components.append(action_button)
@@ -255,8 +279,8 @@ class ShopGameplayView:
         coins = getattr(game_globals, 'coins', 0)
         
         if coins < item.price:
-            runtime_globals.game_sound.play("error")
-            runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
+            runtime_globals.game_sound.play("cancel")
+            # (suppressed) runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
             return
         
         runtime_globals.game_sound.play("menu")
@@ -270,35 +294,34 @@ class ShopGameplayView:
                     game_globals.save()
                     
                     item.owned = True
-                    runtime_globals.game_message.add_slide("Purchase successful!", (0, 231, 58), 90)
+                    # Purchase confirmation handled via in-view label, not game_message, 90)
                     self._setup_detail_view(item)
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide(message or "Purchase failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
+                    # Failure shown via in-view label below; suppress global slide, 90)
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopGameplayView] Purchase error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Purchase failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # Failure shown via in-view label below; suppress global slide, 90)
         
         threading.Thread(target=do_purchase, daemon=True).start()
     
     def _on_download(self, item: ShopGameplayItem):
         """Handle download button click."""
         runtime_globals.game_sound.play("menu")
-        runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
+        # (suppressed) runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
         
         def do_download():
             try:
                 success, data = omninet_service.download_gameplay(item.id)
                 if success:
-                    runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
+                    pass
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopGameplayView] Download error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # (suppressed) runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
         
         threading.Thread(target=do_download, daemon=True).start()
     
@@ -309,6 +332,8 @@ class ShopGameplayView:
         
         if self.shop_list:
             self.shop_list.visible = True
+        if self.back_button:
+            self.back_button.visible = True
         
         self.state = self.STATE_LIST
         self.selected_item = None

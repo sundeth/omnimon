@@ -22,6 +22,7 @@ lib64/
 parts/
 utilities/
 modules/*
+!modules/.gitkeep
 sdist/
 var/
 wheels/
@@ -189,7 +190,9 @@ project.lock.json
 *.pyc
 
 # Visual Studio Code
-.vscode
+.vscode/
+# Claude Code
+.claude/
 
 # User-specific files
 *.suo

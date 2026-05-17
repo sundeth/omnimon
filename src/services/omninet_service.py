@@ -2,14 +2,21 @@
 OmninetService - Python client for Omninet API
 Handles device linking, auto-login, and API communication with Omninet server.
 """
+import hashlib
+import hmac as _hmac
 import json
 import os
 import threading
+import time
 import requests
 from urllib.parse import urljoin
 from typing import Optional, Tuple, Dict, Any
 
 from core import runtime_globals, constants
+
+# Shared signing secret — must match REWARD_SIGNING_SECRET in the server .env.
+# Both sides use this to produce/verify HMAC-SHA256 signatures on reward claims.
+_REWARD_SIGNING_SECRET = "omnipet-reward-hmac-secret-v1-change-in-production"
 
 
 class OmninetService:
@@ -514,6 +521,8 @@ class OmninetService:
                 response = requests.get(url, headers=headers, timeout=self._timeout)
             elif method.upper() == 'POST':
                 response = requests.post(url, headers=headers, json=json_data or {}, timeout=self._timeout)
+            elif method.upper() == 'DELETE':
+                response = requests.delete(url, headers=headers, timeout=self._timeout)
             else:
                 return False, f"Unsupported method: {method}"
             
@@ -619,6 +628,55 @@ class OmninetService:
         """Download a module for free (Free Mode). Uses public module download endpoint."""
         return self._make_request('GET', f'/api/v1/modules/{module_id}/download', require_auth=False)
 
+    def get_module_sprite(self, module_id: str, sprite_type: str):
+        """Fetch a module sprite image ('icon' or 'logo'). Returns a pygame.Surface or None."""
+        import io
+        import pygame
+        try:
+            base_url = self._get_base_url()
+            url = urljoin(base_url, f'/api/v1/modules/{module_id}/{sprite_type}')
+            response = requests.get(url, timeout=self._timeout)
+            if response.status_code == 200:
+                return pygame.image.load(io.BytesIO(response.content)).convert_alpha()
+        except Exception as e:
+            runtime_globals.game_console.log(f"[OmninetService] Sprite fetch error ({sprite_type}): {e}")
+        return None
+
+    def get_user_purchases(self):
+        """Fetch the player's full purchase history from the server.
+
+        Returns (success, data) where data is the parsed JSON dict on
+        success (typically ``{'purchases': [...], 'total': N}``).
+        """
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('GET', '/api/v1/shop/purchases')
+
+    def get_shop_sprite(self, kind: str, item_id: str):
+        """Fetch a shop entry's sprite image.
+
+        Args:
+            kind: one of 'item', 'cosmetic', 'gameplay', 'special' — used
+                  to build the URL ``/api/v1/shop/{kind}/{id}/sprite``.
+            item_id: the shop entry's server UUID.
+
+        Returns a pygame.Surface or None on any failure.
+        """
+        import io
+        import pygame
+        if not item_id:
+            return None
+        try:
+            base_url = self._get_base_url()
+            url = urljoin(base_url, f'/api/v1/shop/{kind}/{item_id}/sprite')
+            response = requests.get(url, timeout=self._timeout)
+            if response.status_code == 200:
+                return pygame.image.load(io.BytesIO(response.content)).convert_alpha()
+        except Exception as e:
+            runtime_globals.game_console.log(
+                f"[OmninetService] Shop sprite fetch error ({kind}/{item_id}): {e}")
+        return None
+
     def download_gameplay(self, gameplay_id: str) -> Tuple[bool, Any]:
         """Download a purchased gameplay item."""
         if not self._device_key:
@@ -636,6 +694,159 @@ class OmninetService:
         if not self._device_key:
             return False, "Not logged in"
         return self._make_request('GET', f'/api/v1/shop/download/item/{item_id}')
+
+    # ------------------------------------------------------------------
+    # Arena / Teams / Battles / Seasons
+    # ------------------------------------------------------------------
+
+    def get_current_season(self) -> Tuple[bool, Any]:
+        """Fetch the current ACTIVE season (auto-creates a weekly one if none)."""
+        return self._make_request('GET', '/api/v1/seasons/current', require_auth=False)
+
+    def get_user_teams(self, include_past: bool = False) -> Tuple[bool, Any]:
+        """List the player's teams (current season + any with unclaimed rewards)."""
+        if not self._device_key:
+            return False, "Not logged in"
+        endpoint = f'/api/v1/teams?include_past={"true" if include_past else "false"}'
+        return self._make_request('GET', endpoint)
+
+    def get_current_team(self) -> Tuple[bool, Any]:
+        """Get the player's team for the current season (or 404 if none)."""
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('GET', '/api/v1/teams/current')
+
+    def create_team(self, pets: list, team_name: Optional[str] = None) -> Tuple[bool, Any]:
+        """
+        Create an arena team.
+
+        Args:
+            pets: list of dicts with the GamePet fields the server expects
+                  (name, module_name, module_version, pet_version, stage,
+                  level, atk_main, atk_alt, atk_alt2, power, attribute,
+                  hp, star, critical_turn, extra_data).
+            team_name: optional display name for the team.
+        """
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('POST', '/api/v1/teams', {
+            'name': team_name,
+            'pets': pets,
+        })
+
+    def deactivate_team(self, team_id: str) -> Tuple[bool, Any]:
+        """Soft-delete (deactivate) an arena team."""
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('DELETE', f'/api/v1/teams/{team_id}')
+
+    def claim_team_rewards(self) -> Tuple[bool, Any]:
+        """Claim all unclaimed coin rewards across the player's teams."""
+        if not self._device_key:
+            return False, "Not logged in"
+        success, data = self._make_request('POST', '/api/v1/teams/claim-rewards')
+        if success and isinstance(data, dict):
+            new_balance = data.get('new_balance')
+            if new_balance is not None and self._user_info is not None:
+                self._user_info['coins'] = new_balance
+        return success, data
+
+    def get_team_battles(self, team_id: str) -> Tuple[bool, Any]:
+        """Get the battle history for one team."""
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('GET', f'/api/v1/battles/team/{team_id}/history')
+
+    def get_battle(self, battle_id: str) -> Tuple[bool, Any]:
+        """Get one battle's full data (including the simulator log for replay)."""
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('GET', f'/api/v1/battles/{battle_id}')
+
+    def find_battle(self, team_id: str) -> Tuple[bool, Any]:
+        """
+        Find an opponent and execute a battle for the given team.
+
+        On success the response includes the battle record; the client can
+        then replay it from the simulator log.  Server enforces the
+        per-team daily battle cap.
+        """
+        if not self._device_key:
+            return False, "Not logged in"
+        return self._make_request('POST', f'/api/v1/battles/find/{team_id}')
+
+    # ------------------------------------------------------------------
+    # Reward claims
+    # ------------------------------------------------------------------
+
+    def _reward_idempotency_key(self, event_type: str, context: str, ts: int) -> str:
+        """
+        Build a deterministic idempotency key for one reward event.
+
+        The key is unique per (device, event_type, context, 5-minute window),
+        so a second legitimate call within the same window is silently deduplicated
+        while a call one window later (a genuinely new event) is accepted.
+        """
+        window = ts // 300
+        raw = f"{self._device_key}:{event_type}:{context}:{window}"
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    def _reward_signature(self, event_type: str, idempotency_key: str, ts: int) -> str:
+        """HMAC-SHA256 signature the server uses to authenticate the request."""
+        message = f"{self._device_key}|{event_type}|{idempotency_key}|{ts}"
+        return _hmac.new(
+            _REWARD_SIGNING_SECRET.encode(),
+            message.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+
+    def claim_reward(self, event_type: str, context: str = "") -> None:
+        """
+        Fire-and-forget: grant the player coins for an in-game event.
+
+        Only runs in Progress Mode (when the device key is available).
+        Executes in a daemon thread so it never blocks gameplay.
+
+        Args:
+            event_type: One of "unlock", "evolution", "new_pet", "adventure".
+            context:    Stable descriptor for this specific event instance
+                        (e.g. digimon name, "module:area").  Used to make
+                        the idempotency key unique within the 5-min window.
+        """
+        from core import game_globals
+        if not self._device_key or not game_globals.is_progress_mode():
+            return
+
+        ts = int(time.time())
+        idempotency_key = self._reward_idempotency_key(event_type, context, ts)
+        signature = self._reward_signature(event_type, idempotency_key, ts)
+
+        def _worker():
+            try:
+                success, data = self._make_request('POST', '/api/v1/rewards/claim', {
+                    'event_type': event_type,
+                    'idempotency_key': idempotency_key,
+                    'timestamp': ts,
+                    'signature': signature,
+                })
+                if success and isinstance(data, dict):
+                    total = data.get('total_coins')
+                    if total is not None and self._user_info is not None:
+                        self._user_info['coins'] = total
+                    runtime_globals.game_console.log(
+                        f"[OmninetService] Reward claimed: {event_type} "
+                        f"(+{data.get('coins_awarded', '?')} coins)"
+                    )
+                else:
+                    runtime_globals.game_console.log(
+                        f"[OmninetService] Reward claim skipped ({event_type}): {data}"
+                    )
+            except Exception as e:
+                runtime_globals.game_console.log(
+                    f"[OmninetService] Reward claim error ({event_type}): {e}"
+                )
+
+        threading.Thread(target=_worker, daemon=True).start()
 
 
 # Global singleton instance

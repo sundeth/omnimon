@@ -18,6 +18,7 @@ from ui.components.experience_bar import ExperienceBar
 from ui.components.grid import Grid, GridItem
 from ui.windows.window_background import WindowBackground
 from core import runtime_globals, game_globals
+from services.omninet_service import omninet_service
 from models.game_digidex import register_digidex_entry
 from models.game_pet import GamePet
 from utils.pet_utils import distribute_pets_evenly
@@ -114,14 +115,26 @@ class SceneEggSelection:
             runtime_globals.game_console.log(
                 "[SceneEggSelection] No installed modules have eggs")
         elif game_globals.is_progress_mode() and not navigation_utils.has_owned_modules():
-            # Progress Mode: modules are installed but player owns none of them.
-            # Offer the shop so they can purchase / download one.
-            SceneError.set_error(
-                message="MODULES NOT PURCHASED",
-                return_scene="connect",
-                bottom_message="Buy or download a module from the Shop"
-            )
-            change_scene("error")
+            # Progress Mode: player has no modules in their library.  Send
+            # them straight into the shop's modules section instead of
+            # showing an error screen.
+            runtime_globals.scene_connect_initial_view = "shop_modules"
+            change_scene("connect")
+            return
+
+        # Module pre-selected by the connect-exit flow (player just bought a
+        # module + had no pets).  Skip the category step and jump straight
+        # to that module's egg picker.
+        preselected = getattr(runtime_globals, 'preselected_module', None)
+        runtime_globals.preselected_module = None
+        if preselected and preselected in runtime_globals.game_modules:
+            self.available_modules = [preselected]
+            self.current_module_index = 0
+            self.phase = "egg_selection"
+            self.setup_ui()
+            runtime_globals.game_console.log(
+                f"[SceneEggSelection] Pre-selected module '{preselected}', "
+                "skipping category step")
             return
         else:
             runtime_globals.game_console.log(
@@ -1239,6 +1252,9 @@ class SceneEggSelection:
                 if "version" not in unlock or unlock.get("version") == selected_egg["version"]:
                     unlock_item(selected_egg["module"], "egg", unlock["name"])
         
+        # Reward: new pet slot unlocked
+        omninet_service.claim_reward("unlock", f"{selected_egg['module']}:{selected_egg['name']}")
+
         # Go to game scene
         change_scene("game")
         distribute_pets_evenly()

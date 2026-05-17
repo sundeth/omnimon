@@ -23,6 +23,17 @@ GPIO_MODE = 4
 INPUT_MODE = KEYBOARD_MODE
 INPUT_MODE_FORCED = False  # If True, INPUT_MODE won't auto-switch based on input device
 
+def use_virtual_keyboard() -> bool:
+    """Return True when the on-screen virtual keyboard should be shown.
+
+    Android relies on the native system keyboard (handled separately).
+    Touch / GPIO modes have no physical keyboard; the virtual one is needed.
+    Mouse / Keyboard modes assume a physical keyboard and skip the overlay.
+    """
+    if IS_ANDROID:
+        return False
+    return INPUT_MODE in (TOUCH_MODE, GPIO_MODE)
+
 # --- Resolution and Scaling (Mutable) ---
 SCREEN_WIDTH = 240
 SCREEN_HEIGHT = 240
@@ -42,6 +53,16 @@ FONT_SIZE_LARGE = 40
 # --- Scene and State Control ---
 game_state = "boot"
 game_state_update = False
+# When set, SceneConnect opens directly on this view (e.g. "shop_modules")
+# instead of the main menu.  Consumed once, then cleared.
+scene_connect_initial_view = None
+# Set by ShopModulesView right after a successful module purchase.  When
+# SceneConnect exits and the player has no pets, the connect→egg routing
+# uses this to auto-download the module and pre-select it in the egg picker.
+last_purchased_module = None
+# If set, SceneEggSelection jumps directly into that module's egg picker,
+# bypassing the category selection step.  Cleared after consumption.
+preselected_module = None
 
 # --- Main Menu Navigation ---
 main_menu_index = -1

@@ -1,4 +1,4 @@
-"""
+﻿"""
 MainMenuView - Main connect menu with sub-menus
 Shows Arena, LocalBattle, Shop, Config, Guide, and Exit buttons
 """
@@ -210,11 +210,11 @@ class MainMenuView:
         self.ui_manager.add_component(self.config_button)
         self.main_menu_components.append(self.config_button)
         
-        # Guide button
+        # Discord button (replaces the old GUIDE button — see _on_discord_selected)
         guide_y = small_btn_y_start + small_button_heights + small_button_gap
         self.guide_button = Button(
             small_center_x, guide_y, small_button_width, small_button_heights,
-            "GUIDE", self._on_guide_selected,
+            "DISCORD", self._on_discord_selected,
             cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
         )
         self.guide_button.visible = False
@@ -505,6 +505,19 @@ class MainMenuView:
         if self.exit_button:
             self.exit_button.enabled = has_modules
             self.exit_button.focusable = has_modules
+
+        # Discord button: enabled only when a Discord account is linked AND
+        # the Discord bot/service is reachable.  Connectivity is checked
+        # asynchronously so the menu stays responsive; until then we
+        # disable based on the cached linked-account state.
+        if self.guide_button:
+            discord_linked = bool(
+                self.discord and getattr(self.discord, 'account_name', None)
+            )
+            self.guide_button.enabled = discord_linked
+            self.guide_button.focusable = discord_linked
+            if discord_linked:
+                self._check_discord_availability_async()
     
     def _has_installed_modules(self) -> bool:
         """Check if there are any playable modules installed (excluding Tutorial)."""
@@ -644,9 +657,20 @@ class MainMenuView:
     # === Button callbacks ===
     
     def _on_arena_selected(self):
-        """Arena button clicked."""
+        """Arena button clicked — go straight into the arena view.
+
+        The intermediate submenu (Local Battle / Omninet) was redundant
+        for the arena entry point; arena is always Omninet, so we route
+        directly to ArenaView (after gating on Progress Mode + login).
+        """
         runtime_globals.game_sound.play("menu")
-        self._show_arena_submenu()
+        if not game_globals.is_progress_mode():
+            runtime_globals.game_console.log("[MainMenuView] Arena requires Progress Mode")
+            return
+        if not omninet_service.is_logged_in():
+            self.change_view("link_dialog", is_online_mode=True, return_view="arena")
+            return
+        self.change_view("arena")
     
     def _on_local_battle_selected(self):
         """Local Battle button clicked."""
@@ -658,7 +682,7 @@ class MainMenuView:
         # Free Mode: allow shop without Omninet login
         if not game_globals.is_free_mode() and not omninet_service.is_logged_in():
             runtime_globals.game_console.log("[MainMenuView] Not logged in to Omninet, showing message")
-            runtime_globals.game_sound.play("error")
+            runtime_globals.game_sound.play("cancel")
             runtime_globals.tooltip = "You need to be logged in to Omninet to access the shop. Go to Config to login."
             return
         
@@ -681,20 +705,63 @@ class MainMenuView:
         change_scene("game")
     
     def _on_omninet_selected(self):
-        """OmniNet button clicked."""
+        """OmniNet (Arena) button clicked."""
         runtime_globals.game_sound.play("menu")
-        runtime_globals.game_console.log("[MainMenuView] OmniNet selected - not implemented")
-    
-    def _on_discord_selected(self):
-        """Discord button clicked."""
-        runtime_globals.game_sound.play("menu")
-        
-        # Check if logged in
-        if not self.discord or not self.discord.get_account_name():
-            # Show link dialog first
-            self.change_view("link_dialog", is_online_mode=True, return_view="pet_selection")
+
+        # Arena is Progress-Mode-only; Free Mode players get a no-op.
+        if not game_globals.is_progress_mode():
+            runtime_globals.game_console.log("[MainMenuView] Arena requires Progress Mode")
             return
-        
+
+        # Need to be logged into Omninet; otherwise route through the link flow.
+        if not omninet_service.is_logged_in():
+            self.change_view("link_dialog", is_online_mode=True, return_view="arena")
+            return
+
+        self.change_view("arena")
+    
+    def _check_discord_availability_async(self):
+        """Probe the Discord bot in the background; disable button on failure."""
+        import threading
+
+        def _worker():
+            try:
+                reachable = self.discord.check_connection() if self.discord else False
+            except Exception:
+                reachable = False
+            if not reachable and self.guide_button:
+                self.guide_button.enabled = False
+                self.guide_button.focusable = False
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_discord_selected(self):
+        """Discord button clicked.
+
+        Requires both a linked Discord account and a reachable Discord bot.
+        The button itself is disabled when either is missing (see
+        _check_discord_availability_async), but we double-check here in case
+        the user managed to activate it while the async probe was in flight.
+        """
+        runtime_globals.game_sound.play("menu")
+
+        if not self.discord or not self.discord.get_account_name():
+            # Not linked yet — send through the link dialog and come back.
+            self.change_view("link_dialog", is_online_mode=True,
+                             return_view="main_menu")
+            return
+
+        # Verify the bot is reachable before entering the pet picker.
+        try:
+            reachable = self.discord.check_connection()
+        except Exception:
+            reachable = False
+        if not reachable:
+            runtime_globals.game_console.log(
+                "[MainMenuView] Discord bot unreachable; ignoring click")
+            runtime_globals.game_sound.play("cancel")
+            return
+
         self.change_view("pet_selection", is_online_mode=True)
     
     def _on_arena_back(self):
@@ -735,17 +802,21 @@ class MainMenuView:
         runtime_globals.game_sound.play("menu")
 
         if omninet_service.is_logged_in():
-            # Disconnect
+            # Disconnect: drop the device key and bounce the player into the
+            # login scene so they can sign in again or switch modes.  No
+            # main-scene message slide — see the connect/login messaging
+            # audit rule.
             omninet_service.logout()
             self._omninet_username = None
             self._update_config_status()
             runtime_globals.game_console.log("[MainMenuView] Disconnected from Omninet")
-            runtime_globals.game_message.add_slide("Logged out from Omninet", (255, 255, 255), 90)
+            change_scene("login")
+            return
         else:
             # Progress Mode: redirect to SceneLogin for full login flow
             if game_globals.is_progress_mode():
                 runtime_globals.game_console.log(
-                    "[MainMenuView] Progress Mode — redirecting to SceneLogin")
+                    "[MainMenuView] Progress Mode â€” redirecting to SceneLogin")
                 change_scene("login")
             else:
                 # Free Mode: use inline pairing code view

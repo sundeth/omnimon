@@ -18,6 +18,10 @@ from .shop_items_view import ShopItemsView
 from .shop_cosmetics_view import ShopCosmeticsView
 from .shop_specials_view import ShopSpecialsView
 from .battle_confirm_view import BattleConfirmView
+from .arena_view import ArenaView
+from .arena_rules_view import ArenaRulesView
+from .arena_history_view import ArenaHistoryView
+from .arena_team_creation_view import ArenaTeamCreationView
 
 __all__ = [
     'MainMenuView',
@@ -35,4 +39,7 @@ __all__ = [
     'ShopCosmeticsView',
     'ShopSpecialsView',
     'BattleConfirmView',
+    'ArenaView',
+    'ArenaRulesView',
+    'ArenaHistoryView',
 ]

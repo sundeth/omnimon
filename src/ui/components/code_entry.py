@@ -8,10 +8,17 @@ Works like a horizontal list where each position can be edited.
 Usage:
     code_entry = CodeEntry(x, y, length=4)
     ui_manager.add_component(code_entry)
-    
+
 Controls:
-    Mouse/Touch: Click on a character box to cycle its value (0-9, A-Z)
-    Keyboard: LEFT/RIGHT to move between boxes, A/UP/DOWN to cycle character value
+    Mouse:        LCLICK on a box cycles forward; RCLICK cycles backward.
+    Keyboard:     LEFT/RIGHT move between boxes; DOWN cycles forward,
+                  UP cycles backward; A also cycles forward.
+    Touch mode:   A virtual keyboard overlay is drawn at the bottom of the
+                  screen with all 0-9, A-Z keys plus backspace and OK.
+                  Tapping a key types it into the selected box and advances.
+                  The host scene must call ``draw_keyboard_overlay`` and
+                  forward clicks via ``handle_keyboard_click`` (mirroring
+                  how TextInput is integrated).
 """
 
 import pygame
@@ -19,31 +26,54 @@ import string
 from ui.components.component import UIComponent
 from core import runtime_globals
 
+
 class CodeEntry(UIComponent):
-    def __init__(self, x, y, length=4, callback=None):
+    # Virtual keyboard rendering parameters (in base coordinates, scaled by manager)
+    VK_HEIGHT = 96
+    VK_ROWS = [
+        list("0123456789"),
+        list("ABCDEFGHIJ"),
+        list("KLMNOPQRST"),
+        list("UVWXYZ") + ["BACK", "OK"],
+    ]
+
+    def __init__(self, x, y, length=4, callback=None, on_focus_callback=None):
         # Size based on length (each char is 40x50 approx)
         self.base_char_w = 40
         self.base_char_h = 50
         self.base_spacing = 10
         total_w = (self.base_char_w * length) + (self.base_spacing * (length - 1))
-        
+
         super().__init__(x, y, total_w, self.base_char_h)
-        
+
         self.length = length
         self.callback = callback
-        
+        # Optional callback fired when the entry gains focus — used by the
+        # scene to clear stale "Invalid code" messages on the next attempt.
+        self.on_focus_callback = on_focus_callback
+
         # State
         self.chars = ['A'] * length  # Default to 'A's
         self.selected_index = 0  # Currently selected character position (for keyboard)
         self.mouse_over_index = -1  # Mouse hover tracking
-        
+
         # Charset: 0-9, A-Z
         self.charset = string.digits + string.ascii_uppercase
-        
+
         self.focusable = True
+        self.sticky_focus = True  # Same focus rules as TextInput
         self.shadow_mode = "component"
-        
+
         runtime_globals.game_console.log(f"[CodeEntry] Created length={length}")
+
+    def on_focus_gained(self):
+        """Notify the host scene so it can clear any prior error state."""
+        if self.on_focus_callback:
+            try:
+                self.on_focus_callback()
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[CodeEntry] on_focus_callback error: {exc}")
 
     def get_text(self):
         """Get current code as string."""
@@ -54,16 +84,67 @@ class CodeEntry(UIComponent):
         char_x = index * (self.base_char_w + self.base_spacing)
         return pygame.Rect(char_x, 0, self.base_char_w, self.base_char_h)
     
-    def _cycle_character(self, index):
-        """Cycle to the next character in the charset for the given index."""
+    def _cycle_character(self, index, direction: int = 1):
+        """Cycle to the next/previous character in the charset for the given index.
+
+        Args:
+            index: Position to cycle.
+            direction: +1 = next character (A->B), -1 = previous (B->A).
+        """
         if 0 <= index < self.length:
             current_char = self.chars[index]
             char_idx = self.charset.index(current_char)
-            new_idx = (char_idx + 1) % len(self.charset)
+            new_idx = (char_idx + direction) % len(self.charset)
             self.chars[index] = self.charset[new_idx]
             self.needs_redraw = True
-            runtime_globals.game_sound.play("select")
-            runtime_globals.game_console.log(f"[CodeEntry] Character {index} cycled to {self.chars[index]}")
+            runtime_globals.game_sound.play("menu")
+            runtime_globals.game_console.log(
+                f"[CodeEntry] Character {index} cycled to {self.chars[index]}")
+
+    def _set_character(self, index, ch):
+        """Set the char at *index* to *ch* (must be in the charset)."""
+        if 0 <= index < self.length and ch in self.charset:
+            self.chars[index] = ch
+            self.needs_redraw = True
+            runtime_globals.game_sound.play("menu")
+
+    def _handle_pygame_event(self, event):
+        """Capture printable keys and Backspace from a real keyboard.
+
+        Letters and digits set the current box and advance.  Backspace
+        clears the current/previous box and steps back.  Enter triggers
+        the confirm callback (if set).
+        """
+        if event.type == pygame.TEXTINPUT:
+            ch = (event.text or "").upper()
+            if ch and ch[0] in self.charset:
+                self._set_character(self.selected_index, ch[0])
+                if self.selected_index < self.length - 1:
+                    self.selected_index += 1
+                return True
+            return False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                # Clear current box; step back if it was already 'A' (no change)
+                if self.chars[self.selected_index] != 'A':
+                    self._set_character(self.selected_index, 'A')
+                else:
+                    self.selected_index = max(0, self.selected_index - 1)
+                    self._set_character(self.selected_index, 'A')
+                return True
+            if event.key == pygame.K_RETURN:
+                if self.callback:
+                    self.callback(self.get_text())
+                return True
+            if event.key == pygame.K_LEFT:
+                self.selected_index = (self.selected_index - 1) % self.length
+                self.needs_redraw = True
+                return True
+            if event.key == pygame.K_RIGHT:
+                self.selected_index = (self.selected_index + 1) % self.length
+                self.needs_redraw = True
+                return True
+        return False
 
     def update(self):
         """Update component state including mouse hover detection."""
@@ -104,50 +185,61 @@ class CodeEntry(UIComponent):
         """Handle input events."""
         if not self.visible or not self.focused:
             return False
-        
+
+        # Raw pygame events for physical-keyboard capture (PC and Android IME)
+        if isinstance(event, pygame.event.Event):
+            return self._handle_pygame_event(event)
+
         # Event is a tuple: (event_type, event_data)
         if not isinstance(event, tuple) or len(event) != 2:
             return False
-        
+
         event_type, event_data = event
         
-        # Mouse/Touch mode: Click on a character box to cycle its value
-        if event_type == "LCLICK":
+        # Mouse/Touch: LCLICK cycles forward, RCLICK cycles backward
+        if event_type in ("LCLICK", "RCLICK"):
             if event_data and "pos" in event_data:
                 mouse_pos = event_data["pos"]
                 if self.rect.collidepoint(mouse_pos):
-                    # Calculate which box was clicked
                     local_x = mouse_pos[0] - self.rect.x
                     clicked_index = int(local_x // (self.base_char_w + self.base_spacing))
-                    
                     if 0 <= clicked_index < self.length:
-                        runtime_globals.game_console.log(f"[CodeEntry] Clicked box {clicked_index}")
-                        # Cycle the character at this position
-                        self._cycle_character(clicked_index)
-                        # Also update selection for keyboard mode
+                        direction = 1 if event_type == "LCLICK" else -1
+                        runtime_globals.game_console.log(
+                            f"[CodeEntry] {event_type} box {clicked_index} dir={direction}")
+                        self._cycle_character(clicked_index, direction)
                         self.selected_index = clicked_index
                         return True
-        
-        # Keyboard mode: LEFT/RIGHT to navigate, A/UP/DOWN to cycle character
+
+        # Keyboard: LEFT/RIGHT navigate boxes
         elif event_type == "LEFT":
             self.selected_index = (self.selected_index - 1) % self.length
             runtime_globals.game_sound.play("menu")
             runtime_globals.game_console.log(f"[CodeEntry] Selected index: {self.selected_index}")
             self.needs_redraw = True
             return True
-        
+
         elif event_type == "RIGHT":
             self.selected_index = (self.selected_index + 1) % self.length
             runtime_globals.game_sound.play("menu")
             runtime_globals.game_console.log(f"[CodeEntry] Selected index: {self.selected_index}")
             self.needs_redraw = True
             return True
-        
-        elif event_type in ["A", "UP", "DOWN"]:
-            # Cycle character at selected position
-            self._cycle_character(self.selected_index)
+
+        # DOWN cycles forward, UP cycles backward
+        elif event_type == "DOWN":
+            self._cycle_character(self.selected_index, 1)
             return True
-        
+
+        elif event_type == "UP":
+            self._cycle_character(self.selected_index, -1)
+            return True
+
+        # A advances the character (forward)
+        elif event_type == "A":
+            self._cycle_character(self.selected_index, 1)
+            return True
+
         return False
 
     def render(self):
@@ -208,5 +300,108 @@ class CodeEntry(UIComponent):
             char_surf = font.render(self.chars[i], True, text_color)
             char_rect = char_surf.get_rect(center=(char_x + char_w//2, char_h//2))
             surface.blit(char_surf, char_rect)
-            
+
         return surface
+
+    # ── Touch-mode virtual keyboard ──────────────────────────────────
+
+    def _keyboard_geometry(self, screen_size):
+        """Return (kb_rect, scale, row_h) for the keyboard overlay.
+
+        The keyboard occupies the bottom VK_HEIGHT (in base coords, scaled
+        by the manager's ui_scale) of the screen.
+        """
+        scale = self.manager.ui_scale if self.manager else 1
+        sw, sh = screen_size
+        kb_h = int(self.VK_HEIGHT * scale)
+        kb_rect = pygame.Rect(0, sh - kb_h, sw, kb_h)
+        row_h = kb_h / len(self.VK_ROWS)
+        return kb_rect, scale, row_h
+
+    def draw_keyboard_overlay(self, target_surface):
+        """Draw a 0-9, A-Z + BACK/OK virtual keyboard at the bottom.
+
+        Mirrors TextInput.draw_keyboard_overlay so the host scene can
+        invoke it the same way.  Skipped on Android where the system
+        keyboard is used instead.
+        """
+        if runtime_globals.IS_ANDROID or not self.focused:
+            return
+        if not runtime_globals.use_virtual_keyboard():
+            return
+
+        screen_size = target_surface.get_size()
+        kb_rect, scale, row_h = self._keyboard_geometry(screen_size)
+
+        # Backdrop
+        backdrop = pygame.Surface((kb_rect.width, kb_rect.height), pygame.SRCALPHA)
+        backdrop.fill((20, 20, 20, 230))
+        target_surface.blit(backdrop, kb_rect.topleft)
+
+        font_size = max(10, int(14 * scale))
+        font = pygame.font.SysFont(None, font_size)
+
+        for r, row in enumerate(self.VK_ROWS):
+            key_w = kb_rect.width / len(row)
+            y = kb_rect.y + r * row_h
+            for c, label in enumerate(row):
+                x = kb_rect.x + c * key_w
+                key_rect = pygame.Rect(int(x) + 1, int(y) + 1,
+                                       int(key_w) - 2, int(row_h) - 2)
+                # Highlight OK / BACK distinctly
+                if label == "OK":
+                    bg = (60, 130, 60)
+                elif label == "BACK":
+                    bg = (130, 60, 60)
+                else:
+                    bg = (60, 60, 60)
+                pygame.draw.rect(target_surface, bg, key_rect, border_radius=4)
+                pygame.draw.rect(target_surface, (180, 180, 180),
+                                 key_rect, 1, border_radius=4)
+                text_surf = font.render(label, True, (240, 240, 240))
+                text_rect = text_surf.get_rect(center=key_rect.center)
+                target_surface.blit(text_surf, text_rect)
+
+    def handle_keyboard_click(self, pos, screen_size):
+        """Resolve a click at *pos* to a key press on the virtual keyboard.
+
+        Returns True if the click hit a key (and was consumed), False otherwise.
+        Mirrors TextInput.handle_keyboard_click.
+        """
+        if runtime_globals.IS_ANDROID or not self.focused:
+            return False
+        if not runtime_globals.use_virtual_keyboard():
+            return False
+
+        kb_rect, _, row_h = self._keyboard_geometry(screen_size)
+        if not kb_rect.collidepoint(pos):
+            return False
+
+        local_y = pos[1] - kb_rect.y
+        row_idx = int(local_y // row_h)
+        if row_idx < 0 or row_idx >= len(self.VK_ROWS):
+            return False
+        row = self.VK_ROWS[row_idx]
+        key_w = kb_rect.width / len(row)
+        local_x = pos[0] - kb_rect.x
+        col_idx = int(local_x // key_w)
+        if col_idx < 0 or col_idx >= len(row):
+            return False
+        label = row[col_idx]
+
+        if label == "OK":
+            # Trigger callback / let scene confirm — defocus by leaving as-is
+            if self.callback:
+                self.callback(self.get_text())
+            runtime_globals.game_sound.play("menu")
+        elif label == "BACK":
+            # Reset selected box back to 'A' and step back one
+            self._set_character(self.selected_index, 'A')
+            self.selected_index = max(0, self.selected_index - 1)
+        else:
+            # Single-letter / digit key
+            self._set_character(self.selected_index, label)
+            # Auto-advance to the next box
+            if self.selected_index < self.length - 1:
+                self.selected_index += 1
+        return True

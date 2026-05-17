@@ -179,7 +179,7 @@ class DiscordView:
             self._show_phase("browsing")
         elif index == 2:  # Back
             runtime_globals.game_sound.play("cancel")
-            self.change_view("pet_selection", is_online_mode=True)
+            self.change_view("main_menu")
     
     def _start_hosting(self):
         """Start hosting a Discord room."""
@@ -347,7 +347,7 @@ class DiscordView:
             elif self.phase == "hosting":
                 self._on_host_cancel()
             elif self.phase == "host_join":
-                self.change_view("pet_selection", is_online_mode=True)
+                self.change_view("main_menu")
             return True
     
     def cleanup(self):

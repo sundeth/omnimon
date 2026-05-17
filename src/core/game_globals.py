@@ -274,6 +274,36 @@ def is_progress_mode() -> bool:
     """Check if the game is currently in Progression Mode."""
     return game_mode == GAME_MODE_PROGRESS
 
+
+#---------------------------------------------------------------------
+# Arena pet pool
+#---------------------------------------------------------------------
+
+def send_pets_to_arena(pets: list) -> None:
+    """Move the given pets out of pet_list and into the arena_pets pool.
+
+    Called after a successful arena team upload.  Hides them from the
+    rest of the game until the season ends.
+    """
+    global pet_list, arena_pets
+    pet_ids = {id(p) for p in pets}
+    arena_pets.extend(p for p in pet_list if id(p) in pet_ids)
+    pet_list = [p for p in pet_list if id(p) not in pet_ids]
+
+
+def return_pets_from_arena() -> list:
+    """Move every arena pet back into pet_list. Returns the moved pets."""
+    global pet_list, arena_pets
+    returned = list(arena_pets)
+    pet_list.extend(returned)
+    arena_pets = []
+    return returned
+
+
+def is_pet_in_arena(pet) -> bool:
+    """True if this pet object is currently in the arena pool."""
+    return any(p is pet for p in arena_pets)
+
 SAVE_FILE = "save/save_data.dat"  # Legacy reference, use get_save_dir() instead
 SAVE_DIR = "save"  # Legacy reference, use get_save_dir() instead
 MAX_BACKUPS = 10  # Keep 10 backup files
@@ -303,11 +333,29 @@ total_victories = {}  # Track total battle victories per module: {module_name: c
 purchases = GamePurchases()  # Shop purchases
 configuration = GameConfiguration()  # Centralized configuration
 coins = 0  # Player's coin balance
+
+# Pets currently uploaded to an active arena team are kept in this side list
+# instead of pet_list while the season is running.  Functions that walk
+# pet_list (battle, training, feeding, evolution, UI) therefore skip them
+# automatically.  When the team's season closes (or the team is deactivated),
+# pets are moved back to pet_list with their state preserved.
+arena_pets = []
 setup_input = True
 setup_graphics = True
+setup_game_mode = False  # Jump directly to mode selection, bypassing welcome
+skip_tutorial_on_mode_switch = False  # Set when player has pets and switches mode from settings
 show_tutorial = True
 game_mode = GAME_MODE_PROGRESS  # Default to Progression Mode
 player_id = None  # Player UUID for Progress Mode save folder (loaded from omninet credentials)
+
+# Shop metadata caches — populated when the relevant shop view loads its
+# listings so that downstream code (SceneInventory, the settings
+# background selector, the training menu) can look up details for any
+# purchased item without re-fetching from the server.  Keyed by the
+# shop item's UUID string.
+shop_items_data = {}        # id -> {name, sprite_name, description, ...}
+shop_backgrounds = {}       # id -> {name, sprite_name, day_night, high_res, label}
+shop_gameplay_data = {}     # id -> {name, description, item_type}
 
 # Note: Python doesn't support module-level properties directly.
 # Code should access these via configuration.* or use the helper functions.

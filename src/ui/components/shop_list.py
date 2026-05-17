@@ -2,9 +2,70 @@
 Shop List Component - Vertical scrollable list for shop items
 Inherits from BaseList and provides specialized rendering for modules, items, cosmetics, and gameplay.
 """
+import os
 import pygame
 from ui.components.base_list import BaseList
 from core import runtime_globals, game_globals
+from utils.asset_utils import image_load
+
+
+_COIN_SPRITE = None
+_COIN_SPRITE_SOURCE = None
+
+
+def _get_coin_sprite() -> pygame.Surface:
+    """Return the shop coin sprite (loaded lazily once)."""
+    global _COIN_SPRITE, _COIN_SPRITE_SOURCE
+    if _COIN_SPRITE is not None:
+        return _COIN_SPRITE
+    try:
+        path = os.path.join("assets", "ui", "Shop_Coin_1.png")
+        if os.path.exists(path):
+            _COIN_SPRITE_SOURCE = image_load(path).convert_alpha()
+            _COIN_SPRITE = _COIN_SPRITE_SOURCE
+    except Exception as e:
+        runtime_globals.game_console.log(f"[ShopList] Coin sprite load error: {e}")
+    return _COIN_SPRITE
+
+
+def _scaled_coin(size_px: int) -> pygame.Surface:
+    """Return the coin sprite scaled to *size_px* on its longer edge."""
+    src = _get_coin_sprite()
+    if src is None or size_px <= 0:
+        return None
+    w, h = src.get_size()
+    scale = size_px / max(w, h)
+    return pygame.transform.smoothscale(src, (max(1, int(w * scale)), max(1, int(h * scale))))
+
+
+def _blit_price_or_owned(surface, item, font, row_y, row_height, right_edge, padding):
+    """Draw either a green ``Owned`` label or ``<coin icon> N`` on the right.
+
+    Returns the x of the leftmost pixel drawn (useful for callers that
+    want to avoid overlapping the price area).
+    """
+    if item.owned:
+        text = "Owned"
+        text_surf = font.render(text, True, (120, 220, 120))
+        x = right_edge - padding - text_surf.get_width()
+        y = row_y + (row_height - text_surf.get_height()) // 2
+        surface.blit(text_surf, (x, y))
+        return x
+
+    # Price: <coin> NN, value in gold/yellow
+    value_surf = font.render(str(item.price), True, (255, 215, 80))
+    icon_size = max(8, value_surf.get_height())
+    coin = _scaled_coin(icon_size)
+    gap = 2
+    total_w = (coin.get_width() if coin else 0) + gap + value_surf.get_width()
+    x = right_edge - padding - total_w
+    y = row_y + (row_height - value_surf.get_height()) // 2
+    if coin:
+        coin_y = row_y + (row_height - coin.get_height()) // 2
+        surface.blit(coin, (x, coin_y))
+    value_x = x + (coin.get_width() if coin else 0) + gap
+    surface.blit(value_surf, (value_x, y))
+    return x
 
 
 class ShopListItem:
@@ -31,6 +92,11 @@ class ShopModuleItem(ShopListItem):
         self.contributors = contributors
         self.updated_at = updated_at
         self.category = category
+        # Sprites fetched async from server
+        self.icon = None   # BattleIcon.png - shown in list
+        self.logo = None   # logo.png - shown in detail view
+        self._icon_fetching = False
+        self._logo_fetching = False
 
 
 class ShopGameplayItem(ShopListItem):
@@ -56,11 +122,15 @@ class ShopCosmeticItem(ShopListItem):
     """Cosmetic item for shop list."""
     def __init__(self, item_id: str, name: str, price: int, owned: bool = False,
                  icon: pygame.Surface = None, preview: pygame.Surface = None,
-                 cosmetic_type: str = ""):
+                 cosmetic_type: str = "", day_night: bool = True,
+                 high_res: bool = False, sprite_name: str = ""):
         super().__init__(item_id, name, price, owned)
         self.icon = icon
         self.preview = preview
         self.cosmetic_type = cosmetic_type
+        self.day_night = day_night
+        self.high_res = high_res
+        self.sprite_name = sprite_name
 
 
 class ShopList(BaseList):
@@ -97,6 +167,11 @@ class ShopList(BaseList):
         
         # Visual settings
         self.cut_width = 8
+        # ShopList draws its own per-item polygons; both the global
+        # items-area background and the 1px theme-colored border around
+        # that area are undesired here.
+        self.show_background = False
+        self.show_border = False
         
         # Text scrolling for long names
         self.text_scroll_speed = 20 * (30 / (runtime_globals.FRAME_RATE if hasattr(runtime_globals, 'FRAME_RATE') else 30))
@@ -109,27 +184,28 @@ class ShopList(BaseList):
         if self.on_item_selected_callback:
             self.on_item_selected_callback(item)
     
+    def _on_item_clicked(self, index, was_already_selected=False):
+        """Called by base_list when an item is clicked with the mouse (correct mouse_over_index)."""
+        if 0 <= index < len(self.items):
+            self.on_item_activated(self.items[index])
+
+    def _on_item_activated(self, index, interaction_type="keyboard"):
+        """Called by base_list when an item is activated via keyboard (A/ENTER)."""
+        if 0 <= index < len(self.items):
+            self.on_item_activated(self.items[index])
+
+    def handle_mouse_click(self, mouse_pos, action):
+        """Called by UIManager on LCLICK — delegates to base_list's position-based click handler."""
+        if not (runtime_globals.INPUT_MODE in [runtime_globals.MOUSE_MODE, runtime_globals.TOUCH_MODE]):
+            return False
+        if hasattr(runtime_globals, 'game_input') and hasattr(runtime_globals.game_input, 'is_dragging'):
+            if runtime_globals.game_input.is_dragging():
+                return False
+        return self._handle_mouse_click(mouse_pos)
+
     def handle_event(self, event):
-        """Handle events and check for item activation.
-        
-        Args:
-            event: Tuple of (event_type, event_data) from input system
-        """
-        result = super().handle_event(event)
-        
-        # Check for selection confirmation via tuple-based events
-        if isinstance(event, tuple):
-            event_type, event_data = event
-            if event_type in ["A", "ENTER"]:
-                if self.items and 0 <= self.active_index < len(self.items):
-                    self.on_item_activated(self.items[self.active_index])
-                    return True
-            elif event_type == "LCLICK":
-                if self.items and 0 <= self.active_index < len(self.items):
-                    self.on_item_activated(self.items[self.active_index])
-                    return True
-        
-        return result
+        """Delegate to base_list; activation is handled via _on_item_clicked/_on_item_activated."""
+        return super().handle_event(event)
     
     def _draw_items(self, surface):
         """Draw shop items based on current mode."""
@@ -194,55 +270,67 @@ class ShopList(BaseList):
         item_total_size = self.item_size + self.item_spacing
         first_visible = max(0, int(self.scroll_offset // item_total_size))
         last_visible = min(len(self.items), first_visible + self.get_visible_item_count() + 2)
-        
+
         for i in range(first_visible, last_visible):
             if i >= len(self.items):
                 break
-            
+
             item = self.items[i]
             item_y = self.items_rect.y + (i * item_total_size) - self.scroll_offset
-            
+
             if item_y + self.item_size < self.items_rect.y or item_y > self.items_rect.y + self.items_rect.height:
                 continue
-            
+
             fill_color, text_color, border_color = self._get_item_colors(i)
             self._draw_item_background(surface, item_y, fill_color, border_color)
-            
+
             # Fonts
             name_font = self.get_font("text", custom_size=18 * self.manager.ui_scale)
             small_font = self.get_font("text", custom_size=14 * self.manager.ui_scale)
-            
+
             padding = self.manager.scale_value(6)
-            
+
+            # Icon (left side, proportionally scaled to fit item height)
+            icon_offset = 0
+            if hasattr(item, 'icon') and item.icon:
+                icon_max = self.item_size - padding * 2
+                orig_w, orig_h = item.icon.get_size()
+                scale = min(icon_max / orig_w, icon_max / orig_h)
+                icon_w = int(orig_w * scale)
+                icon_h = int(orig_h * scale)
+                scaled_icon = pygame.transform.scale(item.icon, (icon_w, icon_h))
+                icon_x = self.items_rect.x + padding
+                icon_y = item_y + (self.item_size - icon_h) // 2
+                surface.blit(scaled_icon, (icon_x, icon_y))
+                icon_offset = icon_w + padding
+
+            text_left = self.items_rect.x + padding + icon_offset
+
             # Draw official badge if applicable
             badge_offset = 0
             if hasattr(item, 'official') and item.official:
                 badge_text = "★"
                 badge_surface = small_font.render(badge_text, True, text_color)
-                surface.blit(badge_surface, (self.items_rect.x + padding, item_y + padding))
+                surface.blit(badge_surface, (text_left, item_y + padding))
                 badge_offset = badge_surface.get_width() + 4
-            
-            # Name (top left)
+
+            # Name (top left, after icon)
             name_text = item.name[:20] + "..." if len(item.name) > 20 else item.name
             name_surface = name_font.render(name_text, True, text_color)
-            surface.blit(name_surface, (self.items_rect.x + padding + badge_offset, item_y + padding))
-            
-            # Price or "Owned" (top right)
-            if item.owned:
-                price_text = "Owned"
-            else:
-                price_text = f"{item.price}c"
-            price_surface = small_font.render(price_text, True, text_color)
-            price_x = self.items_rect.right - padding - price_surface.get_width()
-            surface.blit(price_surface, (price_x, item_y + padding))
-            
-            # Creator and version (bottom left)
+            surface.blit(name_surface, (text_left + badge_offset, item_y + padding))
+
+            # Price / Owned (top right) — coin icon + yellow value, green Owned
+            _blit_price_or_owned(surface, item, small_font, item_y + padding - 2,
+                                  small_font.get_height() + 4,
+                                  self.items_rect.right, padding)
+
+            # Creator and version (bottom left, after icon)
             creator_text = f"by {item.creator}" if hasattr(item, 'creator') and item.creator else ""
             version_text = f"v{item.version}" if hasattr(item, 'version') and item.version else ""
             info_text = f"{creator_text} {version_text}".strip()
             if info_text:
                 info_surface = small_font.render(info_text[:30], True, text_color)
-                surface.blit(info_surface, (self.items_rect.x + padding, item_y + self.item_size - padding - info_surface.get_height()))
+                surface.blit(info_surface, (text_left, item_y + self.item_size - padding - info_surface.get_height()))
     
     def _draw_gameplay_items(self, surface):
         """Draw gameplay items: name and type."""
@@ -273,14 +361,10 @@ class ShopList(BaseList):
             name_surface = name_font.render(name_text, True, text_color)
             surface.blit(name_surface, (self.items_rect.x + padding, item_y + padding))
             
-            # Price or "Owned" (top right)
-            if item.owned:
-                price_text = "Owned"
-            else:
-                price_text = f"{item.price}c"
-            price_surface = small_font.render(price_text, True, text_color)
-            price_x = self.items_rect.right - padding - price_surface.get_width()
-            surface.blit(price_surface, (price_x, item_y + padding))
+            # Price / Owned (top right) — coin icon + yellow value, green Owned
+            _blit_price_or_owned(surface, item, small_font, item_y + padding - 2,
+                                  small_font.get_height() + 4,
+                                  self.items_rect.right, padding)
             
             # Type (bottom left)
             if hasattr(item, 'item_type') and item.item_type:
@@ -328,16 +412,17 @@ class ShopList(BaseList):
             name_surface = name_font.render(name_text, True, text_color)
             surface.blit(name_surface, (text_x, item_y + padding + 2))
             
-            # Price or quantity (bottom right)
+            # Price / quantity / Owned (bottom right)
             if item.owned and hasattr(item, 'quantity') and item.quantity > 0:
-                info_text = f"x{item.quantity}"
-            elif item.owned:
-                info_text = "Owned"
+                qty_surf = small_font.render(f"x{item.quantity}", True, (120, 220, 120))
+                qx = self.items_rect.right - padding - qty_surf.get_width()
+                qy = item_y + self.item_size - padding - qty_surf.get_height()
+                surface.blit(qty_surf, (qx, qy))
             else:
-                info_text = f"{item.price}c"
-            info_surface = small_font.render(info_text, True, text_color)
-            info_x = self.items_rect.right - padding - info_surface.get_width()
-            surface.blit(info_surface, (info_x, item_y + self.item_size - padding - info_surface.get_height()))
+                row_top = item_y + self.item_size - padding - small_font.get_height() - 2
+                _blit_price_or_owned(surface, item, small_font, row_top,
+                                      small_font.get_height() + 4,
+                                      self.items_rect.right, padding)
     
     def _draw_cosmetic_items(self, surface):
         """Draw cosmetic items with small icon and name."""
@@ -384,11 +469,6 @@ class ShopList(BaseList):
                 type_surface = small_font.render(item.cosmetic_type, True, text_color)
                 surface.blit(type_surface, (text_x, item_y + self.item_size - padding - type_surface.get_height()))
             
-            # Price or "Owned" (right side)
-            if item.owned:
-                price_text = "Owned"
-            else:
-                price_text = f"{item.price}c"
-            price_surface = small_font.render(price_text, True, text_color)
-            price_x = self.items_rect.right - padding - price_surface.get_width()
-            surface.blit(price_surface, (price_x, item_y + (self.item_size - price_surface.get_height()) // 2))
+            # Price / Owned (right) — coin icon + yellow value, green Owned
+            _blit_price_or_owned(surface, item, small_font, item_y,
+                                  self.item_size, self.items_rect.right, padding)

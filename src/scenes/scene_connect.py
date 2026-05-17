@@ -26,6 +26,10 @@ from scenes.connect_views import (
     ShopCosmeticsView,
     ShopSpecialsView,
     BattleConfirmView,
+    ArenaView,
+    ArenaRulesView,
+    ArenaHistoryView,
+    ArenaTeamCreationView,
 )
 
 
@@ -183,8 +187,21 @@ class SceneConnect:
         # Selected pets (shared across views for battle flow)
         self.selected_pets = []
         
-        # Show main menu initially
-        self._change_view("main_menu")
+        # If a caller set runtime_globals.scene_connect_initial_view, jump
+        # directly to that view (e.g. "shop_modules" after login when the
+        # player hasn't bought any modules yet).  Consumed once.
+        initial = getattr(runtime_globals, 'scene_connect_initial_view', None)
+        runtime_globals.scene_connect_initial_view = None
+        if initial:
+            try:
+                self._change_view(initial)
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[SceneConnect] Failed to open initial view '{initial}': {exc}; "
+                    "falling back to main menu")
+                self._change_view("main_menu")
+        else:
+            self._change_view("main_menu")
         
         runtime_globals.game_console.log("[SceneConnect] Initialized with view architecture")
     
@@ -236,6 +253,10 @@ class SceneConnect:
             "shop_cosmetics": ShopCosmeticsView,
             "shop_specials": ShopSpecialsView,
             "battle_confirm": BattleConfirmView,
+            "arena": ArenaView,
+            "arena_rules": ArenaRulesView,
+            "arena_history": ArenaHistoryView,
+            "arena_team_creation": ArenaTeamCreationView,
         }
         
         view_class = view_map.get(view_name)
@@ -330,15 +351,57 @@ class SceneConnect:
                     return
             # If not handled by a view, exit to game from main menu
             if self.current_view_name == "main_menu":
-                from utils.scene_utils import change_scene
                 runtime_globals.game_sound.play("cancel")
-                change_scene("game")
+                self._exit_to_game()
             return
         
         # Delegate to current view for any additional event handling
         if self.current_view:
             self.current_view.handle_event(event)
     
+    def _exit_to_game(self):
+        """Leave the connect scene.
+
+        Special case: if the player just bought a module and has no pets
+        in their party, auto-download the module and jump straight into
+        the egg picker with that module pre-selected (skipping the
+        category step).  Otherwise just go to the main game scene.
+        """
+        from utils.scene_utils import change_scene
+        from core import game_globals
+        import threading
+
+        purchased = getattr(runtime_globals, 'last_purchased_module', None)
+        has_pets = bool(getattr(game_globals, 'pet_list', None))
+
+        if purchased and not has_pets:
+            # Pre-select for SceneEggSelection
+            runtime_globals.preselected_module = purchased.get('name')
+            # Clear so we don't trigger again on a later exit
+            runtime_globals.last_purchased_module = None
+
+            module_id = purchased.get('id')
+
+            def _do_download_then_route():
+                try:
+                    from services.omninet_service import omninet_service
+                    if game_globals.is_free_mode():
+                        omninet_service.download_module_free(module_id)
+                    else:
+                        omninet_service.download_module(module_id)
+                except Exception as exc:
+                    runtime_globals.game_console.log(
+                        f"[SceneConnect] Auto-download failed: {exc}")
+                # Route on the main thread next tick by setting the scene now;
+                # change_scene is safe to call from a worker for this codebase
+                # (it just flips a flag).
+                change_scene("egg")
+
+            threading.Thread(target=_do_download_then_route, daemon=True).start()
+            return
+
+        change_scene("game")
+
     def __del__(self):
         """Cleanup when scene is destroyed."""
         if self.current_view:

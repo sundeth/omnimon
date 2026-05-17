@@ -157,6 +157,7 @@ class TextInput(UIComponent):
         self.on_confirm = on_confirm
         self.on_change = on_change
         self.focusable = True
+        self.sticky_focus = True  # Hover doesn't steal focus; click outside unfocuses
         self.is_dynamic = True  # Redraw every frame (cursor blink)
 
         # Cursor blink
@@ -221,7 +222,7 @@ class TextInput(UIComponent):
         if len(self.text) + len(ch) <= self.max_length:
             self.text += ch
             self.needs_redraw = True
-            runtime_globals.game_sound.play("select")
+            runtime_globals.game_sound.play("menu")
             if self.on_change:
                 self.on_change(self.text)
 
@@ -428,7 +429,9 @@ class TextInput(UIComponent):
 
         Returns True if the click was consumed.
         """
-        if runtime_globals.IS_ANDROID or not self.focused:
+        if not self.focused:
+            return False
+        if not runtime_globals.use_virtual_keyboard():
             return False
 
         scale = self.manager.ui_scale if self.manager else 1
@@ -503,9 +506,13 @@ class TextInput(UIComponent):
         """Draw the virtual keyboard at the bottom of *target_surface*.
 
         Call this from the scene's ``draw()`` method **after** the UI
-        manager has drawn.  Only draws when focused and not on Android.
+        manager has drawn.  Only draws when focused and the device has no
+        physical keyboard (touch / GPIO modes).  PCs with a real keyboard
+        and Android (which uses the system IME) skip the overlay.
         """
-        if runtime_globals.IS_ANDROID or not self.focused:
+        if not self.focused:
+            return
+        if not runtime_globals.use_virtual_keyboard():
             return
 
         scale = self.manager.ui_scale if self.manager else 1

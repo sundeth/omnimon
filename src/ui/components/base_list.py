@@ -362,8 +362,13 @@ class BaseList(UIComponent):
                 self.scroll_offset += scroll_step if scroll_diff > 0 else -scroll_step
             self.needs_redraw = True
             
-        # Handle mouse hover if mouse or touch is enabled
-        if (runtime_globals.INPUT_MODE in [runtime_globals.MOUSE_MODE, runtime_globals.TOUCH_MODE]) and self.focused:
+        # Handle mouse hover whenever mouse / touch is the active mode.
+        # The hover visual is local state; gating it on self.focused caused
+        # the highlight to die after the list lost focus to another scene
+        # element, requiring the user to reopen the shop to get it back.
+        if runtime_globals.INPUT_MODE in (
+            runtime_globals.MOUSE_MODE, runtime_globals.TOUCH_MODE
+        ):
             self._handle_mouse_hover()
             
     def _handle_mouse_hover(self):
@@ -408,11 +413,48 @@ class BaseList(UIComponent):
                 self.mouse_over_index = -1
                 self.needs_redraw = True
                 
+    def handle_scroll(self, event):
+        """Mouse wheel scroll handler — UIManager dispatches SCROLL events
+        here directly when the cursor is over this component, regardless
+        of focus state.  Returning True consumes the event.
+        """
+        if not self.items:
+            return False
+        if not isinstance(event, tuple) or len(event) != 2:
+            return False
+        event_type, event_data = event
+        if event_type != "SCROLL" or not event_data:
+            return False
+        direction = event_data.get("direction")
+        if direction == "UP":
+            if self.orientation == "horizontal":
+                self.select_previous()
+            else:
+                self.scroll_by_items(-1)
+        elif direction == "DOWN":
+            if self.orientation == "horizontal":
+                self.select_next()
+            else:
+                self.scroll_by_items(1)
+        else:
+            return False
+        runtime_globals.game_sound.play("menu")
+        return True
+
     def handle_event(self, event):
         """Handle input events - now expects tuple-based events"""
         event_type, event_data = event
-        
-        if not self.focused or not self.items:
+
+        if not self.items:
+            return False
+
+        # Also accept SCROLL via handle_event for paths that route everything
+        # through the focused component.  Duplicates handle_scroll but is
+        # cheap and keeps both routing styles working.
+        if event_type == "SCROLL" and event_data:
+            return self.handle_scroll(event)
+
+        if not self.focused:
             return False
             
         # Handle directional inputs
@@ -670,15 +712,25 @@ class BaseList(UIComponent):
         if self.items_rect and self.show_background:
             bg_color = self.background_color if self.background_color else colors["bg"]
             pygame.draw.rect(surface, bg_color, self.items_rect)
-            
+
         # Draw items area border (if enabled)
         if self.items_rect and self.show_border:
             border_color = self.border_color if self.border_color else colors["fg"]
             pygame.draw.rect(surface, border_color, self.items_rect, 1)
-            
-        # Draw items - override this method in subclasses for custom item rendering
-        self._draw_items(surface)
-        
+
+        # Clip item drawing to items_rect so tall items can't overflow into
+        # the prev/next arrow strips (this was hiding the bottom arrow when
+        # the first item was focused).
+        if self.items_rect:
+            prev_clip = surface.get_clip()
+            surface.set_clip(self.items_rect)
+            try:
+                self._draw_items(surface)
+            finally:
+                surface.set_clip(prev_clip)
+        else:
+            self._draw_items(surface)
+
         return surface
         
     def _draw_arrow(self, surface, rect, direction, pressed):

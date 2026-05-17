@@ -36,6 +36,7 @@ from core import constants
 from battle import combat_constants
 from models.game_quest import QuestType
 from utils.quest_event_utils import update_quest_progress
+from services.omninet_service import omninet_service
 
 #=====================================================================
 # BattleEncounter Class
@@ -1752,6 +1753,7 @@ class BattleEncounter:
             self.return_to_main_scene()
             return
 
+        area_advanced = False
         pets = get_battle_targets()
         if self.victory_status == "Victory":
             if not self.boss:
@@ -1768,6 +1770,7 @@ class BattleEncounter:
                         # Area cleared — advance to next area
                         self.area += 1
                         self.round = 1
+                        area_advanced = True
                         if self.module.area_exists(self.area):
                             game_globals.battle_round[self.module.name] = self.round
                             game_globals.battle_area[self.module.name] = max(self.area, game_globals.battle_area.get(self.module.name, 0))
@@ -1810,6 +1813,7 @@ class BattleEncounter:
 
                 self.area += 1
                 self.round = 1
+                area_advanced = True
 
                 if self.module.area_exists(self.area):
                     game_globals.battle_round[self.module.name] = self.round
@@ -1841,6 +1845,9 @@ class BattleEncounter:
             runtime_globals.game_sound.play("fail")
             # perdeu
             game_globals.battle_round[self.module.name] = 1
+
+        if area_advanced:
+            omninet_service.claim_reward("adventure", f"{self.module.name}:{self.area - 1}")
 
         self.return_to_main_scene()
 

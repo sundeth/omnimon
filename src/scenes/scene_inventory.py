@@ -113,7 +113,53 @@ class SceneInventory:
         
         # Add all unique items to the list
         items.extend(items_by_id.values())
-        
+
+        # Shop-purchased items (cross-module): pulled from purchases.items
+        # (quantity per id) + metadata from game_globals.shop_items_data
+        # (cached when the shop items view loaded).  Skip any item that
+        # already exists in items_by_id (i.e. also defined by a module).
+        try:
+            purchases = getattr(game_globals, 'purchases', None)
+            shop_meta = getattr(game_globals, 'shop_items_data', {}) or {}
+            if purchases and shop_meta and getattr(purchases, 'items', None):
+                items_dir = os.path.join("assets", "items")
+                for shop_id, qty in purchases.items.items():
+                    if qty <= 0 or shop_id in items_by_id:
+                        continue
+                    meta = shop_meta.get(shop_id)
+                    if not meta:
+                        continue
+                    sprite_name = meta.get('sprite_name') or ''
+                    sprite_path = os.path.join(items_dir, sprite_name) if sprite_name else ''
+                    icon = pygame.Surface((48, 48), pygame.SRCALPHA)
+                    if sprite_path and os.path.exists(sprite_path):
+                        try:
+                            icon = image_load(sprite_path).convert_alpha()
+                        except Exception:
+                            pass
+                    # Build a lightweight game_item proxy holding the
+                    # fields the inventory consumer expects.  cross_module
+                    # is True so the apply-effect path bypasses the usual
+                    # per-module pet filter.
+                    class _ShopGameItem:
+                        pass
+                    proxy = _ShopGameItem()
+                    proxy.id = shop_id
+                    proxy.name = meta.get('name', 'Item')
+                    proxy.description = meta.get('description', '')
+                    proxy.sprite_name = sprite_name
+                    proxy.module = 'shop'
+                    proxy.effect = meta.get('effect', '')
+                    proxy.status = meta.get('status', '')
+                    proxy.amount = meta.get('amount', 1)
+                    proxy.boost_time = meta.get('boost_time', 0)
+                    proxy.component_item = ''
+                    proxy.cross_module = True
+                    items.append(InventoryItem(shop_id, proxy, icon, qty, None))
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[SceneInventory] Shop items load error: {exc}")
+
         return items
 
     def setup_ui(self):

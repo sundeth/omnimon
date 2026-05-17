@@ -8,12 +8,13 @@ from utils.pygame_utils import blit_with_cache
 
 
 class Image(UIComponent):
-    def __init__(self, x, y, width, height, image_path=None, image_surface=None, keep_aspect_ratio=True):
+    def __init__(self, x, y, width, height, image_path=None, image_surface=None, keep_aspect_ratio=True, top_align=False):
         super().__init__(x, y, width, height)
         self.image_path = image_path
         self.original_surface = image_surface
         self.scaled_surface = None
         self.keep_aspect_ratio = keep_aspect_ratio
+        self.top_align = top_align
         self.focusable = False
         
         # Load image if path is provided
@@ -30,15 +31,26 @@ class Image(UIComponent):
 
     
     def set_image(self, image_path=None, image_surface=None):
-        """Set new image from path or surface"""
+        """Set new image from path or surface.
+
+        Accepts either argument positionally — if a ``pygame.Surface`` is
+        passed as the first positional ``image_path``, it's treated as
+        ``image_surface`` instead of being shoved into pygame.image.load
+        (which would raise "not a file object").
+        """
+        # Tolerate the surface-as-first-positional call style
+        if isinstance(image_path, pygame.Surface) and image_surface is None:
+            image_surface = image_path
+            image_path = None
+
         if image_path:
             self.image_path = image_path
             self.original_surface = None
             self.load_image()
-        elif image_surface:
+        elif image_surface is not None:
             self.original_surface = image_surface
             self.needs_redraw = True
-        
+
         self.scaled_surface = None  # Force rescaling
     
     def on_manager_set(self):
@@ -88,10 +100,10 @@ class Image(UIComponent):
             else:
                 self.scaled_surface = self.original_surface
         
-        # Center the image within the component
+        # Position the image within the component
         image_width, image_height = self.scaled_surface.get_size()
         x = (self.rect.width - image_width) // 2
-        y = (self.rect.height - image_height) // 2
+        y = 0 if self.top_align else (self.rect.height - image_height) // 2
         
         blit_with_cache(surface, self.scaled_surface, (x, y))
         

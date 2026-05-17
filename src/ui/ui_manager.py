@@ -664,6 +664,16 @@ class UIManager:
                     best_sub_rect = component.rect
                 break
         
+        # If the currently focused component opted into sticky focus, hover
+        # never moves or clears it — focus is only released by an explicit
+        # click outside (handled by handle_event) or programmatic action.
+        if self.focused_index >= 0:
+            current = self.focusable_components[self.focused_index]
+            if getattr(current, 'sticky_focus', False):
+                self.mouse_over_component = best_component
+                self.mouse_over_sub_rect = best_sub_rect
+                return
+
         # If mouse is not over any valid component, clear focus
         if not best_component:
             # Clear focus
@@ -675,7 +685,7 @@ class UIManager:
                     old_component.on_focus_lost()
                 self.focused_index = -1
             return
-        
+
         # Update focus if needed
         if best_component and self.focused_index != best_component_index:
             # Update focus
@@ -685,7 +695,7 @@ class UIManager:
                 old_component.needs_redraw = True
                 if hasattr(old_component, 'on_focus_lost'):
                     old_component.on_focus_lost()
-            
+
             self.focused_index = best_component_index
             best_component.focused = True
             best_component.needs_redraw = True
@@ -998,7 +1008,22 @@ class UIManager:
             
             if mouse_pos:
                 runtime_globals.game_console.log(f"[UIManager] LCLICK at {mouse_pos}, checking {len(self.components)} components")
-                
+
+                # Sticky-focus components: unfocus if the click is outside their
+                # rect (the scene has already given the keyboard overlay first
+                # crack at the click via handle_keyboard_click, so anything
+                # reaching here is genuinely outside both the field and its
+                # keyboard).
+                if self.focused_index >= 0:
+                    fc = self.focusable_components[self.focused_index]
+                    if getattr(fc, 'sticky_focus', False):
+                        if not (hasattr(fc, 'rect') and fc.rect.collidepoint(mouse_pos)):
+                            fc.focused = False
+                            fc.needs_redraw = True
+                            if hasattr(fc, 'on_focus_lost'):
+                                fc.on_focus_lost()
+                            self.focused_index = -1
+
                 # Check components in reverse order (top to bottom) for mouse clicks
                 for component in reversed(self.components):
                     # Skip invisible components

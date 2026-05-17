@@ -1,9 +1,14 @@
-"""
+﻿"""
 ShopModulesView - Browse and purchase game modules
 Shows list of available modules with details view for purchase/download.
 """
 import threading
 import pygame
+
+
+# Pricing decisions live on the server.  The shop listing endpoint returns
+# the correct per-user ``price`` (0 for the player's first module, the
+# fixed price for everything else); the client just renders it.
 
 from ui.ui_manager import UIManager
 from ui.components.title_scene import TitleScene
@@ -16,6 +21,7 @@ from ui.components.shop_list import ShopList, ShopModuleItem
 from ui.ui_constants import BASE_RESOLUTION
 from core import runtime_globals, game_globals
 from services.omninet_service import omninet_service
+from services.shop_image_cache import shop_image_cache
 from utils.asset_utils import image_load
 
 
@@ -144,20 +150,39 @@ class ShopModulesView:
         
         self.shop_list.set_items(items)
         self.ui_manager.add_component(self.shop_list)
-        
+        self.ui_manager.set_focused_component(self.shop_list)
+
+        for item in items:
+            self._fetch_item_icon(item)
+
         self.state = self.STATE_LIST
     
     def _setup_detail_view(self, item: ShopModuleItem):
         """Setup the detail view for a selected module."""
         self._clear_detail_components()
         
-        # Hide list
+        # Hide list and the persistent back button so it doesn't intercept clicks
         if self.shop_list:
             self.shop_list.visible = False
+        if self.back_button:
+            self.back_button.visible = False
         
         padding = 10
         y_offset = 35
-        
+
+        # Logo area (right side, 80x88 in base units)
+        logo_area_x = BASE_RESOLUTION - padding - 80
+        logo_area_y = y_offset
+        logo_area_w = 80
+        logo_area_h = 88
+        if item.logo:
+            logo_img = Image(logo_area_x, logo_area_y, logo_area_w, logo_area_h,
+                             image_surface=item.logo, top_align=True)
+            self.ui_manager.add_component(logo_img)
+            self.detail_components.append(logo_img)
+        elif not item._logo_fetching:
+            self._fetch_item_logo(item)
+
         # Module name (large)
         name_label = Label(0, y_offset, item.name, is_title=True)
         self.ui_manager.add_component(name_label)
@@ -166,7 +191,7 @@ class ShopModulesView:
         
         # Official badge
         if item.official:
-            official_label = Label(padding, y_offset, "★ Official Module", is_title=False)
+            official_label = Label(padding, y_offset, "â˜… Official Module", is_title=False)
             self.ui_manager.add_component(official_label)
             self.detail_components.append(official_label)
             y_offset += 18
@@ -211,39 +236,82 @@ class ShopModulesView:
         self.detail_components.append(desc_panel)
         y_offset += desc_height + 10
         
-        # Price display
+        # Determine installation state
+        installed_module = runtime_globals.game_modules.get(item.name)
+        installed_version = installed_module.version if installed_module else None
+        is_free = game_globals.is_free_mode()
+        can_access = item.owned or is_free
+        coins = getattr(game_globals, 'coins', 0)
+
+        # Price block — yellow label, coin icon + value, "Free" when zero,
+        # green "Already Owned" / "Purchase Successful" when applicable.
+        # The server already decided the price (0 = the player's free
+        # first module, fixed price otherwise); we just render it.
+        price_x = 2  # 2 base px from the left border
+        just_purchased = getattr(item, '_just_purchased', False)
         if item.owned:
-            price_text = "Already Owned"
-        elif game_globals.is_free_mode():
-            price_text = "FREE"
+            price_text = "Purchase Successful" if just_purchased else "Already Owned"
+            price_color = (120, 220, 120)
+            show_coin = False
+        elif is_free or item.price <= 0:
+            price_text = "Free"
+            price_color = (120, 220, 120)
+            show_coin = False
         else:
-            price_text = f"Price: {item.price} coins"
-        price_label = Label(0, y_offset, price_text, is_title=False)
+            price_text = "Price:"
+            price_color = (255, 215, 80)  # yellow
+            show_coin = True
+
+        price_label = Label(price_x, y_offset, price_text, is_title=False,
+                            color_override=price_color)
         self.ui_manager.add_component(price_label)
         self.detail_components.append(price_label)
-        y_offset += 25
-        
+
+        # Coin icon + value (only when actually charging the player)
+        if show_coin:
+            from ui.components.image import Image as _Image
+            coin_icon_x = price_x + 50
+            coin_icon = _Image(coin_icon_x, y_offset - 1, 14, 14,
+                               image_path="assets/ui/Shop_Coin_1.png")
+            self.ui_manager.add_component(coin_icon)
+            self.detail_components.append(coin_icon)
+            value_label = Label(coin_icon_x + 18, y_offset, str(item.price),
+                                is_title=False, color_override=(255, 215, 80))
+            self.ui_manager.add_component(value_label)
+            self.detail_components.append(value_label)
+
+        y_offset += 20
+
         # Buttons
         btn_width = 80
         btn_height = 28
         btn_y = BASE_RESOLUTION - btn_height - 10
-        
-        # Buy/Download button
-        if item.owned:
-            action_text = "Download"
-            action_callback = lambda: self._on_download(item)
-        elif game_globals.is_free_mode():
-            # Free mode: download for free without buying
-            action_text = "Download"
-            action_callback = lambda: self._on_free_download(item)
-        else:
-            action_text = "Buy"
+
+        # Action button: Purchase / Download / Update / Updated
+        if not can_access:
+            action_text = "Purchase"
             action_callback = lambda: self._on_buy(item)
-        
+            # Disable buy if the player can't afford the price the server
+            # set.  Price 0 (free first module) is always allowed.
+            button_enabled = item.price <= 0 or coins >= item.price
+        elif installed_version is not None and installed_version == item.version:
+            action_text = "Updated"
+            action_callback = None
+            button_enabled = False
+        elif installed_version is not None and installed_version != item.version:
+            action_text = "Update"
+            action_callback = lambda: (self._on_download(item) if item.owned else self._on_free_download(item))
+            button_enabled = True
+        else:
+            action_text = "Download"
+            action_callback = lambda: (self._on_download(item) if item.owned else self._on_free_download(item))
+            button_enabled = True
+
         action_button = Button(
             BASE_RESOLUTION - btn_width - padding, btn_y, btn_width, btn_height,
             action_text, action_callback,
-            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True}
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+            enabled=button_enabled
         )
         self.ui_manager.add_component(action_button)
         self.detail_components.append(action_button)
@@ -288,6 +356,60 @@ class ShopModulesView:
     def _on_modules_loaded(self):
         """Called when modules are loaded from server."""
         self._setup_list_view()
+
+    def _fetch_item_icon(self, item):
+        """Fetch BattleIcon.png for a list item in the background.
+
+        Hits the in-memory cache first so re-entering the shop doesn't
+        re-pull sprites that were already loaded earlier in the session.
+        """
+        if item.icon is not None:
+            return
+        cached = shop_image_cache.get(item.id, 'icon')
+        if cached is not None:
+            item.icon = cached
+            return
+        if item._icon_fetching:
+            return
+        item._icon_fetching = True
+
+        def fetch():
+            try:
+                surface = omninet_service.get_module_sprite(item.id, 'icon')
+                if surface is not None:
+                    shop_image_cache.put(item.id, 'icon', surface)
+                item.icon = surface
+            finally:
+                item._icon_fetching = False
+
+        threading.Thread(target=fetch, daemon=True).start()
+
+    def _fetch_item_logo(self, item):
+        """Fetch logo.png for a detail item in the background."""
+        if item.logo is not None:
+            return
+        cached = shop_image_cache.get(item.id, 'logo')
+        if cached is not None:
+            item.logo = cached
+            if self.state == self.STATE_DETAIL and self.selected_item is item:
+                self._setup_detail_view(item)
+            return
+        if item._logo_fetching:
+            return
+        item._logo_fetching = True
+
+        def fetch():
+            try:
+                surface = omninet_service.get_module_sprite(item.id, 'logo')
+                if surface is not None:
+                    shop_image_cache.put(item.id, 'logo', surface)
+                item.logo = surface
+                if surface and self.state == self.STATE_DETAIL and self.selected_item is item:
+                    self._setup_detail_view(item)
+            finally:
+                item._logo_fetching = False
+
+        threading.Thread(target=fetch, daemon=True).start()
     
     def _on_module_selected(self, item: ShopModuleItem):
         """Handle module selection from list."""
@@ -300,8 +422,8 @@ class ShopModulesView:
         coins = getattr(game_globals, 'coins', 0)
         
         if coins < item.price:
-            runtime_globals.game_sound.play("error")
-            runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
+            runtime_globals.game_sound.play("cancel")
+            # (suppressed) runtime_globals.game_message.add_slide("Not enough coins!", (255, 100, 100), 90)
             return
         
         runtime_globals.game_sound.play("menu")
@@ -317,24 +439,30 @@ class ShopModulesView:
                     game_globals.save()
                     
                     item.owned = True
-                    runtime_globals.game_message.add_slide("Purchase successful!", (0, 231, 58), 90)
-                    
+                    item._just_purchased = True
+                    # Stash for SceneConnect's exit hook (auto-download + jump
+                    # straight to egg picker if the player has no pets).
+                    runtime_globals.last_purchased_module = {
+                        'id': item.id, 'name': item.name,
+                    }
+                    # Purchase confirmation shown by in-view label
+
                     # Refresh detail view
                     self._setup_detail_view(item)
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide(message or "Purchase failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
+                    # Failure shown via in-view label below; suppress global slide, 90)
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopModulesView] Purchase error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Purchase failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # Failure shown via in-view label below; suppress global slide, 90)
         
         threading.Thread(target=do_purchase, daemon=True).start()
     
     def _on_download(self, item: ShopModuleItem):
         """Handle download button click."""
         runtime_globals.game_sound.play("menu")
-        runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
+        # (suppressed) runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
         
         def do_download():
             try:
@@ -345,21 +473,19 @@ class ShopModulesView:
                     success, data = omninet_service.download_module(item.id)
                 if success:
                     # TODO: Save module data to modules folder
-                    runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
+                    pass
                 else:
-                    runtime_globals.game_sound.play("error")
-                    runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                    runtime_globals.game_sound.play("cancel")
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopModulesView] Download error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
         
         threading.Thread(target=do_download, daemon=True).start()
 
     def _on_free_download(self, item: ShopModuleItem):
         """Handle free download in Free Mode (no purchase required)."""
         runtime_globals.game_sound.play("menu")
-        runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
+        # (suppressed) runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
         
         def do_free_download():
             try:
@@ -369,17 +495,17 @@ class ShopModulesView:
                     game_globals.purchases.add_module(item.id, item.name)
                     game_globals.save()
                     item.owned = True
-                    runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
+                    # (suppressed) runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
                     # Refresh detail view
                     self._setup_detail_view(item)
                 else:
-                    runtime_globals.game_sound.play("error")
+                    runtime_globals.game_sound.play("cancel")
                     error_msg = data if isinstance(data, str) else "Download failed"
-                    runtime_globals.game_message.add_slide(error_msg, (255, 100, 100), 90)
+                    # (suppressed) runtime_globals.game_message.add_slide(error_msg, (255, 100, 100), 90)
             except Exception as e:
                 runtime_globals.game_console.log(f"[ShopModulesView] Free download error: {e}")
-                runtime_globals.game_sound.play("error")
-                runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
+                runtime_globals.game_sound.play("cancel")
+                # (suppressed) runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
         
         threading.Thread(target=do_free_download, daemon=True).start()
     
@@ -387,10 +513,13 @@ class ShopModulesView:
         """Go back from detail view to list view."""
         runtime_globals.game_sound.play("cancel")
         self._clear_detail_components()
-        
+
         if self.shop_list:
             self.shop_list.visible = True
-        
+            self.ui_manager.set_focused_component(self.shop_list)
+        if self.back_button:
+            self.back_button.visible = True
+
         self.state = self.STATE_LIST
         self.selected_item = None
     

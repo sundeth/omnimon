@@ -76,6 +76,14 @@ class SceneLogin:
         self._from_connect = (runtime_globals.game_state == "connect"
                               or runtime_globals.game_state == "login")
 
+        # Mandatory: player must log in (Progress Mode, not authenticated).
+        # In this mode the Back button is hidden; only "Change to Free Play"
+        # provides an exit.
+        self._mandatory = (
+            game_globals.is_progress_mode()
+            and not omninet_service.is_logged_in()
+        )
+
         self._build_menu()
 
     # =====================================================================
@@ -129,10 +137,38 @@ class SceneLogin:
         self._add(Button(btn_x, y, btn_w, btn_h, "Link Device",
                          self._go_link_device))
         y += btn_h + gap + 8
-        self._add(Button(btn_x, y, btn_w, btn_h, "Back",
-                         self._go_back))
+
+        if self._mandatory:
+            # Progress Mode, not authenticated: hide Back, show escape hatch
+            self._add(Button(btn_x, y, btn_w, btn_h, "Change to Free Play",
+                             self._switch_to_free))
+            y += btn_h + gap
+            # Connectivity status — filled asynchronously
+            self._conn_label = self._add(Label(
+                120, y + 4, "Checking connection...",
+                color_override=(180, 180, 180), center=True,
+                word_wrap=True, max_width=w - 20))
+            self._check_connection_async()
+        else:
+            self._add(Button(btn_x, y, btn_w, btn_h, "Back",
+                             self._go_back))
 
         runtime_globals.game_console.log("[SceneLogin] Menu built")
+
+    def _check_connection_async(self):
+        """Background connectivity check; updates _conn_label with result."""
+        def _worker():
+            ok = omninet_service.check_availability()
+            if not ok:
+                if hasattr(self, '_conn_label') and self._conn_label:
+                    self._conn_label.set_text(
+                        "No internet connection found. "
+                        "Use 'Change to Free Play' to continue without an account.")
+                    self._conn_label.color_override = (255, 140, 80)
+            else:
+                if hasattr(self, '_conn_label') and self._conn_label:
+                    self._conn_label.set_text("")
+        threading.Thread(target=_worker, daemon=True).start()
 
     # ── Create Account phase ──────────────────────────────────────────
 
@@ -341,7 +377,9 @@ class SceneLogin:
         # Code entry (6 characters) — reuse CodeEntry with length=6
         code_w = 6 * 30 + 5 * 8  # Approximate width
         self.code_entry = self._add(
-            CodeEntry((w - code_w) // 2, 90, length=6))
+            CodeEntry((w - code_w) // 2, 90, length=6,
+                      callback=lambda _t: self._on_verify_submit(),
+                      on_focus_callback=self._clear_error))
 
         # Timer label
         self._verify_seconds = 5 * 60  # 5 minutes
@@ -414,7 +452,7 @@ class SceneLogin:
             self._verify_seconds = 5 * 60
             self._show_error("")  # Clear error
             runtime_globals.game_sound.play("menu")
-            runtime_globals.game_message.add_slide("Code resent!", (0, 231, 58), 90)
+            # (suppressed) runtime_globals.game_message.add_slide("Code resent!", (0, 231, 58), 90)
         else:
             self._show_error(message[:40])
 
@@ -441,9 +479,11 @@ class SceneLogin:
         self._add(Label(120, 68, "Enter code from Module Editor",
                         color_override=(180, 180, 180), center=True))
 
-        # Code entry (4 characters)
+        # Code entry (4 characters) — refocus clears any prior error message
         self.code_entry = self._add(
-            CodeEntry((w - 190) // 2, 90, length=4))
+            CodeEntry((w - 190) // 2, 90, length=4,
+                      callback=lambda _t: self._on_link_submit(),
+                      on_focus_callback=self._clear_error))
 
         # Status / error label
         self.error_label = self._add(Label(
@@ -476,14 +516,29 @@ class SceneLogin:
         )
 
     def _on_link_response(self, result):
-        success, message, user_info = result
+        # validate_pairing_code returns (success, message, user_info) but
+        # _async_call's exception fallback returns (False, str(exc)).  Be
+        # tolerant of either shape so a thrown error doesn't crash here.
+        if not isinstance(result, tuple):
+            self._show_error("Invalid code")
+            return
+        success = result[0]
+        raw_message = result[1] if len(result) > 1 else ""
+        user_info = result[2] if len(result) > 2 else None
         if success:
             username = user_info.get('nickname', 'User') if user_info else 'User'
             runtime_globals.game_console.log(f"[SceneLogin] Linked as: {username}")
             runtime_globals.game_sound.play("evolution")
             self._complete_login()
         else:
-            self._show_error(message[:32])
+            # Map any technical error into a single user-friendly message.
+            msg = str(raw_message).lower()
+            if not raw_message or "unpack" in msg or "exception" in msg \
+                    or "traceback" in msg or "error" in msg and len(msg) > 32:
+                friendly = "Invalid code"
+            else:
+                friendly = str(raw_message)[:32]
+            self._show_error(friendly)
 
     # ── Loading overlay ───────────────────────────────────────────────
 
@@ -540,9 +595,15 @@ class SceneLogin:
     def _go_back(self):
         """Exit the login scene.
 
+        In mandatory mode (Progress Mode, not logged in) the exit is blocked —
+        the player must log in or switch to Free Play via the dedicated button.
+
         If entering from setup (first-time), go back to setup.
         If entering from connect menu, go back to connect.
         """
+        if self._mandatory and not omninet_service.is_logged_in():
+            self._show_error("Login required. Use 'Change to Free Play' to exit.")
+            return
         runtime_globals.game_sound.play("cancel")
         # If game mode preference hasn't been saved yet, go back to setup
         if not game_globals.has_game_mode_preference():
@@ -550,6 +611,89 @@ class SceneLogin:
         else:
             change_scene("connect")
         runtime_globals.game_console.log("[SceneLogin] Back")
+
+    def _sync_purchases_async(self):
+        """Pull the player's purchase history from the server and merge it
+        into ``game_globals.purchases`` in a background thread.
+
+        Without this, ``GamePurchases`` only knows about purchases made
+        on this device — so on a fresh login from a different machine
+        every module shows up as Free (the first-module-free hint kicks
+        in because the local set is empty).
+        """
+        def _worker():
+            try:
+                ok, data = omninet_service.get_user_purchases()
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[SceneLogin] purchases sync threw: {exc}")
+                return
+            if not ok or not isinstance(data, dict):
+                runtime_globals.game_console.log(
+                    f"[SceneLogin] purchases sync failed: {data!r}")
+                return
+
+            entries = data.get('purchases') or []
+            purchases = getattr(game_globals, 'purchases', None)
+            if purchases is None:
+                return
+
+            added = {'module': 0, 'cosmetic': 0, 'gameplay': 0,
+                     'item': 0, 'special': 0}
+            for entry in entries:
+                ptype = (entry.get('purchase_type') or '').lower()
+                item_id = entry.get('item_id') or entry.get('id')
+                if not item_id:
+                    continue
+                item_id = str(item_id)
+                if ptype == 'module':
+                    # Name not in this payload; populate id only — the
+                    # local name is added when the shop list resolves it
+                    # against the modules listing.
+                    purchases.add_module(item_id)
+                    added['module'] += 1
+                elif ptype == 'cosmetic':
+                    purchases.add_cosmetic(item_id)
+                    added['cosmetic'] += 1
+                elif ptype == 'gameplay':
+                    purchases.add_gameplay(item_id)
+                    added['gameplay'] += 1
+                elif ptype == 'item':
+                    # Items track quantity, not just ownership.  We don't
+                    # know the per-purchase quantity here so increment 1
+                    # per purchase row if the id isn't already known.
+                    current = purchases.items.get(item_id, 0)
+                    if current == 0:
+                        purchases.items[item_id] = 1
+                    added['item'] += 1
+                elif ptype == 'special':
+                    purchases.add_special(item_id)
+                    added['special'] += 1
+            try:
+                game_globals.save()
+            except Exception:
+                pass
+            runtime_globals.game_console.log(
+                f"[SceneLogin] Synced purchases from server: {added}")
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _switch_to_free(self):
+        """Switch to Free Play mode and route accordingly.
+
+        Escape hatch when the player was forced into login by Progress Mode
+        but does not want to create an Omninet account.
+        """
+        runtime_globals.game_sound.play("cancel")
+        runtime_globals.game_console.log("[SceneLogin] Switching to Free Play")
+        game_globals.game_mode = game_globals.GAME_MODE_FREE
+        game_globals.save_game_mode_preference()
+        game_globals.skip_tutorial_on_mode_switch = False
+        game_globals.migrate_legacy_saves()
+        save_dir = game_globals.get_save_dir()
+        os.makedirs(save_dir, exist_ok=True)
+        game_globals.load()
+        navigation_utils.route_to_next_scene(check_tutorial=True)
 
     def _complete_login(self):
         """Post-login finalisation: sync player_id, migrate saves, load, route.
@@ -580,14 +724,21 @@ class SceneLogin:
         # 4. Load save data from the (now-correct) directory
         game_globals.load()
 
+        # 4b. Sync purchases from the server so the shop knows what the
+        # player already owns (otherwise modules would all appear as
+        # "Free" even on accounts with prior purchases).
+        self._sync_purchases_async()
+
         # 5. If still in first-time setup, clear setup flags and save
         if game_globals.setup_input or game_globals.setup_graphics:
             game_globals.setup_input = False
             game_globals.setup_graphics = False
             game_globals.save()
 
-        # 6. Route to next scene
-        navigation_utils.route_to_next_scene(check_tutorial=True)
+        # 6. Route to next scene (skip tutorial if mid-game mode switch)
+        skip_tutorial = game_globals.skip_tutorial_on_mode_switch
+        game_globals.skip_tutorial_on_mode_switch = False
+        navigation_utils.route_to_next_scene(check_tutorial=not skip_tutorial)
         runtime_globals.game_console.log("[SceneLogin] Login complete, routed to next scene")
 
     # ── Error display ─────────────────────────────────────────────────
@@ -598,7 +749,14 @@ class SceneLogin:
         if hasattr(self, 'error_label') and self.error_label:
             self.error_label.set_text(text)
         if text and text != "Connecting...":
-            runtime_globals.game_sound.play("error")
+            runtime_globals.game_sound.play("cancel")
+        self.ui_manager.master_ui_dirty = True
+
+    def _clear_error(self):
+        """Hide any prior error/status message (called when refocusing input)."""
+        self._error_text = ""
+        if hasattr(self, 'error_label') and self.error_label:
+            self.error_label.set_text("")
         self.ui_manager.master_ui_dirty = True
 
     # ── Field height helper ───────────────────────────────────────────
@@ -615,14 +773,22 @@ class SceneLogin:
         """Called every frame."""
         self.ui_manager.update()
 
-        # Process async result if available
+        # Process async result if available — always re-enable buttons even
+        # if the callback raises, so the user is never left stuck staring at
+        # disabled controls.
         if hasattr(self, '_async_result') and self._async_result is not None:
             result = self._async_result
             callback = self._async_callback
             self._async_result = None
             self._async_callback = None
-            self._end_loading()
-            callback(result)
+            try:
+                callback(result)
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[SceneLogin] async callback raised: {exc}")
+                self._show_error("Invalid code")
+            finally:
+                self._end_loading()
 
         # Verify phase countdown
         if self.phase == "verify" and hasattr(self, '_verify_seconds'):
@@ -643,12 +809,14 @@ class SceneLogin:
         self.window_background.draw(surface)
         self.ui_manager.draw(surface)
 
-        # Draw virtual-keyboard overlay for the focused TextInput (if any)
+        # Draw virtual-keyboard overlay for the focused TextInput / CodeEntry
         if not runtime_globals.IS_ANDROID:
             idx = self.ui_manager.focused_index
             if 0 <= idx < len(self.ui_manager.focusable_components):
                 focused = self.ui_manager.focusable_components[idx]
                 if isinstance(focused, TextInput):
+                    focused.draw_keyboard_overlay(surface)
+                elif isinstance(focused, CodeEntry):
                     focused.draw_keyboard_overlay(surface)
 
     def handle_event(self, event) -> None:
@@ -666,6 +834,13 @@ class SceneLogin:
         event_type, event_data = event
 
         # Global shortcuts
+        if event_type == "B":
+            if self.phase != "menu":
+                self._on_cancel()
+            else:
+                self._go_back()  # Blocked internally if mandatory + not logged in
+            return
+
         if event_type == "CANCEL" and self.phase != "menu":
             self._on_cancel()
             return
@@ -680,7 +855,7 @@ class SceneLogin:
                 idx = self.ui_manager.focused_index
                 if 0 <= idx < len(self.ui_manager.focusable_components):
                     focused = self.ui_manager.focusable_components[idx]
-                    if isinstance(focused, TextInput):
+                    if isinstance(focused, (TextInput, CodeEntry)):
                         screen_sz = self.ui_manager.get_scaled_resolution()
                         if focused.handle_keyboard_click(
                                 event_data["pos"], screen_sz):

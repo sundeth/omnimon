@@ -185,6 +185,20 @@ class VirtualPetGame:
         if input_event:
             if self.scene.handle_event(input_event):
                 return
+
+        # Forward raw text-input events to the scene so a focused
+        # TextInput / CodeEntry can capture physical keyboard input.
+        # TEXTINPUT events are always forwarded (printable characters never
+        # double as game actions).  KEYDOWN events are only forwarded when
+        # the input manager didn't already convert them into a game action,
+        # to avoid double-handling things like UP / DOWN.
+        if event.type == pygame.TEXTINPUT or (
+            event.type == pygame.KEYDOWN and not input_event
+        ):
+            try:
+                self.scene.handle_event(event)
+            except Exception:
+                pass
         
         if not runtime_globals.IS_ANDROID:
             # Handle analog joystick inputs (they come through get_just_pressed_joystick)

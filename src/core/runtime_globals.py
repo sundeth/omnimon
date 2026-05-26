@@ -1,4 +1,35 @@
+import os
+import sys
 import random
+
+# Defence-in-depth: on some Android emulators (notably Bluestacks) the
+# entry-point script's ``sys.path.insert(0, '<app>/src')`` doesn't take
+# effect before this module is imported, and the top-level
+# ``from input.X import Y`` lines below fail with ModuleNotFoundError.
+# Try several roots to locate the sibling ``input`` package and add its
+# parent (i.e. ``src/``) to sys.path before the imports run.
+def _ensure_src_on_path():
+    candidates = []
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        candidates.append(os.path.dirname(here))           # .../src
+    except Exception:
+        pass
+    try:
+        cwd = os.getcwd()
+        candidates.append(os.path.join(cwd, "src"))        # <app>/src
+        candidates.append(cwd)                              # <app> (if src already on path)
+    except Exception:
+        pass
+    for src in candidates:
+        try:
+            if src and os.path.isdir(os.path.join(src, "input")) and src not in sys.path:
+                sys.path.insert(0, src)
+                return
+        except Exception:
+            continue
+
+_ensure_src_on_path()
 
 from models.game_console import GameConsole
 from models.game_item import GameItem

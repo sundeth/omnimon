@@ -40,7 +40,15 @@ Write-Status "NOTE: This requires ARM cross-compilation setup or building on Pi 
 # Clean previous builds
 Write-Status "Cleaning previous builds..."
 if (Test-Path $TEMP_DIR) { Remove-Item -Recurse -Force $TEMP_DIR }
-if (Test-Path (Join-Path $PROJECT_ROOT "build")) { Remove-Item -Recurse -Force (Join-Path $PROJECT_ROOT "build") }
+# IMPORTANT: do NOT wipe $PROJECT_ROOT\build — that's the folder these
+# scripts live in.  Nuitka writes its intermediates to $TEMP_DIR (set
+# via --output-dir) and to source-name-derived sibling folders at the
+# project root (main_nuitka.build / .dist / .onefile-build).  Clean
+# only those, never the generic "build" name.
+foreach ($leak in @("main_nuitka.build", "main_nuitka.dist", "main_nuitka.onefile-build")) {
+    $leakPath = Join-Path $PROJECT_ROOT $leak
+    if (Test-Path $leakPath) { Remove-Item -Recurse -Force $leakPath }
+}
 if (Test-Path (Join-Path $PROJECT_ROOT "dist")) { Remove-Item -Recurse -Force (Join-Path $PROJECT_ROOT "dist") }
 
 # Check if Nuitka is installed
@@ -227,12 +235,10 @@ Write-Status "Copying documentation..."
 Copy-Item -Recurse (Join-Path $PROJECT_ROOT "Documentation") "$TEMP_DIR\$BUILD_NAME\" -Force
 
 # Copy additional modules that might not be automatically detected
-Write-Status "Copying modules..."
-Copy-Item -Recurse (Join-Path $PROJECT_ROOT "modules") "$TEMP_DIR\$BUILD_NAME\" -Force
+# Ship an EMPTY modules/ folder (see legacy build scripts for rationale).
+Write-Status "Creating empty modules/ folder..."
+New-Item -ItemType Directory -Force -Path "$TEMP_DIR\$BUILD_NAME\modules" | Out-Null
 
-# Copy network
-Write-Status "Copying network..."
-Copy-Item -Recurse (Join-Path $PROJECT_ROOT "network") "$TEMP_DIR\$BUILD_NAME\" -Force
 
 # Create empty save folder
 Write-Status "Creating save directory..."

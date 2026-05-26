@@ -42,6 +42,11 @@ class ArenaView:
         # Server data (filled in by background fetch)
         self._season = None
         self._team = None
+        # Past-season team with reward not yet claimed.  When set, the
+        # view locks out new-season actions and surfaces the reclaim
+        # flow instead (spec: "the player cannot enter a new season if
+        # it still has unclaimed pets/rewards from previous seasons").
+        self._pending_team = None
         self._loading = True
         self._fetch_lock = threading.Lock()
         self._finding_battle = False
@@ -167,6 +172,12 @@ class ArenaView:
                     self._team = team
                 else:
                     self._team = None
+
+                # Look for past-season teams whose rewards still aren't
+                # claimed.  The server includes those in /teams when
+                # include_past=true regardless of whether they belong
+                # to the current ACTIVE season.
+                self._pending_team = self._fetch_pending_past_team()
             except Exception as exc:
                 runtime_globals.game_console.log(f"[ArenaView] Refresh error: {exc}")
             finally:
@@ -176,18 +187,57 @@ class ArenaView:
 
         threading.Thread(target=_worker, daemon=True).start()
 
+    def _fetch_pending_past_team(self) -> dict | None:
+        """Return the first unclaimed past-season team, or None."""
+        try:
+            ok, payload = omninet_service.get_user_teams(include_past=True)
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[ArenaView] past-teams fetch error: {exc}")
+            return None
+        if not ok:
+            return None
+        teams = payload if isinstance(payload, list) else (
+            payload.get('teams') if isinstance(payload, dict) else None
+        )
+        if not teams:
+            return None
+
+        current_season_id = (self._season or {}).get('id')
+        for team in teams:
+            if not isinstance(team, dict):
+                continue
+            if team.get('reward_claimed'):
+                continue
+            team_season_id = team.get('season_id')
+            # The current-season team is handled separately via /current —
+            # only past-season unclaimed teams qualify for the reclaim
+            # flow.  Compare loosely (UUID-vs-string).
+            if current_season_id and str(team_season_id) == str(current_season_id):
+                continue
+            return team
+        return None
+
     def _render_state(self):
         """Update labels + button enablement after a fetch completes."""
         has_season = bool(self._season)
         has_team = bool(self._team)
+        pending = self._pending_team
 
-        # Time / season info
+        # When a past-season team is still waiting to be reclaimed we
+        # take over the view entirely — the player has to deal with that
+        # before anything related to the new season can happen.
+        if pending:
+            self._render_pending_state(pending)
+            return
+
+        # ── Time / season info ────────────────────────────────────────
         if has_season:
             self.time_label.set_text(self._format_time_left(self._season))
         else:
             self.time_label.set_text("No active season")
 
-        # Team area
+        # ── Team area ─────────────────────────────────────────────────
         if has_team:
             self.team_header_label.visible = True
             self.create_team_button.visible = False
@@ -201,7 +251,6 @@ class ArenaView:
                 else:
                     lbl.set_text("")
         else:
-            # No team — show create / placeholder
             for lbl in self.pet_labels:
                 lbl.set_text("")
             self.team_header_label.visible = False
@@ -213,7 +262,7 @@ class ArenaView:
                 self.create_team_button.text = "SEASON NOT STARTED"
                 self.create_team_button.enabled = False
 
-        # Rank / Score
+        # ── Rank / Score ──────────────────────────────────────────────
         if has_team:
             rank = self._team.get('rank')
             self.rank_value.set_value(str(rank) if rank else "-")
@@ -222,7 +271,8 @@ class ArenaView:
             self.rank_value.set_value("-")
             self.score_value.set_value("0")
 
-        # Find Battle button — only when we have a team
+        # ── Find Battle button — only when we have a team ─────────────
+        self.find_button.on_click_callback = self._on_find_battle
         if has_team:
             remaining = self._team.get('daily_battles_remaining')
             if remaining is None:
@@ -235,8 +285,48 @@ class ArenaView:
             self.find_button.text = "FIND BATTLE"
             self.find_button.enabled = False
 
-        # History only useful with a team
+        # ── Footer ────────────────────────────────────────────────────
+        self.rules_button.enabled = has_season
         self.history_button.enabled = has_team
+
+    def _render_pending_state(self, pending: dict):
+        """Layout when the player owes a reclaim from a past season.
+
+        - Show the past team's pet names, rank, score (read-only).
+        - Replace Find Battle with RECLAIM TEAM.
+        - Disable Rules / History (their data points at the current
+          season, which the player can't engage with yet).
+        - Hide / disable Create Team.
+        """
+        self.team_header_label.visible = True
+        self.create_team_button.visible = False
+        self.create_team_button.enabled = False
+
+        pets = pending.get('pets') or []
+        for i, lbl in enumerate(self.pet_labels):
+            if i < len(pets):
+                name = pets[i].get('name', '?')
+                short = name if len(name) <= 7 else name[:6] + "."
+                lbl.set_text(short)
+            else:
+                lbl.set_text("")
+
+        rank = pending.get('rank')
+        self.rank_value.set_value(str(rank) if rank else "-")
+        self.score_value.set_value(str(pending.get('score', 0)))
+
+        season_name = pending.get('season_name') or "Previous season"
+        self.time_label.set_text(f"{season_name} - ended. Reclaim to continue.")
+
+        # Find Battle slot becomes the Reclaim entry point
+        self.find_button.text = "RECLAIM TEAM"
+        self.find_button.enabled = True
+        self.find_button.on_click_callback = self._on_reclaim
+
+        # Rules / History pertain to live seasons — both off until reclaim
+        self.rules_button.enabled = False
+        self.history_button.enabled = False
+        self.status_label.set_text("")
 
     def _format_time_left(self, season: dict) -> str:
         """Format the season's time-left string as 'TIME LEFT: X DAYS Y HOURS'."""
@@ -267,12 +357,34 @@ class ArenaView:
 
     def _on_create_team(self):
         runtime_globals.game_sound.play("menu")
+        # Spec: the player cannot enter a new season if they still have
+        # unclaimed pets/rewards from previous seasons.  The view should
+        # already be in pending-state when this is true, but guard the
+        # entry point anyway in case a stale UI click slips through.
+        if self._pending_team:
+            self.status_label.set_text(
+                "Reclaim your past-season team before creating a new one.")
+            return
         if not self._season:
             self.status_label.set_text("No active season")
             return
         self.change_view("arena_team_creation", season=self._season)
 
+    def _on_reclaim(self):
+        """Open the reclaim summary view for the pending past-season team."""
+        if not self._pending_team:
+            return
+        runtime_globals.game_sound.play("menu")
+        self.change_view("arena_reclaim", team=self._pending_team)
+
     def _on_find_battle(self):
+        if self._pending_team:
+            # Defensive: render_state should have repointed the button
+            # at _on_reclaim already, but if a click raced past, route
+            # through the reclaim flow instead of attempting a battle
+            # for a team the player owes coins on.
+            self._on_reclaim()
+            return
         if self._finding_battle or not self._team:
             return
         runtime_globals.game_sound.play("menu")

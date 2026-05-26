@@ -74,6 +74,18 @@ class SceneBoot:
 
         self.boot_timer = int(120 * (game_globals.configuration.frame_rate / 30))
         self.f12_press_count = 0  # Track F12 presses for debug toggle
+
+        # Eagerly load sound effects now that the Android environment
+        # (IS_ANDROID / APP_ROOT) is configured.  GameSound was
+        # instantiated when runtime_globals was first imported — too
+        # early to safely resolve paths on Android — so we defer the
+        # preload to here.  No-op on subsequent boot scene re-entries.
+        try:
+            runtime_globals.game_sound.load_sounds()
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[SceneBoot] sound preload failed: {exc}")
+
         runtime_globals.game_console.log("[SceneBoot] Initialized")
 
     def update(self) -> None:
@@ -96,6 +108,7 @@ class SceneBoot:
 
     def handle_event(self, event) -> None:
         """Handle key press events. A/B/START/LCLICK skips boot. F12 x3 toggles debug."""
+
         event_type, event_data = event
 
         if event_type in ["A", "B", "START", "LCLICK"]:

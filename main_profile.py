@@ -28,7 +28,7 @@ from utils.document_utils import build_module_documentation
 from vpet import VirtualPetGame
 
 # Game Version
-VERSION = "0.9.9"
+VERSION = "1.0.0 Beta 1"
 
 # Check Pygame version for compatibility
 PYGAME_VERSION = tuple(map(int, pygame.version.ver.split('.')))

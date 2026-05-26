@@ -58,6 +58,12 @@ TEAL_DARK = (33, 77, 64)
 TEAL = (38, 166, 120)
 TEAL_LIGHT = (217, 248, 235)
 
+# NAVY — deep navy used by the first-time setup scene.  Visually quiet
+# so the player's focus stays on the setup instructions and buttons.
+NAVY_DARK = (12, 22, 46)
+NAVY = (50, 90, 168)
+NAVY_LIGHT = (210, 222, 255)
+
 
 BATTLE_COLORS = {
     "orange_dark": (226, 129, 69),

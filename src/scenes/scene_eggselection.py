@@ -97,15 +97,14 @@ class SceneEggSelection:
         # Check if this is the first pet
         self.is_first_pet = len(game_globals.pet_list) == 0
         
-        # Check module availability and redirect to SceneError if needed
+        # No modules installed at all → send straight to the shop's
+        # modules section instead of bouncing through SceneError (the
+        # shop view handles offline state on its own).
         if not navigation_utils.has_modules_installed():
-            # No modules installed at all
-            SceneError.set_error(
-                message="NO MODULE DETECTED",
-                return_scene="connect",
-                bottom_message="Install a module from the Connect menu"
-            )
-            change_scene("error")
+            runtime_globals.scene_connect_initial_view = "shop_modules"
+            change_scene("connect")
+            runtime_globals.game_console.log(
+                "[SceneEggSelection] No modules installed → routing to Shop")
             return
 
         if not self._has_any_modules_with_eggs():

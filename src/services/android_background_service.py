@@ -112,6 +112,39 @@ def _has_active_save():
         return False
 
 
+_status = {
+    "last_result": None,        # "ok", "blocked", "unsupported", "no_save"
+    "last_error": "",
+    "success_count": 0,
+    "fail_count": 0,
+}
+
+
+def get_status() -> dict:
+    """Return a snapshot of the most recent service-start outcome.
+
+    Consumed by the settings menu to surface a user-readable status
+    ("OK" / "Blocked" / etc.) and a hint for MIUI/Xiaomi devices where
+    Autostart must be granted manually.
+    """
+    return dict(_status)
+
+
+def get_status_label() -> str:
+    """One-word summary suitable for an option-row value."""
+    result = _status.get("last_result")
+    if not runtime_globals.IS_ANDROID:
+        return "N/A"
+    if result is None:
+        return "Idle"
+    return {
+        "ok": "Running",
+        "blocked": "Blocked",
+        "unsupported": "Unavail.",
+        "no_save": "Idle",
+    }.get(result, result)
+
+
 def start_service():
     """Start the background pet-tick service (Android only).
 
@@ -119,8 +152,10 @@ def start_service():
     just delivers another onStartCommand which the service ignores.
     """
     if not runtime_globals.IS_ANDROID:
+        _status["last_result"] = "unsupported"
         return False
     if not _has_active_save():
+        _status["last_result"] = "no_save"
         print("[BgService] No active save; not starting service.")
         return False
 
@@ -136,9 +171,20 @@ def start_service():
         argument = os.getcwd()
         Service.start(mActivity, argument)
         print(f"[BgService] Service start requested ({resolved_name})")
+        _status["last_result"] = "ok"
+        _status["last_error"] = ""
+        _status["success_count"] += 1
         return True
     except Exception as exc:
+        msg = str(exc)
         print(f"[BgService] Failed to start service: {exc}")
+        # MIUI's "process is bad" SecurityException → Autostart denied.
+        if "process is bad" in msg or "SecurityException" in msg:
+            _status["last_result"] = "blocked"
+        else:
+            _status["last_result"] = "unsupported"
+        _status["last_error"] = msg[:200]
+        _status["fail_count"] += 1
         # Without the JNI bridge, the marker alone won't do anything --
         # remove it so we don't leave a stale flag.
         _remove_marker()
@@ -173,6 +219,89 @@ def stop_service():
         # next tick boundary (<= TICK_INTERVAL_SECONDS), so this isn't
         # fatal -- just slower.
         print(f"[BgService] stopService JNI call failed (will self-stop): {exc}")
+        return False
+
+
+_lifecycle_registered = False
+
+
+def install_lifecycle_hooks(on_pause=None, on_resume=None):
+    """Register an Application.ActivityLifecycleCallbacks listener via JNI.
+
+    SDL2's APP_DIDENTERBACKGROUND event isn't surfaced by pygame on
+    every p4a build (notably the MIUI/Xiaomi case observed in the wild
+    where pygame never delivers the lifecycle event).  This hooks
+    Android's own per-activity callbacks, which fire on *every* Android
+    version regardless of SDL routing.
+
+    The provided callbacks run on the JVM main thread.  Keep them tiny
+    and thread-safe — they typically just call ``game.save()`` and
+    ``start_service()`` / ``stop_service()``.
+
+    No-op on non-Android, on failure, or on a second call (registration
+    is idempotent for the lifetime of the process).
+    """
+    global _lifecycle_registered
+    if _lifecycle_registered or not runtime_globals.IS_ANDROID:
+        return False
+
+    try:
+        from jnius import autoclass, PythonJavaClass, java_method  # type: ignore
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        mActivity = PythonActivity.mActivity
+        Application = mActivity.getApplication()
+
+        class _Callbacks(PythonJavaClass):
+            __javainterfaces__ = [
+                "android/app/Application$ActivityLifecycleCallbacks"
+            ]
+            __javacontext__ = "app"
+
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivityCreated(self, activity, savedInstanceState):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityStarted(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityResumed(self, activity):
+                try:
+                    if on_resume:
+                        on_resume()
+                except Exception as cb_exc:
+                    print(f"[BgService] on_resume callback error: {cb_exc}")
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPaused(self, activity):
+                try:
+                    if on_pause:
+                        on_pause()
+                except Exception as cb_exc:
+                    print(f"[BgService] on_pause callback error: {cb_exc}")
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityStopped(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivitySaveInstanceState(self, activity, outState):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityDestroyed(self, activity):
+                pass
+
+        # Hold a reference so the JVM doesn't GC the listener.
+        global _callbacks_ref
+        _callbacks_ref = _Callbacks()
+        Application.registerActivityLifecycleCallbacks(_callbacks_ref)
+        _lifecycle_registered = True
+        print("[BgService] ActivityLifecycleCallbacks installed")
+        return True
+    except Exception as exc:
+        print(f"[BgService] install_lifecycle_hooks failed: {exc}")
         return False
 
 

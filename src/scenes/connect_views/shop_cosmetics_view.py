@@ -1,4 +1,4 @@
-﻿"""
+"""
 ShopCosmeticsView - Browse and purchase cosmetic items (backgrounds, etc.)
 Shows list with small icons and larger preview in detail view.
 """
@@ -89,6 +89,12 @@ class ShopCosmeticsView:
     
     def _setup_coin_display(self):
         """Setup the coin icon and amount display."""
+        # Free Play has no coin economy — hide the balance entirely.
+        if game_globals.is_free_mode():
+            self.coin_label = None
+            self.coin_icon = None
+            return
+
         icon_size = 16
         label_width = 55
         margin = 10

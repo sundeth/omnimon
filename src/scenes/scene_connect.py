@@ -30,6 +30,7 @@ from scenes.connect_views import (
     ArenaRulesView,
     ArenaHistoryView,
     ArenaTeamCreationView,
+    ArenaReclaimView,
 )
 
 
@@ -257,6 +258,7 @@ class SceneConnect:
             "arena_rules": ArenaRulesView,
             "arena_history": ArenaHistoryView,
             "arena_team_creation": ArenaTeamCreationView,
+            "arena_reclaim": ArenaReclaimView,
         }
         
         view_class = view_map.get(view_name)

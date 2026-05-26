@@ -4,8 +4,18 @@ Omnipet Virtual Pet - Android Entry Point
 import sys
 import os
 
-# Add src directory to Python path so internal imports (core, components, scenes, vpet) resolve
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add src directory to Python path so internal imports (core, input,
+# scenes, vpet) resolve.  We try multiple locations because p4a's
+# __file__ resolution is inconsistent across bootstraps and emulators
+# (notably Bluestacks, where the relative path doesn't resolve and
+# imports like ``from input.input_manager import ...`` fail).
+_HERE = os.path.dirname(os.path.abspath(__file__)) if __file__ else os.getcwd()
+for _candidate in (
+    os.path.join(_HERE, 'src'),
+    os.path.join(os.getcwd(), 'src'),
+):
+    if os.path.isdir(_candidate) and _candidate not in sys.path:
+        sys.path.insert(0, _candidate)
 
 os.environ["SDL_RENDER_SCALE_QUALITY"] = "0"
 import pygame
@@ -68,10 +78,54 @@ def main():
         APP_DIDENTERBACKGROUND = getattr(pygame, "APP_DIDENTERBACKGROUND", None)
         APP_WILLENTERFOREGROUND = getattr(pygame, "APP_WILLENTERFOREGROUND", None)
         APP_TERMINATING = getattr(pygame, "APP_TERMINATING", None)
+        # NOTE: WINDOWHIDDEN / WINDOWFOCUSLOST were tried as fallback
+        # lifecycle signals but on MIUI they fire on every transient
+        # focus change (including the ones caused by our own set_mode()
+        # call on resume) producing an infinite save+set_mode loop with
+        # a ~600ms cycle.  Stick to APP_* only — the periodic auto-save
+        # below covers the case where APP_* doesn't fire at all.
 
         # Main game loop
         clock = pygame.time.Clock()
         running = True
+        # Periodic-save state.  SDL2's APP_DIDENTERBACKGROUND event
+        # delivery via pygame is unreliable across p4a versions, so we
+        # also flush to disk every ~30s while in the foreground.
+        last_periodic_save = pygame.time.get_ticks()
+        PERIODIC_SAVE_MS = 30_000
+
+        def _save_and_start_service():
+            try:
+                game.save()
+            except Exception as save_exc:
+                print(f"[main_android] save() failed: {save_exc}")
+            try:
+                bg_service.start_service()
+            except Exception as svc_exc:
+                print(f"[main_android] start_service() failed: {svc_exc}")
+
+        def _on_resume_from_jvm():
+            try:
+                bg_service.stop_service()
+                bg_service.reload_state_from_disk()
+            except Exception as exc:
+                print(f"[main_android] on_resume hook failed: {exc}")
+
+        # Install Android-native lifecycle callbacks.  pygame's
+        # APP_DIDENTERBACKGROUND isn't delivered on every device (notably
+        # several MIUI builds), but Activity.onPause is guaranteed.
+        bg_service.install_lifecycle_hooks(
+            on_pause=_save_and_start_service,
+            on_resume=_on_resume_from_jvm,
+        )
+
+        # NOTE: previously had a _reacquire_display() that called
+        # set_mode() on resume to fix black-screen after focus switch.
+        # Removed — set_mode() itself triggers another focus event on
+        # MIUI, creating an infinite loop.  If the black-on-resume bug
+        # comes back we need a different mechanism (e.g. a one-shot
+        # flag that ignores the next N focus events).
+
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -79,46 +133,39 @@ def main():
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
                 elif APP_DIDENTERBACKGROUND is not None and event.type == APP_DIDENTERBACKGROUND:
-                    # App backgrounded: hand off to the service so pets
-                    # keep ticking and we can fire status-bar notifications.
-                    try:
-                        game.save()
-                    except Exception:
-                        pass
-                    bg_service.start_service()
+                    _save_and_start_service()
                 elif APP_WILLENTERFOREGROUND is not None and event.type == APP_WILLENTERFOREGROUND:
-                    # Resuming: tell the service to stop so we don't
-                    # double-tick the same save, then refresh in-memory
-                    # state from disk because the service may have
-                    # advanced the world while we were paused.
                     bg_service.stop_service()
                     bg_service.reload_state_from_disk()
                 elif APP_TERMINATING is not None and event.type == APP_TERMINATING:
-                    # OS is killing us -- start the service so the pets
-                    # don't freeze the moment we die.
-                    try:
-                        game.save()
-                    except Exception:
-                        pass
-                    bg_service.start_service()
+                    _save_and_start_service()
                     running = False
                 else:
                     game.handle_event(event)
 
             game.update()
 
+            # Periodic auto-save while running (durable progress even if
+            # the OS kills us without firing a lifecycle event).
+            now = pygame.time.get_ticks()
+            if now - last_periodic_save >= PERIODIC_SAVE_MS:
+                try:
+                    game.save()
+                except Exception as save_exc:
+                    print(f"[main_android] periodic save() failed: {save_exc}")
+                last_periodic_save = now
+
             # Render the game into the offscreen (half-res) surface
             game.draw(offscreen, clock)
 
-            # Upscale 2x using pixel-perfect integer scaling (no interpolation/blur)
-            
-            scaled = pygame.transform.scale(
-                offscreen,
-                (game_width * 2, game_height * 2)
-            )
-            scaled_rect = scaled.get_rect(center=screen.get_rect().center)
-            screen.blit(scaled, scaled_rect)
-            #screen.blit(offscreen, (0, 0))
+            # Scale the offscreen surface to the *exact* screen size and
+            # blit at (0, 0).  Doing this (instead of an integer 2x
+            # centered blit) guarantees no letterboxing, no off-screen
+            # clipping, and a linear display→game touch mapping that
+            # input_manager already does correctly.
+            screen.fill((0, 0, 0))
+            scaled = pygame.transform.scale(offscreen, screen.get_size())
+            screen.blit(scaled, (0, 0))
 
             pygame.display.flip()
             clock.tick(game_globals.configuration.frame_rate)

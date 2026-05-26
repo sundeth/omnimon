@@ -4,6 +4,25 @@ param(
     [string]$Version = ""
 )
 
+# Pre-flight: ensure every sub-script we're about to dispatch is present.
+# This folder shares its name with Nuitka's default intermediate output
+# directory, and earlier cleanup code wiped it on every run.  If anything
+# has gone missing, fail loudly and tell the user how to recover instead
+# of silently producing a broken release.
+$expectedScripts = @(
+    "build_windows.ps1", "build_android.ps1", "build_python_desktop.ps1",
+    "build_gamepi.ps1", "build_batocera.ps1",
+    "build_nuitka_windows.ps1", "build_gamepi_nuitka.ps1"
+)
+$missing = $expectedScripts | Where-Object {
+    -not (Test-Path (Join-Path $PSScriptRoot $_))
+}
+if ($missing.Count -gt 0) {
+    Write-Host "[ABORT] Missing build scripts: $($missing -join ', ')" -ForegroundColor Red
+    Write-Host "        Run 'git restore build/' to recover, then retry." -ForegroundColor Red
+    exit 1
+}
+
 # Color functions
 function Write-Status {
     param([string]$Message)
@@ -209,7 +228,13 @@ function Clean-Up {
     Write-Status "Cleaning up temporary build files..."
     $rootDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
     
-    Remove-Item -Path (Join-Path $rootDir "build") -Recurse -Force -ErrorAction SilentlyContinue
+    # IMPORTANT: do NOT remove "$rootDir\build" — that path is the folder
+    # holding every PowerShell script we just dispatched.  Earlier
+    # revisions wiped it here and obliterated the scripts on every run.
+    # Only clean Nuitka's actual leak folders (source-name-derived).
+    foreach ($leak in @("main_nuitka.build", "main_nuitka.dist", "main_nuitka.onefile-build")) {
+        Remove-Item -Path (Join-Path $rootDir $leak) -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item -Path (Join-Path $rootDir "dist") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path (Join-Path $rootDir "temp_*") -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path (Join-Path $PSScriptRoot "temp_*") -Recurse -Force -ErrorAction SilentlyContinue

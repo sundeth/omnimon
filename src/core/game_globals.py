@@ -300,6 +300,105 @@ def return_pets_from_arena() -> list:
     return returned
 
 
+def freezer_deposit_pets(pets: list) -> int:
+    """Append *pets* to the freezer pkl in the player's current save dir.
+
+    Used by the arena reclaim flow: when a past season is reclaimed, the
+    pets that were locked to that team are returned to the player —
+    spec says "transferred to the freezer", so we drop them into the
+    first freezer page(s) with a free slot rather than back into the
+    active party (where they'd suddenly appear during gameplay).
+
+    Returns the number of pets actually deposited.  Silently no-ops if
+    the save dir can't be accessed or the freezer file can't be read.
+    Empty `pets` returns 0.
+    """
+    if not pets:
+        return 0
+    import pickle
+    try:
+        save_dir = get_save_dir()
+    except Exception as exc:
+        from core import runtime_globals
+        runtime_globals.game_console.log(
+            f"[freezer_deposit_pets] no save dir: {exc}")
+        return 0
+    file_path = os.path.join(save_dir, "freezer.pkl")
+
+    # Load existing freezer pages (or build empty ones if no file yet)
+    freezer_pages = []
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                freezer_pages = pickle.load(f) or []
+        except Exception as exc:
+            from core import runtime_globals
+            runtime_globals.game_console.log(
+                f"[freezer_deposit_pets] load failed: {exc}")
+            freezer_pages = []
+
+    if not freezer_pages:
+        # Build a minimal freezer of 10 pages.  Done lazily to avoid
+        # importing GameFreezer at module load time (circular risk).
+        try:
+            from models.game_freezer import GameFreezer
+            freezer_pages = [
+                GameFreezer([], i, "default_bg", "default_module",
+                            game_mode=game_mode)
+                for i in range(10)
+            ]
+        except Exception as exc:
+            from core import runtime_globals
+            runtime_globals.game_console.log(
+                f"[freezer_deposit_pets] could not bootstrap freezer: {exc}")
+            return 0
+
+    # Stamp pages with current game mode so the next freezer scene load
+    # accepts them.
+    for page in freezer_pages:
+        if not hasattr(page, 'game_mode') or page.game_mode == -1:
+            page.game_mode = game_mode
+
+    deposited = 0
+    remaining = list(pets)
+    for page in freezer_pages:
+        if not remaining:
+            break
+        page_pets = list(getattr(page, 'pets', []) or [])
+        # Each page has a fixed slot count; treat existing length as the
+        # cap if available, else default to 12.
+        cap = getattr(page, 'capacity', None) or 12
+        while remaining and len(page_pets) < cap:
+            page_pets.append(remaining.pop(0))
+            deposited += 1
+        page.pets = page_pets
+        if hasattr(page, 'rebuild'):
+            try:
+                page.rebuild()
+            except Exception:
+                pass
+
+    if not deposited and remaining:
+        # No room anywhere — fall back to extending the last page
+        try:
+            freezer_pages[-1].pets = list(
+                getattr(freezer_pages[-1], 'pets', []) or []) + remaining
+            deposited = len(remaining)
+        except Exception:
+            pass
+
+    try:
+        os.makedirs(save_dir, exist_ok=True)
+        with open(file_path, "wb") as f:
+            pickle.dump(freezer_pages, f)
+    except Exception as exc:
+        from core import runtime_globals
+        runtime_globals.game_console.log(
+            f"[freezer_deposit_pets] save failed: {exc}")
+        return 0
+    return deposited
+
+
 def is_pet_in_arena(pet) -> bool:
     """True if this pet object is currently in the arena pool."""
     return any(p is pet for p in arena_pets)

@@ -213,6 +213,8 @@ class UIManager:
             colors = {"bg": VIOLET_DARK, "fg": VIOLET, "highlight": VIOLET_LIGHT, "black": BLACK, "grey": GREY}
         elif self.theme == "TEAL":
             colors = {"bg": TEAL_DARK, "fg": TEAL, "highlight": TEAL_LIGHT, "black": BLACK, "grey": GREY}
+        elif self.theme == "NAVY":
+            colors = {"bg": NAVY_DARK, "fg": NAVY, "highlight": NAVY_LIGHT, "black": BLACK, "grey": GREY}
         else:
             colors = {"bg": BLACK, "fg": GREY, "highlight": GREY, "black": BLACK, "grey": GREY}
         

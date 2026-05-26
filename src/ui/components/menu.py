@@ -125,15 +125,18 @@ class Menu(UIComponent):
             self.needs_redraw = True
             return True
         elif event_type == "LCLICK":
-            # For mouse clicks, check if click is inside menu
+            # For mouse / touch clicks, check if click is inside menu and
+            # which option was tapped (touch has no MOUSE_MOTION pre-select).
             if event_data and "pos" in event_data:
                 mouse_pos = event_data["pos"]
                 if self.rect.collidepoint(mouse_pos):
-                    # Click inside menu - select option
-                    runtime_globals.game_sound.play("menu")
-                    if self.on_select:
-                        self.on_select(self.selected_index)
-                    self.close()
+                    tapped_index = self._option_index_at(mouse_pos)
+                    if tapped_index is not None:
+                        self.selected_index = tapped_index
+                        runtime_globals.game_sound.play("menu")
+                        if self.on_select:
+                            self.on_select(self.selected_index)
+                        self.close()
                 else:
                     # Click outside menu - cancel
                     runtime_globals.game_sound.play("cancel")
@@ -174,7 +177,30 @@ class Menu(UIComponent):
         
         # Block all other events while menu is visible
         return True
-        
+
+    def _option_index_at(self, pos):
+        """Return the option index at a screen-coord position, or None."""
+        if not self.manager:
+            return None
+        relative_y = pos[1] - self.rect.y
+        padding = int(self.padding * self.manager.ui_scale)
+        option_height = int(self.option_height * self.manager.ui_scale)
+        if option_height <= 0:
+            return None
+        option_y = relative_y - padding
+        if option_y < 0:
+            return None
+        idx = int(option_y // option_height)
+        if 0 <= idx < len(self.options):
+            return idx
+        return None
+
+    def _is_touch_mode(self):
+        """True when the player is using touch / mouse input."""
+        return runtime_globals.INPUT_MODE in (
+            runtime_globals.TOUCH_MODE, runtime_globals.MOUSE_MODE,
+        ) or getattr(runtime_globals, "IS_ANDROID", False)
+
     def render(self):
         """Render the menu using UI theme colors"""
         if getattr(self, 'cached_surface', None) is None or self.cached_surface.get_size() != (self.rect.width, self.rect.height):
@@ -204,22 +230,26 @@ class Menu(UIComponent):
         padding = int(self.padding * self.manager.ui_scale)
         option_height = int(self.option_height * self.manager.ui_scale)
         
+        touch_mode = self._is_touch_mode()
+
         for i, option in enumerate(self.options):
             y_pos = padding + (i * option_height)
-            
-            # Determine text color based on selection
-            if i == self.selected_index:
-                text_color = highlight_color
-                # Draw selection highlight background
+
+            is_selected = (i == self.selected_index)
+            # In touch mode, every option gets a tappable highlight; the
+            # selected one is rendered more strongly.
+            draw_highlight = is_selected or touch_mode
+            if draw_highlight:
+                text_color = highlight_color if is_selected else fg_color
                 highlight_rect = pygame.Rect(
                     padding // 2,
                     y_pos,
                     self.rect.width - padding,
                     option_height
                 )
-                # Draw subtle highlight with lower opacity
+                alpha = 50 if is_selected else 25
                 highlight_surface = pygame.Surface((highlight_rect.width, highlight_rect.height), pygame.SRCALPHA)
-                highlight_surface.fill((*highlight_color, 50))  # 50 alpha for subtle highlight
+                highlight_surface.fill((*highlight_color, alpha))
                 from utils.pygame_utils import blit_with_cache
                 blit_with_cache(surface, highlight_surface, (highlight_rect.x, highlight_rect.y))
             else:

@@ -51,10 +51,15 @@ class GameSound:
         if not pygame.mixer.get_init():
             pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
 
-        # On Pi, pre-load all sounds immediately so the first press has no stutter.
-        import platform
-        if platform.system() == "Linux":
-            self.load_sounds()
+        # NOTE: do NOT eager-load here.  This instance is constructed
+        # while ``runtime_globals`` is being imported, which on Android
+        # happens BEFORE ``main_android.py`` sets IS_ANDROID / APP_ROOT.
+        # An eager load at this point silently mis-resolves every path
+        # and marks ``sounds_loaded = True`` with an empty dict, so play()
+        # never retries.  Lazy-load in play() runs after the scene loop
+        # has started — IS_ANDROID + APP_ROOT are set by then — and is
+        # cheap enough that the first press won't stutter noticeably,
+        # even on Pi.
     
     def load_sounds(self) -> None:
         """

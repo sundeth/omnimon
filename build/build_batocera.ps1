@@ -129,13 +129,11 @@ New-Item -ItemType Directory -Path "$TEMP_DIR\$BUILD_NAME\src" -Force | Out-Null
 Copy-Item "..\src\vpet.py" "$TEMP_DIR\$BUILD_NAME\src\"
 Copy-Item "..\src\__init__.py" "$TEMP_DIR\$BUILD_NAME\src\"
 
-# Copy modules
-Write-Status "Copying modules..."
-Copy-Item -Recurse "..\modules" "$TEMP_DIR\$BUILD_NAME\"
-
-# Copy network
-Write-Status "Copying network..."
-Copy-Item -Recurse "..\network" "$TEMP_DIR\$BUILD_NAME\"
+# Ship an EMPTY modules/ folder - releases must not include the dev
+# environment's installed modules.  The runtime handles the empty
+# folder (load_modules() returns an empty dict).
+Write-Status "Creating empty modules/ folder..."
+New-Item -ItemType Directory -Force -Path "$TEMP_DIR\$BUILD_NAME\modules" | Out-Null
 
 # Create empty save folder
 Write-Status "Creating save directory..."

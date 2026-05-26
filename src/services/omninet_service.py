@@ -54,15 +54,22 @@ class OmninetService:
         self._load_credentials()
     
     def _get_credentials_path(self) -> str:
-        """Get the path to the credentials file."""
-        # Try to get save directory from game globals
-        save_dir = getattr(runtime_globals, 'save_directory', None)
-        if save_dir:
-            return os.path.join(save_dir, 'omninet_device.json')
-        
-        # Fallback to save/ directory
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                          'save', 'omninet_device.json')
+        """Get the path to the credentials file.
+
+        Uses the same base save directory as game_mode preferences so the
+        device key lives outside the bundle on every platform (notably
+        android.storage.app_storage_path()/save on Android).
+        """
+        try:
+            from core.game_globals import _get_base_save_dir
+            base = _get_base_save_dir()
+        except Exception:
+            base = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                'save',
+            )
+        os.makedirs(base, exist_ok=True)
+        return os.path.join(base, 'omninet_device.json')
     
     def _get_base_url(self) -> str:
         """Get the Omninet server base URL."""
@@ -627,6 +634,53 @@ class OmninetService:
     def download_module_free(self, module_id: str) -> Tuple[bool, Any]:
         """Download a module for free (Free Mode). Uses public module download endpoint."""
         return self._make_request('GET', f'/api/v1/modules/{module_id}/download', require_auth=False)
+
+    def download_module_zip(self, module_id: str, progress_cb=None) -> Tuple[bool, Any]:
+        """Download a module as raw zip bytes.
+
+        Streams the response (so Android downloads don't time out on large
+        modules) and calls progress_cb(percent_int, downloaded_bytes,
+        total_bytes) when total is known.  Returns (True, bytes) on
+        success or (False, error_message) on failure.
+        """
+        try:
+            base_url = self._get_base_url()
+            url = urljoin(base_url, f'/api/v1/modules/{module_id}/download')
+            headers = {}
+            if self._device_key:
+                headers['X-Device-Key'] = self._device_key
+            # Long timeout for the connect phase; per-chunk reads use the
+            # same stream so a slow Android connection won't 5-second-out.
+            response = requests.get(url, headers=headers, timeout=60, stream=True)
+            if response.status_code != 200:
+                return False, f"Server returned {response.status_code}"
+            total = int(response.headers.get('Content-Length', 0) or 0)
+            downloaded = 0
+            chunks = []
+            for chunk in response.iter_content(chunk_size=32 * 1024):
+                if not chunk:
+                    continue
+                chunks.append(chunk)
+                downloaded += len(chunk)
+                if progress_cb and total > 0:
+                    try:
+                        progress_cb(int(downloaded * 100 / total), downloaded, total)
+                    except Exception:
+                        pass
+            if progress_cb:
+                try:
+                    progress_cb(100, downloaded, downloaded)
+                except Exception:
+                    pass
+            return True, b"".join(chunks)
+        except requests.exceptions.Timeout:
+            return False, "Download timeout"
+        except requests.exceptions.ConnectionError:
+            return False, "Cannot connect to server"
+        except Exception as e:
+            runtime_globals.game_console.log(
+                f"[OmninetService] download_module_zip error: {e}")
+            return False, str(e)
 
     def get_module_sprite(self, module_id: str, sprite_type: str):
         """Fetch a module sprite image ('icon' or 'logo'). Returns a pygame.Surface or None."""

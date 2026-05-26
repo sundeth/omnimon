@@ -5,7 +5,7 @@ import time
 import core.constants as constants
 from core import game_globals, runtime_globals
 from models import game_console
-from utils.asset_utils import image_load
+from utils.asset_utils import image_load, resolve_path
 from utils.module_utils import get_module
 
 shadow_cache = {}  # {id(surface): shadow_surface} — validated by size on retrieval
@@ -117,8 +117,16 @@ def load_attack_sprites():
     attack_sprites = {}
     # Scale to half pet height, maintaining aspect ratio
     target_height = 24 * runtime_globals.UI_SCALE
-    for filename in os.listdir(constants.ATK_FOLDER):
+    # Resolve ATK_FOLDER through APP_ROOT so the listdir works on Android.
+    atk_folder = resolve_path(constants.ATK_FOLDER)
+    if not os.path.isdir(atk_folder):
+        runtime_globals.game_console.log(
+            f"[load_attack_sprites] folder missing: {atk_folder}")
+        return attack_sprites
+    for filename in os.listdir(atk_folder):
         if filename.endswith(".png"):
+            # image_load() takes the relative path and re-resolves it
+            # against APP_ROOT, so use the unresolved path here.
             path = os.path.join(constants.ATK_FOLDER, filename)
             sprite = image_load(path).convert_alpha()
             # Calculate proportional width based on target height
@@ -141,13 +149,16 @@ def load_crit_attack_sprites():
       - Other formats:     look up str(id) directly
     """
     crit_sprites = {}
-    folder = constants.ATK_CRIT_FOLDER
+    # Resolve through APP_ROOT for Android; on desktop this is a no-op.
+    folder = resolve_path(constants.ATK_CRIT_FOLDER)
     if not os.path.isdir(folder):
         return crit_sprites
     target_height = 48 * runtime_globals.UI_SCALE  # 2× normal attack sprite size
     for filename in os.listdir(folder):
         if filename.endswith(".png"):
-            path = os.path.join(folder, filename)
+            # image_load re-resolves against APP_ROOT, so feed it the
+            # relative form to stay portable.
+            path = os.path.join(constants.ATK_CRIT_FOLDER, filename)
             try:
                 sprite = image_load(path).convert_alpha()
                 orig_w, orig_h = sprite.get_width(), sprite.get_height()

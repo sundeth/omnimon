@@ -22,6 +22,7 @@ from .arena_view import ArenaView
 from .arena_rules_view import ArenaRulesView
 from .arena_history_view import ArenaHistoryView
 from .arena_team_creation_view import ArenaTeamCreationView
+from .arena_reclaim_view import ArenaReclaimView
 
 __all__ = [
     'MainMenuView',

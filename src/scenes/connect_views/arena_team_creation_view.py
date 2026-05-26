@@ -32,20 +32,40 @@ MAX_TEAM_SIZE = 3
 REQUIRED_TEAM_SIZE = 3
 
 
-def _pet_passes(pet, restrictions: dict) -> bool:
-    """Return True if *pet* satisfies the season's restrictions."""
+def _pet_passes(pet, restrictions: dict) -> tuple[bool, str]:
+    """Return ``(ok, reason)`` for whether *pet* may join an arena team.
+
+    Combined check covers two things:
+        * Universal arena eligibility — ``power > 0`` (so dead / starter
+          pets are filtered) and ``edited == False`` (edited / modded
+          pets aren't allowed regardless of season rules).
+        * Season restrictions when the active season has them
+          (``allowed_stages`` / ``allowed_attributes`` /
+          ``allowed_modules``).  Mirrors ``Season.is_pet_allowed`` on the
+          server so the client doesn't waste a network round-trip on a
+          team it knows the server will reject.
+
+    Returns ``True, ""`` if the pet is eligible, or ``False, reason``
+    with a short human-readable reason ready for the status label.
+    """
+    # Universal arena gates first — apply regardless of season rules
+    if getattr(pet, 'edited', False):
+        return False, "Edited pets aren't allowed"
+    if int(getattr(pet, 'power', 0) or 0) <= 0:
+        return False, "Pet has no power"
+
     if not restrictions:
-        return True
+        return True, ""
     stages = restrictions.get('allowed_stages')
     if stages and getattr(pet, 'stage', None) not in stages:
-        return False
+        return False, "Wrong stage for this season"
     attributes = restrictions.get('allowed_attributes')
     if attributes and getattr(pet, 'attribute', None) not in attributes:
-        return False
+        return False, "Wrong attribute for this season"
     modules = restrictions.get('allowed_modules')
     if modules and getattr(pet, 'module', None) not in modules:
-        return False
-    return True
+        return False, "Wrong module for this season"
+    return True, ""
 
 
 def _pet_to_server_dict(pet) -> dict:
@@ -154,12 +174,17 @@ class ArenaTeamCreationView:
         self.pet_selector.set_interactive(True)
         self.pet_selector.activation_callback = self._on_pet_activate
 
-        # Disable pets that fail the season rules.  PetSelector.enabled_pets
-        # is the allow-list of selectable indices.
-        eligible = [
-            i for i, pet in enumerate(self.pet_selector.pets)
-            if _pet_passes(pet, self._restrictions)
-        ]
+        # Disable pets that fail eligibility (universal arena gates +
+        # season-specific filters).  Reasons are stashed per index so the
+        # status label can explain why a tap was rejected.
+        self._reject_reasons = {}
+        eligible = []
+        for i, pet in enumerate(self.pet_selector.pets):
+            ok, reason = _pet_passes(pet, self._restrictions)
+            if ok:
+                eligible.append(i)
+            else:
+                self._reject_reasons[i] = reason
         self.pet_selector.enabled_pets = eligible
 
         self.ui_manager.set_focused_component(self.pet_selector)
@@ -188,7 +213,9 @@ class ArenaTeamCreationView:
         if pet_index < 0 or pet_index >= len(self.pet_selector.pets):
             return False
         if pet_index not in self.pet_selector.enabled_pets:
-            self.status_label.set_text("Pet violates season rules")
+            reason = self._reject_reasons.get(pet_index, "Pet not eligible")
+            self.status_label.set_text(reason)
+            runtime_globals.game_sound.play("cancel")
             return False
         self._toggle_pet(pet_index)
         return True

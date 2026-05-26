@@ -128,18 +128,31 @@ def _get_sections():
     def _cycle_sleep(increase):
         cfg.sleep_time = _change_time(cfg.sleep_time, increase, 12, 0, is_sleep=True)
 
+    main_options = [
+        {"key": "gameplay",     "label": "Gameplay",     "type": "action"},
+        {"key": "display",      "label": "Display",      "type": "action"},
+        {"key": "audio",        "label": "Audio",        "type": "action"},
+        {"key": "input",        "label": "Input",        "type": "action"},
+        {"key": "background",   "label": "Backgrounds",  "type": "action"},
+        {"key": "unlockables",  "label": "Secrets",      "type": "action"},
+    ]
+    if runtime_globals.IS_ANDROID:
+        # Surface a "(!)" marker on the System row when the background
+        # service is in a non-OK state so MIUI users notice it before
+        # they have to go digging.
+        try:
+            from services import android_background_service as _bg
+            _result = _bg.get_status().get("last_result")
+        except Exception:
+            _result = None
+        _system_label = "System" if _result in (None, "ok") else "System (!)"
+        main_options.append({"key": "system", "label": _system_label, "type": "action"})
+
     sections = [
         {
             "key": "main",
             "title": "SETTINGS",
-            "options": [
-                {"key": "gameplay",     "label": "Gameplay",     "type": "action"},
-                {"key": "display",      "label": "Display",      "type": "action"},
-                {"key": "audio",        "label": "Audio",        "type": "action"},
-                {"key": "input",        "label": "Input",        "type": "action"},
-                {"key": "background",   "label": "Backgrounds",  "type": "action"},
-                {"key": "unlockables",  "label": "Secrets",      "type": "action"},
-            ],
+            "options": main_options,
         },
         {
             "key": "gameplay",
@@ -200,6 +213,19 @@ def _get_sections():
             ],
         },
     ]
+    if runtime_globals.IS_ANDROID:
+        from services import android_background_service as _bg
+        sections.append({
+            "key": "system",
+            "title": "SYSTEM",
+            "options": [
+                {"key": "service_status",  "label": "Bg Service",     "type": "cycle",
+                 "get": _bg.get_status_label,
+                 "set": lambda inc: None},
+                {"key": "service_retry",   "label": "Retry Service",  "type": "action"},
+                {"key": "service_help",    "label": "Service Help",   "type": "action"},
+            ],
+        })
     return {s["key"]: s for s in sections}
 
 
@@ -304,8 +330,83 @@ class SceneSettingsMenu:
             self._build_background_view()
         elif key == "unlockables":
             self._build_unlockables_view()
+        elif key == "service_help":
+            self._build_service_help_view()
         else:
             self._build_option_list_view(key)
+
+    def _build_service_help_view(self):
+        """Android-only help screen explaining what the bg service does
+        and how to unblock it when the OS (notably MIUI) refuses to start
+        it.  Reuses the same Label / Button components as the other
+        sub-section views for visual consistency.
+        """
+        from services import android_background_service as _bg
+        status = _bg.get_status()
+        self.title_scene.set_text("BG SERVICE")
+
+        result = status.get("last_result")
+        status_color = {
+            "ok": (160, 230, 160),
+            "blocked": (230, 160, 160),
+            "unsupported": (200, 200, 200),
+        }.get(result, (220, 220, 220))
+
+        status_text = _bg.get_status_label()
+        self._add_dynamic(Label(8, 36, f"Status: {status_text}",
+                                color_override=status_color))
+
+        fail_count = status.get("fail_count", 0)
+        success_count = status.get("success_count", 0)
+        self._add_dynamic(Label(8, 56, f"OK: {success_count}  Fail: {fail_count}"))
+
+        # Help body — keep lines short so they fit at 240-base width.
+        if result == "blocked":
+            lines = [
+                "Service blocked by the OS.",
+                "On Xiaomi/MIUI: enable",
+                "Autostart and set Battery",
+                "to 'No restrictions' for",
+                "Omnipet in app settings.",
+            ]
+        elif result == "unsupported":
+            lines = [
+                "Service unavailable here.",
+                "Pets will keep ticking when",
+                "the app is open; progress",
+                "auto-saves every 30s.",
+            ]
+        elif result == "ok":
+            lines = [
+                "Service is running.",
+                "Pets keep ticking while",
+                "the app is in the",
+                "background.",
+            ]
+        else:
+            lines = [
+                "Service has not started",
+                "yet. It launches when the",
+                "app is backgrounded.",
+            ]
+        y = 84
+        for line in lines:
+            self._add_dynamic(Label(8, y, line))
+            y += 16
+
+        # Last error (truncated) — only when we have one.
+        err = status.get("last_error", "")
+        if err:
+            self._add_dynamic(Label(8, y + 6, "Last error:",
+                                    color_override=(220, 160, 160)))
+            self._add_dynamic(Label(8, y + 22, err[:36]))
+
+        back_btn = Button(
+            BASE_RESOLUTION - 68, BASE_RESOLUTION - 38, 60, 28,
+            "BACK", self._go_back,
+        )
+        back_btn.visible = self._mouse_enabled()
+        self._add_dynamic(back_btn)
 
     # ------------------------------------------------------------------
     # Generic option list (uses OptionRow)
@@ -318,12 +419,21 @@ class SceneSettingsMenu:
         self.title_scene.set_text(section["title"])
 
         row_width = 224
-        row_height = 24
-        row_spacing = 2
         start_x = 8
         start_y = 40
+        # Auto-tighten the row layout when the list would overlap the
+        # bottom-right BACK button (which sits at y >= 202).  Without
+        # this the 7th row in the main settings (Android-only "System"
+        # entry) draws under the BACK button.
+        bottom_limit = BASE_RESOLUTION - 40   # leave room for BACK
+        opts = section["options"]
+        available = bottom_limit - start_y
+        per_row = max(20, available // max(len(opts), 1))
+        per_row = min(per_row, 26)
+        row_height = per_row - 2
+        row_spacing = 2
         self._option_rows = []
-        self._option_defs = section["options"]
+        self._option_defs = opts
 
         for i, opt in enumerate(self._option_defs):
             y = start_y + i * (row_height + row_spacing)
@@ -594,6 +704,18 @@ class SceneSettingsMenu:
             runtime_globals.game_sound.play("menu")
             game_globals.show_tutorial = True
             change_scene("tutorial")
+            return
+        if key == "service_retry":
+            runtime_globals.game_sound.play("menu")
+            from services import android_background_service as _bg
+            _bg.start_service()
+            # The cycle row pulls its value from get_status_label() on
+            # next paint — force a redraw so the new state shows up.
+            self._refresh_option_texts()
+            return
+        if key == "service_help":
+            runtime_globals.game_sound.play("menu")
+            self._navigate_to("service_help")
             return
 
     # ------------------------------------------------------------------

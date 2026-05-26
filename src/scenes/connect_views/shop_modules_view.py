@@ -23,6 +23,7 @@ from core import runtime_globals, game_globals
 from services.omninet_service import omninet_service
 from services.shop_image_cache import shop_image_cache
 from utils.asset_utils import image_load
+from utils.module_utils import get_modules_dir, load_modules
 
 
 class ShopModulesView:
@@ -94,19 +95,29 @@ class ShopModulesView:
         runtime_globals.game_console.log("[ShopModulesView] UI setup complete")
     
     def _setup_coin_display(self):
-        """Setup the coin icon and amount display."""
+        """Setup the coin icon and amount display.
+
+        Free Play hides coins entirely — there's no economy in that mode
+        (modules are free, items aren't reachable from the shop UI for
+        Free Mode players), so showing a balance is misleading clutter.
+        """
+        if game_globals.is_free_mode():
+            self.coin_label = None
+            self.coin_icon = None
+            return
+
         icon_size = 16
         label_width = 55
         margin = 10
         label_x = BASE_RESOLUTION - margin - label_width
         coin_y = 9 + 4
-        
+
         coins = getattr(game_globals, 'coins', 0)
         self.coin_label = Label(label_x, coin_y, str(coins), is_title=False)
         self.ui_manager.add_component(self.coin_label)
-        
+
         icon_x = label_x - icon_size - 4
-        self.coin_icon = Image(icon_x, coin_y - 2, icon_size, icon_size, 
+        self.coin_icon = Image(icon_x, coin_y - 2, icon_size, icon_size,
                                image_path="assets/ui/Shop_Coin_1.png")
         self.ui_manager.add_component(self.coin_icon)
     
@@ -315,6 +326,8 @@ class ShopModulesView:
         )
         self.ui_manager.add_component(action_button)
         self.detail_components.append(action_button)
+        # Track for in-place updates from the download worker.
+        self._action_button = action_button
         
         # Back to list button
         back_list_button = Button(
@@ -459,55 +472,108 @@ class ShopModulesView:
         
         threading.Thread(target=do_purchase, daemon=True).start()
     
-    def _on_download(self, item: ShopModuleItem):
-        """Handle download button click."""
-        runtime_globals.game_sound.play("menu")
-        # (suppressed) runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
-        
-        def do_download():
-            try:
-                if game_globals.is_free_mode():
-                    # Free mode: use free download endpoint
-                    success, data = omninet_service.download_module_free(item.id)
-                else:
-                    success, data = omninet_service.download_module(item.id)
-                if success:
-                    # TODO: Save module data to modules folder
-                    pass
-                else:
-                    runtime_globals.game_sound.play("cancel")
-            except Exception as e:
-                runtime_globals.game_console.log(f"[ShopModulesView] Download error: {e}")
-                runtime_globals.game_sound.play("cancel")
-        
-        threading.Thread(target=do_download, daemon=True).start()
+    def _set_action_button_text(self, text, enabled=False):
+        """In-place update of the detail action button from any thread.
 
-    def _on_free_download(self, item: ShopModuleItem):
-        """Handle free download in Free Mode (no purchase required)."""
+        Rendering happens on the main thread; mutating these attrs is
+        safe because they're only read by the next paint cycle.
+        """
+        btn = getattr(self, "_action_button", None)
+        if btn is None:
+            return
+        try:
+            btn.set_text(text)
+            btn.set_enabled(enabled)
+        except Exception:
+            pass
+
+    def _install_module_zip(self, item: 'ShopModuleItem', zip_bytes: bytes) -> bool:
+        """Save downloaded bytes to modules/<name>/ and unpack the zip.
+
+        Returns True on success.
+        """
+        import io
+        import os
+        import zipfile
+        try:
+            modules_dir = get_modules_dir()
+            # Folder name: prefer the module's display name, sanitized.
+            safe_name = "".join(c for c in (item.name or item.id)
+                                if c.isalnum() or c in ('-', '_', ' ')).strip()
+            if not safe_name:
+                safe_name = item.id
+            target_dir = os.path.join(modules_dir, safe_name)
+            # Clean any prior install so we don't merge with stale files.
+            if os.path.isdir(target_dir):
+                import shutil
+                shutil.rmtree(target_dir, ignore_errors=True)
+            os.makedirs(target_dir, exist_ok=True)
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                zf.extractall(target_dir)
+            # Some publishers wrap content in a single top-level folder —
+            # flatten that so module.json sits directly under target_dir.
+            entries = os.listdir(target_dir)
+            if (len(entries) == 1
+                    and os.path.isdir(os.path.join(target_dir, entries[0]))
+                    and not os.path.exists(os.path.join(target_dir, 'module.json'))):
+                inner = os.path.join(target_dir, entries[0])
+                for n in os.listdir(inner):
+                    os.rename(os.path.join(inner, n), os.path.join(target_dir, n))
+                os.rmdir(inner)
+            return os.path.exists(os.path.join(target_dir, 'module.json'))
+        except Exception as e:
+            runtime_globals.game_console.log(
+                f"[ShopModulesView] Install error for {item.name}: {e}")
+            return False
+
+    def _run_download(self, item: 'ShopModuleItem', mark_owned: bool):
+        """Worker shared by paid + free downloads."""
         runtime_globals.game_sound.play("menu")
-        # (suppressed) runtime_globals.game_message.add_slide("Downloading...", (255, 255, 255), 60)
-        
-        def do_free_download():
+        self._set_action_button_text("0%", enabled=False)
+
+        def progress(pct, _dl, _total):
+            self._set_action_button_text(f"{pct}%", enabled=False)
+
+        def worker():
             try:
-                success, data = omninet_service.download_module_free(item.id)
-                if success:
-                    # Mark as owned locally
+                success, data = omninet_service.download_module_zip(
+                    item.id, progress_cb=progress)
+                if not success or not isinstance(data, (bytes, bytearray)):
+                    err = data if isinstance(data, str) else "Download failed"
+                    self._set_action_button_text(f"Failed: {err}", enabled=False)
+                    runtime_globals.game_sound.play("cancel")
+                    return
+                if not self._install_module_zip(item, bytes(data)):
+                    self._set_action_button_text("Install failed", enabled=False)
+                    runtime_globals.game_sound.play("cancel")
+                    return
+                if mark_owned:
                     game_globals.purchases.add_module(item.id, item.name)
                     game_globals.save()
                     item.owned = True
-                    # (suppressed) runtime_globals.game_message.add_slide("Download complete!", (0, 231, 58), 90)
-                    # Refresh detail view
-                    self._setup_detail_view(item)
-                else:
-                    runtime_globals.game_sound.play("cancel")
-                    error_msg = data if isinstance(data, str) else "Download failed"
-                    # (suppressed) runtime_globals.game_message.add_slide(error_msg, (255, 100, 100), 90)
+                # Refresh the in-memory module registry so the new module
+                # shows up everywhere (egg picker, modules screen, etc.).
+                try:
+                    load_modules()
+                except Exception as e:
+                    runtime_globals.game_console.log(
+                        f"[ShopModulesView] load_modules() failed post-install: {e}")
+                self._set_action_button_text("Completed", enabled=False)
             except Exception as e:
-                runtime_globals.game_console.log(f"[ShopModulesView] Free download error: {e}")
+                runtime_globals.game_console.log(
+                    f"[ShopModulesView] Download worker error: {e}")
+                self._set_action_button_text("Failed", enabled=False)
                 runtime_globals.game_sound.play("cancel")
-                # (suppressed) runtime_globals.game_message.add_slide("Download failed", (255, 100, 100), 90)
-        
-        threading.Thread(target=do_free_download, daemon=True).start()
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_download(self, item: ShopModuleItem):
+        """Handle download button click for owned/paid modules."""
+        self._run_download(item, mark_owned=False)
+
+    def _on_free_download(self, item: ShopModuleItem):
+        """Handle free download in Free Mode (no purchase required)."""
+        self._run_download(item, mark_owned=True)
     
     def _on_detail_back(self):
         """Go back from detail view to list view."""

@@ -39,7 +39,8 @@ def _scaled_coin(size_px: int) -> pygame.Surface:
 
 
 def _blit_price_or_owned(surface, item, font, row_y, row_height, right_edge, padding):
-    """Draw either a green ``Owned`` label or ``<coin icon> N`` on the right.
+    """Draw either a green ``Owned`` label, ``Free`` (Free Mode), or
+    ``<coin icon> N`` on the right.
 
     Returns the x of the leftmost pixel drawn (useful for callers that
     want to avoid overlapping the price area).
@@ -52,7 +53,16 @@ def _blit_price_or_owned(surface, item, font, row_y, row_height, right_edge, pad
         surface.blit(text_surf, (x, y))
         return x
 
-    # Price: <coin> NN, value in gold/yellow
+    # Free Mode has no economy — render "Free" in green instead of the
+    # coin price.  Also covers items the server priced at 0 in any mode.
+    if game_globals.is_free_mode() or item.price <= 0:
+        text_surf = font.render("Free", True, (120, 220, 120))
+        x = right_edge - padding - text_surf.get_width()
+        y = row_y + (row_height - text_surf.get_height()) // 2
+        surface.blit(text_surf, (x, y))
+        return x
+
+    # Progress Mode, not owned: <coin> NN, value in gold/yellow
     value_surf = font.render(str(item.price), True, (255, 215, 80))
     icon_size = max(8, value_surf.get_height())
     coin = _scaled_coin(icon_size)

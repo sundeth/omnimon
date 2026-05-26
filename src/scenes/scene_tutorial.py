@@ -11,6 +11,7 @@ import json
 from ui.windows.window_background import WindowBackground
 from ui.ui_manager import UIManager
 from ui.components.tutorial_dialog import TutorialDialog
+from ui.components.skip_overlay import SkipOverlay
 from core import game_globals, runtime_globals
 from models.game_pet import GamePet
 from models.game_module import GameModule
@@ -109,7 +110,11 @@ class SceneTutorial:
         
         # Skip confirmation
         self.skip_requested = False
-        
+
+        # Touch-only SKIP pill — gives finger users a visible way out;
+        # invisible / inert on keyboard / mouse / GPIO devices.
+        self._skip_overlay = SkipOverlay(on_skip=self._complete_after_skip)
+
         # Build tutorial steps
         self._build_tutorial_steps()
         
@@ -1103,18 +1108,14 @@ class SceneTutorial:
             self._advance_step()
     
     def _check_shop_available(self):
-        """Check if the shop is available (has internet connection)."""
-        from scenes.scene_boot import check_internet_connection
-        
-        if not check_internet_connection():
-            # Show error and return
-            from scenes.scene_error import SceneError
-            SceneError.set_error(
-                message="SHOP OFFLINE",
-                return_scene="game",
-                bottom_message="To proceed, install a module manually or check your internet connection"
-            )
-            change_scene("error")
+        """No-op placeholder.
+
+        Previously bounced the player to SceneError when no internet was
+        detected.  The shop view itself surfaces an offline message, so
+        the tutorial now always continues into the shop instead of
+        derailing into an error scene when modules aren't installed.
+        """
+        return
     
     def _complete_tutorial(self):
         """Mark tutorial as complete and transition to next scene."""
@@ -1377,8 +1378,10 @@ class SceneTutorial:
         # Draw dialog via UI manager (on top)
         self.ui_manager.draw(surface)
         
-        # Draw skip hint
+        # Draw skip hint (keyboard players see the START hint; touch
+        # players get the SkipOverlay pill below — both are non-blocking).
         self._draw_skip_hint(surface)
+        self._skip_overlay.draw(surface)
     
     def _draw_skip_hint(self, surface: pygame.Surface):
         """Draw a small hint to skip tutorial."""
@@ -1392,8 +1395,13 @@ class SceneTutorial:
 
     def handle_event(self, event) -> bool:
         """Handle input events."""
+        # Touch-mode SKIP pill gets first crack at any tap so it can
+        # exit the tutorial without competing with focus / step actions.
+        if self._skip_overlay.handle_event(event):
+            return True
+
         event_type, event_data = event
-        
+
         # START skips tutorial
         if event_type == "START":
             self.skip_tutorial()

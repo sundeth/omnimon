@@ -1252,7 +1252,7 @@ class SceneEggSelection:
                     unlock_item(selected_egg["module"], "egg", unlock["name"])
         
         # Reward: new pet slot unlocked
-        omninet_service.claim_reward("unlock", f"{selected_egg['module']}:{selected_egg['name']}")
+        omninet_service.claim_reward("unlock", f"unlock:{selected_egg['module']}")
 
         # Go to game scene
         change_scene("game")

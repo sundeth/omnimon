@@ -178,7 +178,16 @@ class VirtualPetGame:
         if hasattr(self.scene, 'handle_raw_pygame_event'):
             if self.scene.handle_raw_pygame_event(event):
                 return  # Setup scene consumed the raw event
-        
+
+        # Physical Backspace must edit a focused text field (delete a char)
+        # before the input manager maps it to the game action it's bound to
+        # (Backspace → START by default).  The scene only consumes the key
+        # when a text component is focused, so gameplay scenes are unaffected
+        # and fall through to the normal mapping below.
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
+            if self.scene.handle_event(event):
+                return
+
         input_event = runtime_globals.game_input.process_event(event)
 
         # Pass the input event tuple to the scene if we got one

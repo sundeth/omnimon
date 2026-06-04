@@ -453,11 +453,6 @@ class ShopModulesView:
                     
                     item.owned = True
                     item._just_purchased = True
-                    # Stash for SceneConnect's exit hook (auto-download + jump
-                    # straight to egg picker if the player has no pets).
-                    runtime_globals.last_purchased_module = {
-                        'id': item.id, 'name': item.name,
-                    }
                     # Purchase confirmation shown by in-view label
 
                     # Refresh detail view

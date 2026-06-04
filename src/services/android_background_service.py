@@ -293,6 +293,66 @@ def install_lifecycle_hooks(on_pause=None, on_resume=None):
             def onActivityDestroyed(self, activity):
                 pass
 
+            # --- API 29+ default methods ---
+            # pyjnius raises NotImplementedError for each unimplemented default
+            # method in the interface, which can prevent the preceding real
+            # callbacks (onActivityPaused etc.) from executing on some devices.
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivityPreCreated(self, activity, savedInstanceState):
+                pass
+
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivityPostCreated(self, activity, savedInstanceState):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPreStarted(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPostStarted(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPreResumed(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPostResumed(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPrePaused(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPostPaused(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPreStopped(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPostStopped(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivityPreSaveInstanceState(self, activity, outState):
+                pass
+
+            @java_method("(Landroid/app/Activity;Landroid/os/Bundle;)V")
+            def onActivityPostSaveInstanceState(self, activity, outState):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPreDestroyed(self, activity):
+                pass
+
+            @java_method("(Landroid/app/Activity;)V")
+            def onActivityPostDestroyed(self, activity):
+                pass
+
         # Hold a reference so the JVM doesn't GC the listener.
         global _callbacks_ref
         _callbacks_ref = _Callbacks()

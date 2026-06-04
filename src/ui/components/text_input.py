@@ -326,8 +326,11 @@ class TextInput(UIComponent):
             return False
 
         if not isinstance(event, tuple) or len(event) != 2:
-            # Pygame raw events (TEXTINPUT from Android)
-            if isinstance(event, pygame.event.Event):
+            # Raw pygame events (TEXTINPUT / KEYDOWN).  Duck-type on the
+            # ``type`` attribute instead of isinstance(pygame.event.Event):
+            # on some pygame builds (notably the Android one) Event is a
+            # factory function, not a class, so isinstance raises TypeError.
+            if hasattr(event, 'type'):
                 return self._handle_pygame_event(event)
             return False
 

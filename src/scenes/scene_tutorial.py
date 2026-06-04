@@ -92,6 +92,10 @@ class SceneTutorial:
         self.waiting_for_action = None  # Action name we're waiting for
         self.wait_frames = 0
         self.tutorial_complete = False
+        # When True, the player is locked on the module download: back/cancel
+        # is swallowed so they can't leave the shop mid-download.  Cleared when
+        # the download finishes.
+        self._download_lock = False
         
         # Focus timing - wait for focus fade-in before showing dialog
         self.focus_delay_frames = int(game_globals.configuration.frame_rate * 0.4)  # 0.4 second delay
@@ -562,9 +566,13 @@ class SceneTutorial:
         self.steps.append((self.STEP_UNBLOCK_INPUT, None))
         self.steps.append((self.STEP_WAIT_ACTION, "purchase_module"))
         
-        # Focus on download button
+        # Focus on download button and lock the player in: they bought the
+        # module, now they must download it.  Back/cancel is swallowed so they
+        # can't leave the shop until the download finishes (cleared when the
+        # download_module action fires).
         self.steps.append((self.STEP_FOCUS_WAIT, self._focus_download_button))
         self.steps.append((self.STEP_CALLBACK, self._enable_download_selection))
+        self.steps.append((self.STEP_CALLBACK, self._lock_input_for_download))
         self.steps.append((self.STEP_UNBLOCK_INPUT, None))
         self.steps.append((self.STEP_WAIT_ACTION, "download_module"))
         
@@ -1060,8 +1068,10 @@ class SceneTutorial:
     
     def _enable_connect_menu_selection(self):
         """Enable selecting the connect menu from main game."""
+        # Connect is menu index 8 (bottom row, 4th icon) — see
+        # SceneMainGame: `elif index == 8: self.start_connect()`.
         if self.embedded_scene and hasattr(self.embedded_scene, 'set_allow_menu_selection'):
-            self.embedded_scene.set_allow_menu_selection(True, allowed_index=5, callback=self._on_connect_menu_selected)
+            self.embedded_scene.set_allow_menu_selection(True, allowed_index=8, callback=self._on_connect_menu_selected)
     
     def _on_connect_menu_selected(self, index):
         """Called when connect menu is selected."""
@@ -1089,6 +1099,10 @@ class SceneTutorial:
         """Enable selecting download button for a module."""
         if self.embedded_scene and hasattr(self.embedded_scene, 'set_allow_download_selection'):
             self.embedded_scene.set_allow_download_selection(True, callback=self._on_download_selected)
+
+    def _lock_input_for_download(self):
+        """Lock the player on the shop until the module download completes."""
+        self._download_lock = True
     
     def _on_download_selected(self):
         """Called when download is selected."""
@@ -1322,6 +1336,10 @@ class SceneTutorial:
         self.professor_sprite.update()
         self.extra_sprite.update()
         
+        # Detect connect/shop progress (embedded SceneConnect has no tutorial
+        # notification hooks, so we poll its state instead).
+        self._update_connect_phase_progress()
+
         # Handle waiting states
         if self.wait_frames > 0:
             self.wait_frames -= 1
@@ -1400,11 +1418,24 @@ class SceneTutorial:
         if self._skip_overlay.handle_event(event):
             return True
 
+        # Ignore raw pygame events (TEXTINPUT / physical keys the main loop
+        # may forward); the tutorial only acts on the game's tuple events.
+        if not isinstance(event, tuple) or len(event) != 2:
+            return False
+
         event_type, event_data = event
 
         # START skips tutorial
         if event_type == "START":
             self.skip_tutorial()
+            return True
+
+        # While locked on the module download, swallow back/cancel so the
+        # player can't leave the shop before the download finishes.  The
+        # focused Download button stays clickable; START (skip) still works.
+        if self._download_lock and event_type in ("B", "CANCEL"):
+            if hasattr(runtime_globals, 'game_sound') and runtime_globals.game_sound:
+                runtime_globals.game_sound.play("cancel")
             return True
         
         # Dialog handles events first (both top and bottom)
@@ -1449,6 +1480,42 @@ class SceneTutorial:
         
         return True  # Always consume events in tutorial
     
+    def _update_connect_phase_progress(self):
+        """Advance the shop tutorial by polling the embedded SceneConnect.
+
+        The connect step embeds the real SceneConnect (not a tutorial
+        subclass), so the set_allow_* notification hooks no-op.  Instead we
+        watch its current view and the player's module state and fire the
+        matching action when each milestone is reached:
+
+            enter_shop      → SceneConnect shows the "shop" view
+            view_modules    → SceneConnect shows the "shop_modules" view
+            purchase_module → the player has acquired a module (purchases set)
+            download_module → an owned module is now installed on disk
+        """
+        action = self.waiting_for_action
+        if not action or not self.embedded_scene:
+            return
+        if self.embedded_scene_name != "connect":
+            return
+
+        view = getattr(self.embedded_scene, 'current_view_name', None)
+
+        if action == "enter_shop":
+            if view == "shop":
+                self.notify_action("enter_shop")
+        elif action == "view_modules":
+            if view == "shop_modules":
+                self.notify_action("view_modules")
+        elif action == "purchase_module":
+            purchases = getattr(game_globals, 'purchases', None)
+            if purchases and len(purchases.modules) > 0:
+                self.notify_action("purchase_module")
+        elif action == "download_module":
+            if navigation_utils.has_installed_owned_modules():
+                self._download_lock = False
+                self.notify_action("download_module")
+
     def notify_action(self, action_name: str):
         """Called by embedded scenes or callbacks to notify tutorial of completed actions."""
         runtime_globals.game_console.log(f"[SceneTutorial] notify_action: {action_name}, waiting_for: {self.waiting_for_action}")

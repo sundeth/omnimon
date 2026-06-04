@@ -127,8 +127,10 @@ class TutorialTraining(SceneTraining):
         Handle input events with tutorial control.
         Only allows actions that the tutorial has enabled.
         """
+        if not isinstance(event, tuple) or len(event) != 2:
+            return False
         event_type, event_data = event
-        
+
         # Handle exit - only if allowed
         if event_type == "B":
             if self.allow_exit:

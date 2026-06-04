@@ -49,14 +49,84 @@ APP_ROOT = os.environ.get("ANDROID_APP_PATH") \
     or os.environ.get("PYTHON_SERVICE_ARGUMENT") \
     or os.getcwd()
 
-# The PYTHON_SERVICE_ARGUMENT is a string passed at start; if main_android.py
-# passes the app root through it we use it, otherwise fall back to cwd.
 if APP_ROOT and not os.path.isdir(APP_ROOT):
     APP_ROOT = os.getcwd()
 
+# Try several candidates for src/ — on some devices cwd differs from the
+# APK extraction dir.  __file__ points to the .pyc in the extraction dir,
+# so dirname(__file__) is the most reliable root when available.
+_HERE_svc = os.path.dirname(os.path.abspath(__file__)) if __file__ else os.getcwd()
+_src_candidates = [
+    os.path.join(_HERE_svc, "src"),
+    os.path.join(os.path.dirname(_HERE_svc), "src"),
+    os.path.join(APP_ROOT, "src"),
+]
+for _sp in sys.path[:4]:
+    if _sp and _sp not in ('.', ''):
+        _src_candidates.append(_sp)
+        _src_candidates.append(os.path.join(os.path.dirname(_sp), "src"))
+for _sc in _src_candidates:
+    if os.path.isdir(_sc) and os.path.isdir(os.path.join(_sc, "core")) and _sc not in sys.path:
+        sys.path.insert(0, _sc)
+        APP_ROOT = os.path.dirname(_sc)
+        break
+del _src_candidates, _HERE_svc
+
 SRC_DIR = os.path.join(APP_ROOT, "src")
-if os.path.isdir(SRC_DIR) and SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
+
+# Same Bluestacks cwd≠extraction-dir fix as main_android.py: manually load
+# sitecustomize.pyc so p4a's .pyc import hook is installed before game imports.
+if 'sitecustomize' not in sys.modules:
+    import importlib.machinery as _imm
+    import importlib.util as _ilu
+    _sc_candidates = []
+    for _sp in sys.path[:6]:
+        if _sp and _sp not in ('.', ''):
+            _sc_candidates.append(os.path.join(_sp, 'sitecustomize.pyc'))
+            _sc_candidates.append(os.path.join(os.path.dirname(_sp), 'sitecustomize.pyc'))
+    _sc_candidates.append(os.path.join(os.getcwd(), 'sitecustomize.pyc'))
+    for _sc_path in _sc_candidates:
+        try:
+            if os.path.exists(_sc_path):
+                _loader = _imm.SourcelessFileLoader('sitecustomize', _sc_path)
+                _spec = _ilu.spec_from_loader('sitecustomize', _loader)
+                _mod = _ilu.module_from_spec(_spec)
+                sys.modules['sitecustomize'] = _mod
+                _spec.loader.exec_module(_mod)
+                print(f"[Service] sitecustomize loaded from {_sc_path}")
+                break
+        except Exception as _sc_exc:
+            print(f"[Service] sitecustomize load failed ({_sc_path}): {_sc_exc}")
+    del _imm, _ilu, _sc_candidates
+
+# Same direct .pyc import hook as main_android.py.
+class _PyonlyFinder:
+    def find_spec(self, fullname, path, target=None):
+        import importlib.machinery as _m
+        import importlib.util as _u
+        name = fullname.rpartition('.')[2]
+        for entry in (path if path is not None else sys.path):
+            try:
+                pkg_dir = os.path.join(entry, name)
+                init_pyc = os.path.join(pkg_dir, '__init__.pyc')
+                if os.path.isfile(init_pyc):
+                    loader = _m.SourcelessFileLoader(fullname, init_pyc)
+                    spec = _u.spec_from_loader(fullname, loader, is_package=True)
+                    if spec is not None:
+                        spec.submodule_search_locations = [pkg_dir]
+                    return spec
+                mod_pyc = os.path.join(entry, name + '.pyc')
+                if os.path.isfile(mod_pyc):
+                    loader = _m.SourcelessFileLoader(fullname, mod_pyc)
+                    return _u.spec_from_loader(fullname, loader)
+            except Exception:
+                continue
+        return None
+
+if not any(type(f).__name__ == '_PyonlyFinder' for f in sys.meta_path):
+    sys.meta_path.append(_PyonlyFinder())
+    print(f"[Service] _PyonlyFinder installed, cwd={os.getcwd()}, "
+          f"src_dir_exists={os.path.isdir(SRC_DIR)}")
 
 import pygame  # noqa: E402  -- import after env vars are set
 
@@ -481,6 +551,16 @@ def main():
                     poop.update()
                 except Exception:
                     pass
+
+            # Heartbeat notification every tick (≈1 min) for diagnostic testing.
+            try:
+                notifier.notify(
+                    "service_heartbeat",
+                    "Omnipet service running",
+                    f"Tick {tick_count + 1} — service is active.",
+                )
+            except Exception as exc:
+                print(f"[Service] heartbeat notify failed: {exc}")
 
             # Emit notifications for state changes since last tick.
             try:

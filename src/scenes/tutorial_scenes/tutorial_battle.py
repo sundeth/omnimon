@@ -160,27 +160,39 @@ class TutorialBattle(SceneBattle):
         if not encounter:
             return
         
-        # Monkey-patch the change_scene function in the battle_encounter module
-        import core.combat.battle_encounter as battle_encounter_module
+        # Monkey-patch the change_scene function in the battle_encounter module.
+        # The encounter lives in battle.battle_encounter and calls the
+        # change_scene it imported from utils.scene_utils, so replacing the
+        # name in that module's namespace intercepts its "game" transition.
+        import battle.battle_encounter as battle_encounter_module
         original_change_scene = battle_encounter_module.change_scene
-        
+
+        # Store original so we can restore it later
+        if not hasattr(self, '_original_change_scene'):
+            self._original_change_scene = original_change_scene
+
         def patched_change_scene(scene_name: str, **kwargs):
             """Patched change_scene that intercepts game scene transitions."""
             if scene_name == "game":
                 runtime_globals.game_console.log("[TutorialBattle] Battle exit intercepted via patched change_scene")
+                # Restore immediately so the patch never leaks into the real
+                # game (otherwise the next real battle's exit would be hijacked).
+                battle_encounter_module.change_scene = self._original_change_scene
                 self.battle_in_progress = False
                 if self.on_battle_complete_callback:
                     self.on_battle_complete_callback()
             else:
                 # For other scenes, call original
                 original_change_scene(scene_name, **kwargs)
-        
-        # Store original so we can restore it later
-        if not hasattr(self, '_original_change_scene'):
-            self._original_change_scene = original_change_scene
-        
+
         battle_encounter_module.change_scene = patched_change_scene
         runtime_globals.game_console.log("[TutorialBattle] Patched battle_encounter.change_scene")
+
+    def _restore_change_scene(self):
+        """Undo the battle_encounter.change_scene monkey-patch, if active."""
+        if hasattr(self, '_original_change_scene'):
+            import battle.battle_encounter as battle_encounter_module
+            battle_encounter_module.change_scene = self._original_change_scene
     
     def _hook_go_button(self):
         """Hook the GO button callback in the current view."""
@@ -231,13 +243,16 @@ class TutorialBattle(SceneBattle):
         
         event_type, event_data = event
         
-        # If battle is in progress, let events through but intercept scene exit
+        # If battle is in progress, let events through but intercept scene exit.
+        # The player can confirm/skip the result with A / LCLICK / B; any of
+        # these should resume the tutorial rather than drop to the main game.
+        # (Battles that end on their own are caught by the change_scene patch.)
         if self.battle_in_progress:
-            # Check if we're in the result phase and user is trying to exit
-            if event_type == "B" and self._is_in_result_phase():
-                # Instead of letting BattleEncounter call change_scene("game"),
-                # notify the tutorial that battle is complete
+            if event_type in ("A", "B", "LCLICK") and self._is_in_result_phase():
                 runtime_globals.game_console.log("[TutorialBattle] Battle complete, notifying tutorial")
+                # Restore the patch so it can't leak into the real game.
+                self._restore_change_scene()
+                self.battle_in_progress = False
                 if self.on_battle_complete_callback:
                     self.on_battle_complete_callback()
                 return True

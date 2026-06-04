@@ -678,8 +678,8 @@ class SceneSetup:
         self.test_completed = True
         game_globals.configuration.resolution_multiplyer_max = self.test_current_multiplier
         
-        # Show confirmation message
-        if game_globals.configuration.fullscreen:
+        # Show confirmation message — Android only ever tunes FPS, not resolution
+        if game_globals.configuration.fullscreen and not runtime_globals.IS_ANDROID:
             new_width = int(game_globals.configuration.base_resolution_width * self.test_current_multiplier)
             new_height = int(game_globals.configuration.base_resolution_height * self.test_current_multiplier)
             message = f"Recommended: {new_width}x{new_height}"
@@ -718,20 +718,24 @@ class SceneSetup:
 
     def accept_graphics_settings(self) -> None:
         """Accept and apply graphics settings."""
-        if game_globals.configuration.fullscreen:
+        # On Android, the offscreen surface and display scaling are fixed at
+        # startup (main_android.py). Changing SCREEN_WIDTH/HEIGHT here would
+        # shrink the render area without resizing the offscreen, so skip it.
+        # The test only adjusts FPS on Android anyway — resolution stays at base.
+        if game_globals.configuration.fullscreen and not runtime_globals.IS_ANDROID:
             game_globals.configuration.screen_width = int(
                 game_globals.configuration.base_resolution_width * game_globals.configuration.resolution_multiplyer_max
             )
             game_globals.configuration.screen_height = int(
                 game_globals.configuration.base_resolution_height * game_globals.configuration.resolution_multiplyer_max
             )
-            
+
             # Update runtime globals
             runtime_globals.update_resolution_constants(
                 game_globals.configuration.screen_width,
                 game_globals.configuration.screen_height
             )
-        
+
         game_globals.setup_graphics = False
         runtime_globals.game_console.log("[SceneSetup] Graphics settings accepted and applied")
         self.complete_setup()

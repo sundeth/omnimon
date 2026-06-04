@@ -508,7 +508,8 @@ class SceneMainGame:
         elapsed_frames = self.frame_counter - last_frame
         timeout_frames = int(timeout * constants.FRAME_RATE) if timeout and timeout > 0 else 0
 
-        if timeout and timeout > 0 and elapsed_frames >= timeout_frames:
+        if (timeout and timeout > 0 and elapsed_frames >= timeout_frames
+                and not getattr(self, '_screensaver_disabled', False)):
             # Use cached screensaver surface and refresh every 5 seconds using the frame counter
             # Invalidate cache immediately if relevant state changed
             current_pet_alert = bool(getattr(runtime_globals, 'pet_alert', False))

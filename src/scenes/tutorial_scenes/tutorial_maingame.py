@@ -23,6 +23,8 @@ class TutorialMainGame(SceneMainGame):
         self.on_menu_selected_callback = None
         self.allow_navigation = True
         self.on_cleaning_complete_callback = None  # Callback when cleaning animation finishes
+        # The clock screensaver must never kick in mid-tutorial.
+        self._screensaver_disabled = True
         
         runtime_globals.game_console.log("[TutorialMainGame] Tutorial main game scene initialized")
     
@@ -52,8 +54,10 @@ class TutorialMainGame(SceneMainGame):
         Handle input events with tutorial control.
         Only allows actions that the tutorial has enabled.
         """
+        if not isinstance(event, tuple) or len(event) != 2:
+            return False
         event_type, event_data = event
-        
+
         # Handle A button or click - menu selection
         if event_type in ["A", "LCLICK"]:
             if self.allow_menu_selection:
@@ -154,8 +158,8 @@ class TutorialMainGame(SceneMainGame):
         return self.get_menu_icon_rect(3)
     
     def get_connect_menu_rect(self):
-        """Get Connect menu icon bounds (index 5)."""
-        return self.get_menu_icon_rect(5)
+        """Get Connect menu icon bounds (index 8)."""
+        return self.get_menu_icon_rect(8)
     
     def get_call_sign_rect(self):
         """Get Call Sign icon bounds (index 9)."""

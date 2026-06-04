@@ -1,4 +1,5 @@
 import math
+import time
 import pygame
 import random
 from core import runtime_globals
@@ -31,6 +32,8 @@ class SceneEvolution:
         _module = getattr(_pet, 'module', '') if _pet else ''
         _version = getattr(_pet, 'version', 0) if _pet else 0
         self._evo_to_name = _evo.to_name
+        self._evo_module = _module
+        self._evo_version = _version
         self._evo_is_new_pet = not is_pet_unlocked(_evo.to_name, _module, _version)
         self._rewards_fired = False
         if self.evolutions[0].stage == 5:
@@ -600,9 +603,9 @@ class SceneEvolution:
         if self.frame_counter > 60:
             if not self._rewards_fired:
                 self._rewards_fired = True
-                omninet_service.claim_reward("evolution", self._evo_to_name)
+                omninet_service.claim_reward("evolution", f"evolution:{int(time.time() * 1000)}")
                 if self._evo_is_new_pet:
-                    omninet_service.claim_reward("new_pet", self._evo_to_name)
+                    omninet_service.claim_reward("new_pet", f"new_pet:{self._evo_module}:{self._evo_to_name}:{self._evo_version}")
             runtime_globals.game_sound.stop_all()
             change_scene("game")
 

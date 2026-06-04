@@ -186,8 +186,11 @@ class CodeEntry(UIComponent):
         if not self.visible or not self.focused:
             return False
 
-        # Raw pygame events for physical-keyboard capture (PC and Android IME)
-        if isinstance(event, pygame.event.Event):
+        # Raw pygame events for physical-keyboard capture (PC and Android IME).
+        # Duck-type on ``type`` rather than isinstance(pygame.event.Event):
+        # on some pygame builds Event is a factory function, not a class, and
+        # isinstance against it raises TypeError.
+        if not isinstance(event, tuple) and hasattr(event, 'type'):
             return self._handle_pygame_event(event)
 
         # Event is a tuple: (event_type, event_data)

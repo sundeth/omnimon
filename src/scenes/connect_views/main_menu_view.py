@@ -22,18 +22,21 @@ from services.omninet_service import omninet_service
 class MainMenuView:
     """Main connect menu view with Arena, LocalBattle, Shop, Config sub-menus."""
     
-    def __init__(self, ui_manager: UIManager, change_view_callback, discord_module=None, initial_submenu=None):
+    def __init__(self, ui_manager: UIManager, change_view_callback, discord_module=None, initial_submenu=None, exit_callback=None):
         """Initialize the main menu view.
-        
+
         Args:
             ui_manager: The UI manager instance
             change_view_callback: Callback to change to another view
             discord_module: Reference to the Discord module for account checks
             initial_submenu: Optional submenu to show initially ('arena', 'local_battle', 'config', or None for main)
+            exit_callback: Called to leave the connect scene; routes to egg
+                selection vs. main game (no pets + a module → egg).
         """
         self.ui_manager = ui_manager
         self.change_view = change_view_callback
         self.discord = discord_module
+        self.exit_callback = exit_callback
         
         # Sub-menu state
         self.current_submenu = None  # None, 'arena', 'local_battle', 'config'
@@ -702,7 +705,12 @@ class MainMenuView:
     def _on_exit(self):
         """Exit button clicked."""
         runtime_globals.game_sound.play("cancel")
-        change_scene("game")
+        # Route through the scene's exit so the no-pets + module → egg
+        # selection check applies (same as a B-press exit).
+        if self.exit_callback:
+            self.exit_callback()
+        else:
+            change_scene("game")
     
     def _on_omninet_selected(self):
         """OmniNet (Arena) button clicked."""

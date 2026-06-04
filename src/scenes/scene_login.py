@@ -822,14 +822,20 @@ class SceneLogin:
     def handle_event(self, event) -> None:
         """Handle input events."""
         if not isinstance(event, tuple) or len(event) != 2:
-            # Forward raw pygame events to focused TextInput (Android TEXTINPUT)
-            if isinstance(event, pygame.event.Event):
+            # Forward raw pygame events to the focused text field so physical
+            # keyboard input works (Android TEXTINPUT + desktop Backspace).
+            # Return the consumption result so the caller (VirtualPetGame)
+            # knows the key was handled and skips the game-action mapping.
+            # Duck-type on ``type`` rather than isinstance(pygame.event.Event):
+            # on some pygame builds (Android) Event is a factory function, not
+            # a class, so isinstance against it raises TypeError.
+            if hasattr(event, 'type'):
                 idx = self.ui_manager.focused_index
                 if 0 <= idx < len(self.ui_manager.focusable_components):
                     focused = self.ui_manager.focusable_components[idx]
-                    if isinstance(focused, TextInput):
-                        focused.handle_event(event)
-            return
+                    if isinstance(focused, (TextInput, CodeEntry)):
+                        return focused.handle_event(event)
+            return False
 
         event_type, event_data = event
 

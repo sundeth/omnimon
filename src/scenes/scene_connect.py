@@ -208,7 +208,7 @@ class SceneConnect:
     
     def _change_view(self, view_name, **kwargs):
         """Change to a new view.
-        
+
         Args:
             view_name: Name of the view to change to
             **kwargs: Additional arguments to pass to the view constructor
@@ -277,6 +277,11 @@ class SceneConnect:
             # Add selected_pets only to views that consume it (not pet_selection which generates it)
             if view_name in ['dcom', 'wifi_hosting', 'wifi_discovery', 'battle_confirm']:
                 view_kwargs['selected_pets'] = self.selected_pets
+
+            # Main menu's EXIT button must use the same exit routing as a B-press
+            # (no pets + a module → egg selection), so hand it the scene's exit.
+            if view_name == 'main_menu':
+                view_kwargs['exit_callback'] = self._exit_to_game
             
             # Merge additional kwargs
             view_kwargs.update(kwargs)
@@ -364,42 +369,19 @@ class SceneConnect:
     def _exit_to_game(self):
         """Leave the connect scene.
 
-        Special case: if the player just bought a module and has no pets
-        in their party, auto-download the module and jump straight into
-        the egg picker with that module pre-selected (skipping the
-        category step).  Otherwise just go to the main game scene.
+        If the player has no pets but does have a module to hatch from
+        (installed in Free Mode, installed + owned in Progress Mode), send
+        them to the egg selection scene to start their first pet.  Otherwise
+        just go to the main game scene.
         """
         from utils.scene_utils import change_scene
+        from utils import navigation_utils
         from core import game_globals
-        import threading
 
-        purchased = getattr(runtime_globals, 'last_purchased_module', None)
         has_pets = bool(getattr(game_globals, 'pet_list', None))
 
-        if purchased and not has_pets:
-            # Pre-select for SceneEggSelection
-            runtime_globals.preselected_module = purchased.get('name')
-            # Clear so we don't trigger again on a later exit
-            runtime_globals.last_purchased_module = None
-
-            module_id = purchased.get('id')
-
-            def _do_download_then_route():
-                try:
-                    from services.omninet_service import omninet_service
-                    if game_globals.is_free_mode():
-                        omninet_service.download_module_free(module_id)
-                    else:
-                        omninet_service.download_module(module_id)
-                except Exception as exc:
-                    runtime_globals.game_console.log(
-                        f"[SceneConnect] Auto-download failed: {exc}")
-                # Route on the main thread next tick by setting the scene now;
-                # change_scene is safe to call from a worker for this codebase
-                # (it just flips a flag).
-                change_scene("egg")
-
-            threading.Thread(target=_do_download_then_route, daemon=True).start()
+        if not has_pets and navigation_utils.has_installed_owned_modules():
+            change_scene("egg")
             return
 
         change_scene("game")

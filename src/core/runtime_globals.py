@@ -12,13 +12,19 @@ def _ensure_src_on_path():
     candidates = []
     try:
         here = os.path.dirname(os.path.abspath(__file__))
-        candidates.append(os.path.dirname(here))           # .../src
+        # p4a may set __file__ to the .pyc inside __pycache__; walk up past it
+        if os.path.basename(here) == "__pycache__":
+            here = os.path.dirname(here)
+        # here is now .../src/core/; parent is .../src/
+        candidates.append(os.path.dirname(here))
+        # also try grandparent in case we're nested one level deeper
+        candidates.append(os.path.dirname(os.path.dirname(here)))
     except Exception:
         pass
     try:
         cwd = os.getcwd()
-        candidates.append(os.path.join(cwd, "src"))        # <app>/src
-        candidates.append(cwd)                              # <app> (if src already on path)
+        candidates.append(os.path.join(cwd, "src"))
+        candidates.append(cwd)
     except Exception:
         pass
     for src in candidates:
@@ -87,10 +93,6 @@ game_state_update = False
 # When set, SceneConnect opens directly on this view (e.g. "shop_modules")
 # instead of the main menu.  Consumed once, then cleared.
 scene_connect_initial_view = None
-# Set by ShopModulesView right after a successful module purchase.  When
-# SceneConnect exits and the player has no pets, the connect→egg routing
-# uses this to auto-download the module and pre-select it in the egg picker.
-last_purchased_module = None
 # If set, SceneEggSelection jumps directly into that module's egg picker,
 # bypassing the category selection step.  Cleared after consumption.
 preselected_module = None

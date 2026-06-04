@@ -2,21 +2,14 @@
 OmninetService - Python client for Omninet API
 Handles device linking, auto-login, and API communication with Omninet server.
 """
-import hashlib
-import hmac as _hmac
 import json
 import os
 import threading
-import time
 import requests
 from urllib.parse import urljoin
 from typing import Optional, Tuple, Dict, Any
 
 from core import runtime_globals, constants
-
-# Shared signing secret — must match REWARD_SIGNING_SECRET in the server .env.
-# Both sides use this to produce/verify HMAC-SHA256 signatures on reward claims.
-_REWARD_SIGNING_SECRET = "omnipet-reward-hmac-secret-v1-change-in-production"
 
 
 class OmninetService:
@@ -72,23 +65,19 @@ class OmninetService:
         return os.path.join(base, 'omninet_device.json')
     
     def _get_base_url(self) -> str:
-        """Get the Omninet server base URL."""
-        # Try local URL first (for development)
-        local_url = getattr(constants, 'OMNINET_LOCAL_URL', 'http://localhost:8000')
-        if local_url:
-            try:
-                response = requests.get(urljoin(local_url, '/health'), timeout=2)
-                if response.status_code == 200:
-                    return local_url
-            except Exception:
-                pass
-        
-        # Try main URL
+        """Get the Omninet server base URL.
+
+        Always returns the production URL.  To point at a different server
+        during development set the OMNIPET_OMNINET_URL environment variable
+        (e.g. ``export OMNIPET_OMNINET_URL=https://dev.omnipet.app.br``).
+        """
+        override = os.environ.get('OMNIPET_OMNINET_URL', '').strip()
+        if override:
+            return override.rstrip('/')
         main_url = getattr(constants, 'OMNINET_MAIN_URL', None)
         if main_url:
-            return main_url
-        
-        return local_url
+            return main_url.rstrip('/')
+        return 'https://omnipet.app.br'
     
     def _load_credentials(self) -> None:
         """Load saved device credentials from file."""
@@ -833,28 +822,7 @@ class OmninetService:
     # Reward claims
     # ------------------------------------------------------------------
 
-    def _reward_idempotency_key(self, event_type: str, context: str, ts: int) -> str:
-        """
-        Build a deterministic idempotency key for one reward event.
-
-        The key is unique per (device, event_type, context, 5-minute window),
-        so a second legitimate call within the same window is silently deduplicated
-        while a call one window later (a genuinely new event) is accepted.
-        """
-        window = ts // 300
-        raw = f"{self._device_key}:{event_type}:{context}:{window}"
-        return hashlib.sha256(raw.encode()).hexdigest()
-
-    def _reward_signature(self, event_type: str, idempotency_key: str, ts: int) -> str:
-        """HMAC-SHA256 signature the server uses to authenticate the request."""
-        message = f"{self._device_key}|{event_type}|{idempotency_key}|{ts}"
-        return _hmac.new(
-            _REWARD_SIGNING_SECRET.encode(),
-            message.encode(),
-            hashlib.sha256,
-        ).hexdigest()
-
-    def claim_reward(self, event_type: str, context: str = "") -> None:
+    def claim_reward(self, event_type: str, idempotency_key: str) -> None:
         """
         Fire-and-forget: grant the player coins for an in-game event.
 
@@ -862,26 +830,21 @@ class OmninetService:
         Executes in a daemon thread so it never blocks gameplay.
 
         Args:
-            event_type: One of "unlock", "evolution", "new_pet", "adventure".
-            context:    Stable descriptor for this specific event instance
-                        (e.g. digimon name, "module:area").  Used to make
-                        the idempotency key unique within the 5-min window.
+            event_type:      One of "unlock", "evolution", "new_pet", "adventure".
+            idempotency_key: Stable key identifying this specific event instance.
+                             The server rejects duplicate keys per player, so
+                             callers must ensure uniqueness for distinct events
+                             and stability (same value) for the same event.
         """
         from core import game_globals
         if not self._device_key or not game_globals.is_progress_mode():
             return
-
-        ts = int(time.time())
-        idempotency_key = self._reward_idempotency_key(event_type, context, ts)
-        signature = self._reward_signature(event_type, idempotency_key, ts)
 
         def _worker():
             try:
                 success, data = self._make_request('POST', '/api/v1/rewards/claim', {
                     'event_type': event_type,
                     'idempotency_key': idempotency_key,
-                    'timestamp': ts,
-                    'signature': signature,
                 })
                 if success and isinstance(data, dict):
                     total = data.get('total_coins')

@@ -1847,7 +1847,7 @@ class BattleEncounter:
             game_globals.battle_round[self.module.name] = 1
 
         if area_advanced:
-            omninet_service.claim_reward("adventure", f"{self.module.name}:{self.area - 1}")
+            omninet_service.claim_reward("adventure", f"adventure:{self.module.name}:{self.area - 1}")
 
         self.return_to_main_scene()
 

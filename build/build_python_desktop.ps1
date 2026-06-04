@@ -55,37 +55,109 @@ Copy-Item -Recurse "..\Documentation" "$TEMP_DIR\$BUILD_NAME\"
 
 # Copy core directory (excluding __pycache__ folders)
 Write-Status "Copying core directory..."
-$coreSource = (Resolve-Path "..\core").Path
-$coreDestination = "$TEMP_DIR\$BUILD_NAME\core"
+$coreSource = (Resolve-Path "..\src\core").Path
+$coreDestination = "$TEMP_DIR\$BUILD_NAME\src\core"
 robocopy $coreSource $coreDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) {
     Write-Error-Message "Failed to copy core directory"
     exit 1
 }
 
-# Copy components directory
-Write-Status "Copying components directory..."
-$compSource = (Resolve-Path "..\components").Path
-$compDestination = "$TEMP_DIR\$BUILD_NAME\components"
-robocopy $compSource $compDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+# Copy models directory
+Write-Status "Copying models directory..."
+$modelsSource = (Resolve-Path "..\src\models").Path
+$modelsDestination = "$TEMP_DIR\$BUILD_NAME\src\models"
+robocopy $modelsSource $modelsDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) {
-    Write-Error-Message "Failed to copy components directory"
+    Write-Error-Message "Failed to copy models directory"
+    exit 1
+}
+
+# Copy ui directory
+Write-Status "Copying ui directory..."
+$uiSource = (Resolve-Path "..\src\ui").Path
+$uiDestination = "$TEMP_DIR\$BUILD_NAME\src\ui"
+robocopy $uiSource $uiDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy ui directory"
+    exit 1
+}
+
+# Copy input directory
+Write-Status "Copying input directory..."
+$inputSource = (Resolve-Path "..\src\input").Path
+$inputDestination = "$TEMP_DIR\$BUILD_NAME\src\input"
+robocopy $inputSource $inputDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy input directory"
+    exit 1
+}
+
+# Copy battle directory
+Write-Status "Copying battle directory..."
+$battleSource = (Resolve-Path "..\src\battle").Path
+$battleDestination = "$TEMP_DIR\$BUILD_NAME\src\battle"
+robocopy $battleSource $battleDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy battle directory"
+    exit 1
+}
+
+# Copy training directory
+Write-Status "Copying training directory..."
+$trainingSource = (Resolve-Path "..\src\training").Path
+$trainingDestination = "$TEMP_DIR\$BUILD_NAME\src\training"
+robocopy $trainingSource $trainingDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy training directory"
+    exit 1
+}
+
+# Copy services directory
+Write-Status "Copying services directory..."
+$servicesSource = (Resolve-Path "..\src\services").Path
+$servicesDestination = "$TEMP_DIR\$BUILD_NAME\src\services"
+robocopy $servicesSource $servicesDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy services directory"
+    exit 1
+}
+
+# Copy data directory
+Write-Status "Copying data directory..."
+$dataSource = (Resolve-Path "..\src\data").Path
+$dataDestination = "$TEMP_DIR\$BUILD_NAME\src\data"
+robocopy $dataSource $dataDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy data directory"
+    exit 1
+}
+
+# Copy utils directory
+Write-Status "Copying utils directory..."
+$utilsSource = (Resolve-Path "..\src\utils").Path
+$utilsDestination = "$TEMP_DIR\$BUILD_NAME\src\utils"
+robocopy $utilsSource $utilsDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Error-Message "Failed to copy utils directory"
     exit 1
 }
 
 # Copy scenes directory
 Write-Status "Copying scenes directory..."
-$scenesSource = (Resolve-Path "..\scenes").Path
-$scenesDestination = "$TEMP_DIR\$BUILD_NAME\scenes"
+$scenesSource = (Resolve-Path "..\src\scenes").Path
+$scenesDestination = "$TEMP_DIR\$BUILD_NAME\src\scenes"
 robocopy $scenesSource $scenesDestination /E /XD "__pycache__" /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
 if ($LASTEXITCODE -ge 8) {
     Write-Error-Message "Failed to copy scenes directory"
     exit 1
 }
 
-# Copy vpet.py
+# Copy vpet.py and src __init__.py
 Write-Status "Copying vpet.py..."
-Copy-Item "..\vpet.py" "$TEMP_DIR\$BUILD_NAME\"
+New-Item -ItemType Directory -Path "$TEMP_DIR\$BUILD_NAME\src" -Force | Out-Null
+Copy-Item "..\src\vpet.py" "$TEMP_DIR\$BUILD_NAME\src\"
+Copy-Item "..\src\__init__.py" "$TEMP_DIR\$BUILD_NAME\src\"
 
 # Copy Module Editor (excluding Source folder)
 Write-Status "Copying Module Editor..."
@@ -94,13 +166,11 @@ Get-ChildItem "..\Module Editor" | Where-Object { $_.Name -ne "Source" } | ForEa
     Copy-Item -Recurse $_.FullName "$TEMP_DIR\$BUILD_NAME\Module Editor\"
 }
 
-# Copy modules
-Write-Status "Copying modules..."
-Copy-Item -Recurse "..\modules" "$TEMP_DIR\$BUILD_NAME\"
-
-# Copy network
-Write-Status "Copying network..."
-Copy-Item -Recurse "..\network" "$TEMP_DIR\$BUILD_NAME\"
+# Ship an EMPTY modules/ folder - releases must not include the dev
+# environment's installed modules.  The runtime handles the empty
+# folder (load_modules() returns an empty dict).
+Write-Status "Creating empty modules/ folder..."
+New-Item -ItemType Directory -Force -Path "$TEMP_DIR\$BUILD_NAME\modules" | Out-Null
 
 # Create empty save folder
 Write-Status "Creating save directory..."

@@ -1,0 +1,16 @@
+{
+  "protocol": "DM",
+  "description": "Attack patterns for original Digital Monster protocol. Winner attacks with 1,1,1,2 and Loser attacks with 1,1,1,1. Fixed 5 HP battle with 4 turns.",
+  "hp": 5,
+  "turns": 4,
+  "patterns": {
+    "winner": {
+      "description": "Winner attacks: 3 normal hits (1 damage each) then 1 strong hit (2 damage)",
+      "pattern": [1, 1, 1, 2]
+    },
+    "loser": {
+      "description": "Loser attacks: 4 normal hits (1 damage each)",
+      "pattern": [1, 1, 1, 1]
+    }
+  }
+}

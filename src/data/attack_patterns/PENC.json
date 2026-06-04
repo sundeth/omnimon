@@ -1,0 +1,81 @@
+{
+  "name": "PENC",
+  "description": "Digimon Pendulum COLOR attack patterns",
+  "patterns": [
+    {
+      "index": 0,
+      "attacks": [1, 1, 1, 1, 1, 1],
+      "description": "Pattern 0 - All weak attacks"
+    },
+    {
+      "index": 1,
+      "attacks": [2, 1, 1, 1, 1, 2],
+      "description": "Pattern 1"
+    },
+    {
+      "index": 2,
+      "attacks": [1, 2, 1, 1, 1, 1],
+      "description": "Pattern 2"
+    },
+    {
+      "index": 3,
+      "attacks": [1, 1, 2, 1, 1, 1],
+      "description": "Pattern 3"
+    },
+    {
+      "index": 4,
+      "attacks": [1, 1, 1, 2, 1, 1],
+      "description": "Pattern 4"
+    },
+    {
+      "index": 5,
+      "attacks": [1, 1, 2, 2, 1, 1],
+      "description": "Pattern 5"
+    },
+    {
+      "index": 6,
+      "attacks": [1, 2, 1, 2, 1, 1],
+      "description": "Pattern 6"
+    },
+    {
+      "index": 7,
+      "attacks": [2, 1, 1, 2, 1, 2],
+      "description": "Pattern 7"
+    },
+    {
+      "index": 8,
+      "attacks": [2, 1, 2, 1, 1, 2],
+      "description": "Pattern 8"
+    },
+    {
+      "index": 9,
+      "attacks": [1, 1, 2, 2, 2, 1],
+      "description": "Pattern 9"
+    },
+    {
+      "index": 10,
+      "attacks": [1, 2, 1, 2, 2, 1],
+      "description": "Pattern 10"
+    },
+    {
+      "index": 11,
+      "attacks": [2, 1, 2, 1, 2, 2],
+      "description": "Pattern 11"
+    },
+    {
+      "index": 12,
+      "attacks": [1, 2, 2, 2, 2, 1],
+      "description": "Pattern 12"
+    },
+    {
+      "index": 13,
+      "attacks": [2, 1, 2, 2, 2, 2],
+      "description": "Pattern 13"
+    },
+    {
+      "index": 14,
+      "attacks": [2, 2, 2, 2, 2, 2],
+      "description": "Pattern 14 - All strong attacks"
+    }
+  ]
+}

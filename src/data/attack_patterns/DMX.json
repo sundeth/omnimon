@@ -1,0 +1,178 @@
+{
+  "attack_types": {
+    "SINGLE_WEAK": {
+      "value": 1,
+      "description": "1 sprite of pet.atk_main",
+      "sprite_count": 1,
+      "sprite_type": "atk_main",
+      "scale": 1.0
+    },
+    "SINGLE_STRONG": {
+      "value": 2,
+      "description": "1 sprite of pet.atk_alt if > 0, or 2 sprites of pet.atk_main",
+      "sprite_count": 1,
+      "sprite_type": "atk_alt",
+      "fallback_sprite_type": "atk_main",
+      "fallback_sprite_count": 2,
+      "scale": 1.0
+    },
+    "DOUBLE_WEAK": {
+      "value": 3,
+      "description": "2 sprites of pet.atk_main",
+      "sprite_count": 2,
+      "sprite_type": "atk_main",
+      "scale": 1.0
+    },
+    "DOUBLE_STRONG": {
+      "value": 4,
+      "description": "2 sprites of pet.atk_alt if > 0, or 3 sprites of pet.atk_main",
+      "sprite_count": 2,
+      "sprite_type": "atk_alt",
+      "fallback_sprite_type": "atk_main",
+      "fallback_sprite_count": 3,
+      "scale": 1.0
+    },
+    "CRITICAL": {
+      "value": 5,
+      "description": "1 sprite of pet.atk_alt2 if > 0, or pet.atk_main at double size",
+      "sprite_count": 1,
+      "sprite_type": "atk_alt2",
+      "fallback_sprite_type": "atk_main",
+      "fallback_sprite_count": 1,
+      "scale": 2.0
+    }
+  },
+  "patterns": [
+    {
+      "id": 1,
+      "pattern": [1, 1, 1, 1, 1],
+      "comment": "All SINGLE_WEAK (damage 1 each)"
+    },
+    {
+      "id": 2,
+      "pattern": [1, 4, 3, 1, 3],
+      "comment": "SINGLE_WEAK, DOUBLE_STRONG, DOUBLE_WEAK, SINGLE_WEAK, DOUBLE_WEAK"
+    },
+    {
+      "id": 3,
+      "pattern": [3, 4, 4, 3, 3],
+      "comment": "DOUBLE_WEAK, DOUBLE_STRONG, DOUBLE_STRONG, DOUBLE_WEAK, DOUBLE_WEAK"
+    },
+    {
+      "id": 4,
+      "pattern": [5, 4, 4, 2, 4],
+      "comment": "CRITICAL, DOUBLE_STRONG, DOUBLE_STRONG, SINGLE_STRONG, DOUBLE_STRONG"
+    },
+    {
+      "id": 5,
+      "pattern": [1, 2, 2, 1, 4],
+      "comment": "SINGLE_WEAK, SINGLE_STRONG, SINGLE_STRONG, SINGLE_WEAK, DOUBLE_STRONG"
+    },
+    {
+      "id": 6,
+      "pattern": [2, 4, 3, 2, 4],
+      "comment": "SINGLE_STRONG, DOUBLE_STRONG, DOUBLE_WEAK, SINGLE_STRONG, DOUBLE_STRONG"
+    },
+    {
+      "id": 7,
+      "pattern": [2, 5, 4, 4, 3],
+      "comment": "SINGLE_STRONG, CRITICAL, DOUBLE_STRONG, DOUBLE_STRONG, DOUBLE_WEAK"
+    },
+    {
+      "id": 8,
+      "pattern": [2, 1, 1, 2, 1],
+      "comment": "SINGLE_STRONG, SINGLE_WEAK, SINGLE_WEAK, SINGLE_STRONG, SINGLE_WEAK"
+    },
+    {
+      "id": 9,
+      "pattern": [2, 3, 3, 3, 5],
+      "comment": "SINGLE_STRONG, DOUBLE_WEAK, DOUBLE_WEAK, DOUBLE_WEAK, CRITICAL"
+    },
+    {
+      "id": 10,
+      "pattern": [2, 3, 2, 1, 1],
+      "comment": "SINGLE_STRONG, DOUBLE_WEAK, SINGLE_STRONG, SINGLE_WEAK, SINGLE_WEAK"
+    },
+    {
+      "id": 11,
+      "pattern": [3, 4, 5, 3, 3],
+      "comment": "DOUBLE_WEAK, DOUBLE_STRONG, CRITICAL, DOUBLE_WEAK, DOUBLE_WEAK"
+    },
+    {
+      "id": 12,
+      "pattern": [5, 4, 4, 5, 4],
+      "comment": "CRITICAL, DOUBLE_STRONG, DOUBLE_STRONG, CRITICAL, DOUBLE_STRONG"
+    },
+    {
+      "id": 13,
+      "pattern": [2, 4, 5, 4, 5],
+      "comment": "SINGLE_STRONG, DOUBLE_STRONG, CRITICAL, DOUBLE_STRONG, CRITICAL"
+    },
+    {
+      "id": 14,
+      "pattern": [4, 5, 4, 3, 5],
+      "comment": "DOUBLE_STRONG, CRITICAL, DOUBLE_STRONG, DOUBLE_WEAK, CRITICAL"
+    },
+    {
+      "id": 15,
+      "pattern": [3, 3, 1, 4, 3],
+      "comment": "DOUBLE_WEAK, DOUBLE_WEAK, SINGLE_WEAK, DOUBLE_STRONG, DOUBLE_WEAK"
+    },
+    {
+      "id": 16,
+      "pattern": [3, 2, 2, 5, 4],
+      "comment": "DOUBLE_WEAK, SINGLE_STRONG, SINGLE_STRONG, CRITICAL, DOUBLE_STRONG"
+    }
+  ],
+  "assignments": [
+    {"level": 1, "mini-game": 0, "pattern_id": 1, "comment": "Level 1, Bad"},
+    {"level": 1, "mini-game": 1, "pattern_id": 2, "comment": "Level 1, Good"},
+    {"level": 1, "mini-game": 2, "pattern_id": 3, "comment": "Level 1, Great"},
+    {"level": 1, "mini-game": 3, "pattern_id": 4, "comment": "Level 1, Excellent"},
+
+    {"level": 2, "mini-game": 0, "pattern_id": 1, "comment": "Level 2, Bad"},
+    {"level": 2, "mini-game": 1, "pattern_id": 5, "comment": "Level 2, Good"},
+    {"level": 2, "mini-game": 2, "pattern_id": 6, "comment": "Level 2, Great"},
+    {"level": 2, "mini-game": 3, "pattern_id": 7, "comment": "Level 2, Excellent"},
+
+    {"level": 3, "mini-game": 0, "pattern_id": 8, "comment": "Level 3, Bad"},
+    {"level": 3, "mini-game": 1, "pattern_id": 2, "comment": "Level 3, Good"},
+    {"level": 3, "mini-game": 2, "pattern_id": 9, "comment": "Level 3, Great"},
+    {"level": 3, "mini-game": 3, "pattern_id": 4, "comment": "Level 3, Excellent"},
+
+    {"level": 4, "mini-game": 0, "pattern_id": 10, "comment": "Level 4, Bad"},
+    {"level": 4, "mini-game": 1, "pattern_id": 6, "comment": "Level 4, Good"},
+    {"level": 4, "mini-game": 2, "pattern_id": 11, "comment": "Level 4, Great"},
+    {"level": 4, "mini-game": 3, "pattern_id": 12, "comment": "Level 4, Excellent"},
+
+    {"level": 5, "mini-game": 0, "pattern_id": 10, "comment": "Level 5, Bad"},
+    {"level": 5, "mini-game": 1, "pattern_id": 6, "comment": "Level 5, Good"},
+    {"level": 5, "mini-game": 2, "pattern_id": 11, "comment": "Level 5, Great"},
+    {"level": 5, "mini-game": 3, "pattern_id": 13, "comment": "Level 5, Excellent"},
+
+    {"level": 6, "mini-game": 0, "pattern_id": 5, "comment": "Level 6, Bad"},
+    {"level": 6, "mini-game": 1, "pattern_id": 3, "comment": "Level 6, Good"},
+    {"level": 6, "mini-game": 2, "pattern_id": 4, "comment": "Level 6, Great"},
+    {"level": 6, "mini-game": 3, "pattern_id": 12, "comment": "Level 6, Excellent"},
+
+    {"level": 7, "mini-game": 0, "pattern_id": 10, "comment": "Level 7, Bad"},
+    {"level": 7, "mini-game": 1, "pattern_id": 6, "comment": "Level 7, Good"},
+    {"level": 7, "mini-game": 2, "pattern_id": 7, "comment": "Level 7, Great"},
+    {"level": 7, "mini-game": 3, "pattern_id": 13, "comment": "Level 7, Excellent"},
+
+    {"level": 8, "mini-game": 0, "pattern_id": 8, "comment": "Level 8, Bad"},
+    {"level": 8, "mini-game": 1, "pattern_id": 9, "comment": "Level 8, Good"},
+    {"level": 8, "mini-game": 2, "pattern_id": 11, "comment": "Level 8, Great"},
+    {"level": 8, "mini-game": 3, "pattern_id": 14, "comment": "Level 8, Excellent"},
+
+    {"level": 9, "mini-game": 0, "pattern_id": 8, "comment": "Level 9, Bad"},
+    {"level": 9, "mini-game": 1, "pattern_id": 9, "comment": "Level 9, Good"},
+    {"level": 9, "mini-game": 2, "pattern_id": 11, "comment": "Level 9, Great"},
+    {"level": 9, "mini-game": 3, "pattern_id": 14, "comment": "Level 9, Excellent"},
+
+    {"level": 10, "mini-game": 0, "pattern_id": 15, "comment": "Level 10, Bad"},
+    {"level": 10, "mini-game": 1, "pattern_id": 16, "comment": "Level 10, Good"},
+    {"level": 10, "mini-game": 2, "pattern_id": 13, "comment": "Level 10, Great"},
+    {"level": 10, "mini-game": 3, "pattern_id": 12, "comment": "Level 10, Excellent"}
+  ]
+}

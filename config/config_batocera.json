@@ -1,9 +1,0 @@
-{
-    "SCREEN_WIDTH": 320,
-    "SCREEN_HEIGHT": 240,
-    "FRAME_RATE": 30,
-    "MAX_PETS": 4,
-    "FULLSCREEN": true,
-    "AUTO_RESOLUTION": false,
-    "SHOW_FPS": false
-}

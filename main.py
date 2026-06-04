@@ -1,29 +1,23 @@
 """
 Omnipet Virtual Pet Game - Main Entry Point
 Handles pygame initialization, video/audio setup, and display management.
-The game logic is handled by the VirtualPetGame class in game/vpet.py
+The game logic is handled by the VirtualPetGame class in src/vpet.py
 """
 
 import platform
 import pygame
 import os
 import sys
-import json
 
-import sys, os
-
-from core import constants
-from core.utils.document_utils import build_module_documentation
-# sys.stderr = open(os.devnull, 'w')  # Commented out to allow error stack traces
-
-# Add game directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'game'))
+# Add src directory to Python path so internal imports (core, components, scenes, vpet) resolve
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from vpet import VirtualPetGame
-from core.constants import *
+from core import constants, game_globals, runtime_globals
+from utils.document_utils import build_module_documentation
 
 # Game Version
-VERSION = "0.9.9"
+VERSION = "1.0.0 Beta 1"
 
 # Check Pygame version for compatibility
 PYGAME_VERSION = tuple(map(int, pygame.version.ver.split('.')))
@@ -39,36 +33,6 @@ final_screen = None
 scale_to_screen = False
 native_width = 0
 native_height = 0
-
-
-def load_display_config():
-    """Load display configuration with auto-detection for embedded systems"""
-    if platform.system() == "Linux":
-        if os.path.exists("/usr/bin/batocera-info"):
-            display_config = "config/config.json"
-        elif os.path.exists("/boot/config.txt"):
-            display_config = "config/config.json"
-        else:
-            display_config = "config/config.json"
-    elif platform.system() == "Windows":
-        display_config = "config/config.json"
-    elif platform.system() == "Darwin":
-        display_config = "config/config.json"
-    else:
-        display_config = "config/config.json"
-
-    try:
-        with open(display_config, "r", encoding="utf-8") as f:
-            config = json.load(f)
-    except Exception:
-        config = {
-            "SCREEN_WIDTH": 240,
-            "SCREEN_HEIGHT": 240,
-            "FULLSCREEN": False,
-            "AUTO_RESOLUTION": False
-        }
-    
-    return config
 
 
 def get_screen_resolution():
@@ -126,90 +90,79 @@ def setup_pygame():
         pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=128)
 
     pygame.init()
-    
+
     if not IS_PYGAME2:
         pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=128)
 
+    # Enable pygame TEXTINPUT events (off by default).  TextInput / CodeEntry
+    # listen to these for physical-keyboard typing on PC; Android opens the
+    # native IME which also uses TEXTINPUT.
+    try:
+        pygame.key.start_text_input()
+    except Exception:
+        pass
 
-def apply_config_to_constants(config):
-    """Apply configuration values to constants module"""
-    from core import constants
+
+def validate_configuration():
+    """Validate configuration values and apply defaults if necessary."""
+    config = game_globals.configuration
     
-    # Apply frame rate
-    frame_rate = config.get("FRAME_RATE", 30)
-    if frame_rate < 3:
-        frame_rate = 3
-    constants.FRAME_RATE = frame_rate
+    # Validate frame rate
+    if config.frame_rate < 3:
+        config.frame_rate = 3
     
-    # Apply max pets
-    max_pets = config.get("MAX_PETS", 4)
-    if max_pets < 1:
-        max_pets = 1
-    constants.MAX_PETS = max_pets
+    # Validate max pets
+    if config.max_pets < 1:
+        config.max_pets = 1
     
-    # Apply debug settings
-    constants.DEBUG_MODE = config.get("DEBUG_MODE", config.get("DEBUG", False))
-    constants.DEBUG_FILE_LOGGING = config.get("DEBUG_FILE_LOGGING", config.get("LOGGING", False))
-    constants.SHOW_FPS = config.get("SHOW_FPS", False)
-    constants.DEBUG_BLIT_LOGGING = config.get("DEBUG_BLIT_LOGGING", config.get("LOG_BLITS", False))
-    constants.DEBUG_BATTLE_INFO = config.get("DEBUG_BATTLE_INFO", False)
-    
-    # Update legacy aliases
-    constants.DEBUG = constants.DEBUG_MODE
-    constants.LOGGING = constants.DEBUG_FILE_LOGGING
-    constants.LOG_BLITS = constants.DEBUG_BLIT_LOGGING
-    
-    print(f"[Config] Applied: FRAME_RATE={constants.FRAME_RATE}, MAX_PETS={constants.MAX_PETS}, DEBUG_MODE={constants.DEBUG_MODE}")
+    print(f"[Config] Using: frame_rate={config.frame_rate}, max_pets={config.max_pets}, debug_mode={config.debug_mode}")
 
 
 def setup_display():
     """Setup the display window with proper resolution and fullscreen detection"""
     global render_surface, final_screen, scale_to_screen, native_width, native_height
 
-    config = load_display_config()
-    
-    # Apply configuration to constants module
-    apply_config_to_constants(config)
+    config = game_globals.configuration
+
+    # adjust_proportions() calls pygame.display.Info() which requires an
+    # initialised video system.  On Pi Zero 2W (and similar) the display isn't
+    # up yet when game_globals is first imported, so we defer the call until
+    # here (pygame.init() + display.init() have already run by this point).
+    config.adjust_proportions()
+
+    # Validate configuration
+    validate_configuration()
     
     # Determine if we should run in fullscreen
     fullscreen_requested = (
         "--fullscreen" in sys.argv or
         "-f" in sys.argv or
         os.getenv("OMNIPET_FULLSCREEN", "").lower() in ("1", "true", "yes") or
-        config.get("FULLSCREEN", False) or
+        config.fullscreen or
         os.getenv("SDL_VIDEODRIVER") == "kmsdrm" or
         (platform.system() == "Linux" and os.path.exists("/usr/bin/batocera-info"))
     )
     
-    # Determine screen resolution
-    if config.get("AUTO_RESOLUTION", False) and fullscreen_requested:
-        # Use native screen resolution
-        screen_width, screen_height = get_screen_resolution()
-        print(f"[Display] Auto-resolution enabled: {screen_width}x{screen_height}")
-        scale_to_screen = False
+    # Get screen resolution from configuration
+    screen_width = config.screen_width
+    screen_height = config.screen_height
+    
+    # Sanity checks
+    if not screen_width or screen_width < 100:
+        screen_width = 240
+    if not screen_height or screen_height < 100:
+        screen_height = 240
+    
+    print(f"[Display] Using resolution: {screen_width}x{screen_height}")
+
+    if fullscreen_requested:
+        native_width, native_height = get_screen_resolution()
+        scale_to_screen = True
+        print(f"[Display] Scaling {screen_width}x{screen_height} -> {native_width}x{native_height}")
     else:
-        screen_width = config.get("SCREEN_WIDTH", 240)
-        # Same sanity checks as in constants.py and main_nuitka.py
-        if not screen_width:
-            screen_width = 240
-        if screen_width < 100:
-            screen_width = 100
-        screen_height = config.get("SCREEN_HEIGHT", 240)
-        if not screen_height:
-            screen_height = 240
-        if screen_height < 100:
-            screen_height = 100
-        print(f"[Display] Using config resolution: {screen_width}x{screen_height}")
+        scale_to_screen = False
 
-        if fullscreen_requested:
-            native_width, native_height = get_screen_resolution()
-            scale_to_screen = True
-            print(f"[Display] Scaling {screen_width}x{screen_height} -> {native_width}x{native_height}")
-        else:
-            scale_to_screen = False
-
-    # Update game constants with base resolution
-    from core import runtime_globals
+    # Update runtime globals with base resolution
     runtime_globals.update_resolution_constants(width=screen_width, height=screen_height)
 
     if fullscreen_requested:
@@ -234,15 +187,22 @@ def setup_display():
 
     pygame.display.set_caption(f"Omnipet {VERSION}")
     pygame.mouse.set_visible(False)
+    from input.input_manager import GPIO_PRESS_EVENT, GPIO_RELEASE_EVENT
     pygame.event.set_allowed([
-        pygame.QUIT, 
+        pygame.QUIT,
         pygame.KEYDOWN,
         pygame.JOYBUTTONDOWN,
         pygame.JOYBUTTONUP,
         pygame.JOYAXISMOTION,
         pygame.JOYHATMOTION,
         pygame.JOYDEVICEADDED,
-        pygame.JOYDEVICEREMOVED
+        pygame.JOYDEVICEREMOVED,
+        pygame.MOUSEBUTTONDOWN,
+        pygame.MOUSEBUTTONUP,
+        pygame.MOUSEMOTION,
+        pygame.MOUSEWHEEL,
+        GPIO_PRESS_EVENT,
+        GPIO_RELEASE_EVENT,
     ])
     return render_surface, screen_width, screen_height
 
@@ -274,28 +234,35 @@ def main():
         clock = pygame.time.Clock()
         
         while running:
-            # Handle pygame events
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    game.save()
-                    running = False
-                else:
-                    game.handle_event(event)
-            
-            # Update game state
-            game.update()
-            
-            # Draw game
-            game.draw(screen, clock)
+            try:
+                # Handle pygame events
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        game.save()
+                        running = False
+                    else:
+                        game.handle_event(event)
+                
+                # Update game state
+                game.update()
+                
+                # Draw game
+                game.draw(screen, clock)
 
-            # If scaling, blit scaled render surface to fullscreen display
-            if scale_to_screen:
-                pygame.transform.scale(screen, (native_width, native_height), final_screen)
+                # If scaling, blit scaled render surface to fullscreen display
+                if scale_to_screen:
+                    pygame.transform.scale(screen, (native_width, native_height), final_screen)
 
-            pygame.display.flip()
-            
-            # Maintain framerate
-            clock.tick(constants.FRAME_RATE)
+                pygame.display.flip()
+                
+                # Maintain framerate
+                clock.tick(game_globals.configuration.frame_rate)
+            except Exception as e:
+                print(f"[Error] Exception in game loop: {e}")
+                import traceback
+                traceback.print_exc()
+                # Continue running to allow recovery
+                pass
         
         print("[Game] Shutting down...")
         

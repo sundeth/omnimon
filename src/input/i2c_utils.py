@@ -18,6 +18,8 @@ import platform
 
 IS_LINUX = platform.system() == "Linux"
 IS_RPI = IS_LINUX and HAS_SMBUS  # Only True if running on Linux with smbus available
+# python-for-android always sets ANDROID_ARGUMENT in the environment.
+IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
 
 CW2015_ADDRESS = 0x62
 CW2015_REG_VCELL = 0x02
@@ -87,7 +89,30 @@ class I2CUtils:
             print(f"Capacity read error: {e}")
             return None
 
+    def _read_android_battery(self):
+        """Battery level via plyer (Android). Returns (percent, charging) or None."""
+        try:
+            from plyer import battery  # type: ignore
+            status = battery.status
+            percent = status.get("percentage")
+            if percent is None:
+                return None
+            return float(percent), bool(status.get("isCharging"))
+        except Exception:
+            return None
+
     def get_battery_info(self):
+        if IS_ANDROID:
+            info = self._read_android_battery()
+            if info is not None:
+                self.battery_percent, self.charging = info
+            else:
+                # Unreadable on this device -- report a full, non-charging
+                # battery so the clock widget shows a neutral icon instead
+                # of a permanently empty one.
+                self.battery_percent = 100.0
+                self.charging = False
+            return self.battery_percent, self.charging
         if HAS_PSUTIL:
             battery_stats = psutil.sensors_battery()
             if battery_stats == None:

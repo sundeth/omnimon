@@ -306,8 +306,9 @@ class JogressView:
                     if not hasattr(pet1, 'evolution_history'):
                         pet1.evolution_history = []
                     pet1.evolution_history.append("JOGRESS" + pet2.name)
+                    # 2->1 fusion: only score the evolution once (pet2 is absorbed).
                     pet1.evolve_to(evo["to"], pet1.version)
-                    pet2.evolve_to(evo["to"], pet2.version)
+                    pet2.evolve_to(evo["to"], pet2.version, reward=False)
                     # Transfer special attributes from pet2 to pet1
                     if pet2.traited:
                         pet1.traited = True
@@ -332,8 +333,9 @@ class JogressView:
                     if not hasattr(pet1, 'evolution_history'):
                         pet1.evolution_history = []
                     pet1.evolution_history.append(pet2.name)
+                    # 2->1 fusion: only score the evolution once (pet2 is absorbed).
                     pet1.evolve_to(evo["to"], pet1.version)
-                    pet2.evolve_to(evo["to"], pet2.version)
+                    pet2.evolve_to(evo["to"], pet2.version, reward=False)
                     # Transfer special attributes from pet2 to pet1
                     if pet2.traited:
                         pet1.traited = True

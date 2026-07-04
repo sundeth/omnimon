@@ -1091,14 +1091,20 @@ class UIManager:
                                     if hasattr(component, 'on_focus_gained'):
                                         component.on_focus_gained()
                                 
-                                # Activate the component (same as pressing A)
-                                if hasattr(component, 'handle_event'):
-                                    component.handle_event(("A", None))
-                                elif hasattr(component, 'activate'):
-                                    component.activate()
-                                elif hasattr(component, 'on_activate'):
-                                    component.on_activate()
-                                
+                                # Activate the component (same as pressing A),
+                                # unless it opts out of click-activation.  Text
+                                # entry fields (TextInput / CodeEntry) set
+                                # activate_on_click = False so a focus click does
+                                # not also press their selected virtual key (which
+                                # otherwise typed a stray "q" / cycled a letter).
+                                if getattr(component, 'activate_on_click', True):
+                                    if hasattr(component, 'handle_event'):
+                                        component.handle_event(("A", None))
+                                    elif hasattr(component, 'activate'):
+                                        component.activate()
+                                    elif hasattr(component, 'on_activate'):
+                                        component.on_activate()
+
                                 # Always return True - we handled the click by focusing and activating
                                 return True
                                 

@@ -35,25 +35,289 @@ def load_modules():
     bundled modules.
     """
     module_dir = get_modules_dir()
-    runtime_globals.game_modules = {}
+    # Build into a local dict and swap atomically at the end so a concurrent
+    # reader (e.g. egg selection iterating game_modules) never sees a partial
+    # or mid-rebuild dict — important because module syncing can call this
+    # from a background thread.
+    new_modules = {}
     if not os.path.isdir(module_dir):
         runtime_globals.game_console.log(
             f"[load_modules] modules dir missing: {module_dir}")
+        runtime_globals.game_modules = new_modules
         return runtime_globals.game_modules
     for folder in os.listdir(module_dir):
         folder_path = os.path.join(module_dir, folder)
         module_json_path = os.path.join(folder_path, "module.json")
         if os.path.isdir(folder_path) and os.path.exists(module_json_path):
-            module = GameModule(folder_path)
-            if module.adventure_mode and game_globals.battle_area.get(module.name) is None:
-                game_globals.battle_area[module.name] = 1
-                game_globals.battle_round[module.name] = 1
-            runtime_globals.game_modules[module.name] = module
-    runtime_globals.game_console.log(f"[SceneEggSelection] Loaded Modules: {len(runtime_globals.game_modules)}")
+            # A corrupt or malformed module must never take the whole game
+            # down — skip it, log the cause, and surface a player-facing
+            # notice so they know which module failed.
+            try:
+                module = GameModule(folder_path)
+                if module.adventure_mode and game_globals.battle_area.get(module.name) is None:
+                    game_globals.battle_area[module.name] = 1
+                    game_globals.battle_round[module.name] = 1
+                new_modules[module.name] = module
+            except Exception as e:
+                _report_module_load_error(folder, e)
+    runtime_globals.game_modules = new_modules
+    runtime_globals.game_console.log(f"[SceneEggSelection] Loaded Modules: {len(new_modules)}")
     return runtime_globals.game_modules
+
+
+def _report_module_load_error(module_label: str, error: Exception):
+    """Log a failed module load and queue a SceneMainGame slide message.
+
+    The slide is queued on the global ``game_message`` instance, so it
+    displays whenever the player next reaches the main game screen even if
+    loading happened earlier during startup.
+    """
+    runtime_globals.game_console.log(
+        f"[load_modules] Error loading module '{module_label}': {error}")
+    try:
+        runtime_globals.game_message.add_slide(
+            f"Error loading module {module_label}", (255, 80, 80), 90)
+    except Exception:
+        # Never let the error-reporting path itself break module loading.
+        pass
 
 def get_module(name):
     """
     Returns the loaded GameModule instance by name.
     """
     return runtime_globals.game_modules[name]
+
+
+def safe_module_folder(module_name: str, module_id: str = "") -> str:
+    """Folder name used on disk for a module — the sanitized display name
+    (matching the shop's install routine), falling back to the id."""
+    safe_name = "".join(c for c in (module_name or module_id)
+                        if c.isalnum() or c in ('-', '_', ' ')).strip()
+    return safe_name or module_id
+
+
+def install_module_zip(module_id: str, module_name: str, zip_bytes: bytes) -> bool:
+    """Extract a downloaded module zip into ``modules/<name>/``.
+
+    Mirrors the shop's install routine so owned-module syncing produces the
+    same on-disk layout.  Returns True when a valid module.json ends up at the
+    folder root.
+    """
+    import io
+    import zipfile
+    import shutil
+    try:
+        modules_dir = get_modules_dir()
+        safe_name = safe_module_folder(module_name, module_id)
+        target_dir = os.path.join(modules_dir, safe_name)
+        if os.path.isdir(target_dir):
+            shutil.rmtree(target_dir, ignore_errors=True)
+        os.makedirs(target_dir, exist_ok=True)
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+            zf.extractall(target_dir)
+        # Flatten a single wrapping folder so module.json sits at the root.
+        entries = os.listdir(target_dir)
+        if (len(entries) == 1
+                and os.path.isdir(os.path.join(target_dir, entries[0]))
+                and not os.path.exists(os.path.join(target_dir, 'module.json'))):
+            inner = os.path.join(target_dir, entries[0])
+            for n in os.listdir(inner):
+                os.rename(os.path.join(inner, n), os.path.join(target_dir, n))
+            os.rmdir(inner)
+        return os.path.exists(os.path.join(target_dir, 'module.json'))
+    except Exception as e:
+        runtime_globals.game_console.log(
+            f"[ModuleSync] install error for {module_name}: {e}")
+        return False
+
+
+def sync_owned_modules(download_missing: bool = True) -> bool:
+    """Reconcile owned modules with what's installed locally.
+
+    Always records the local name of every owned + installed module into
+    ``purchases.module_names`` (keyed by the module's actual module.json name,
+    matched via the install folder) so ownership checks — which egg selection
+    and the connect-exit routing rely on — work reliably.
+
+    When ``download_missing`` is True it also downloads + installs any owned
+    module that is absent or out of date (slow — best run off the main thread).
+    When False it only reconciles names for already-installed modules, which is
+    fast and safe to run synchronously before routing.
+
+    Progress Mode and a logged-in device are required.  Returns True if the
+    module registry was reloaded (something installed).
+    """
+    from services.omninet_service import omninet_service
+    if not game_globals.is_progress_mode() or not omninet_service.is_logged_in():
+        return False
+    purchases = getattr(game_globals, 'purchases', None)
+    owned_ids = list(getattr(purchases, 'modules', None) or [])
+    if purchases is None or not owned_ids:
+        return False
+
+    # Map the server module id -> display name from the shop listing.
+    try:
+        ok, listing = omninet_service.get_shop_modules()
+    except Exception as exc:
+        runtime_globals.game_console.log(f"[ModuleSync] listing failed: {exc}")
+        return False
+    if not ok or not isinstance(listing, list):
+        return False
+    id_to_info = {}
+    for entry in listing:
+        if isinstance(entry, dict):
+            mid = str(entry.get('id') or '')
+            nm = entry.get('name')
+            if mid and nm:
+                id_to_info[mid] = (nm, entry.get('version', '1.0'))
+
+    # Index installed modules by their on-disk folder name so we can match a
+    # server module to its installed copy regardless of whether the shop
+    # display name matches the module.json name.
+    def _installed_by_folder():
+        out = {}
+        for mod in runtime_globals.game_modules.values():
+            folder = os.path.basename(str(getattr(mod, 'folder_path', '')).rstrip('/\\'))
+            if folder:
+                out[folder] = mod
+        return out
+
+    installed_by_folder = _installed_by_folder()
+
+    changed = False
+    for mid in owned_ids:
+        info = id_to_info.get(str(mid))
+        if not info:
+            continue
+        name, server_version = info
+        folder = safe_module_folder(name, mid)
+        existing = installed_by_folder.get(folder)
+        # Only (re)download when missing or the server has a different version
+        # — the same rule the shop uses.
+        if existing is not None and str(getattr(existing, 'version', '')) == str(server_version):
+            continue
+        if not download_missing:
+            # Reconcile-names-only pass: don't fetch anything here.
+            continue
+        try:
+            ok_dl, data = omninet_service.download_module_zip(mid)
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[ModuleSync] download failed for {name}: {exc}")
+            continue
+        if ok_dl and isinstance(data, (bytes, bytearray)):
+            if install_module_zip(mid, name, bytes(data)):
+                changed = True
+                action = "Updated" if existing is not None else "Installed"
+                runtime_globals.game_console.log(
+                    f"[ModuleSync] {action} owned module: {name} (v{server_version})")
+
+    if changed:
+        try:
+            load_modules()
+            installed_by_folder = _installed_by_folder()
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[ModuleSync] load_modules failed: {exc}")
+
+    # Record the *actual loaded module name* (the game_modules key) for every
+    # owned + installed module, so ownership checks (owns_module_name, which
+    # egg selection and the connect-exit routing use) match reliably even when
+    # the shop name differs from the module.json name.
+    names_added = False
+    for mid in owned_ids:
+        info = id_to_info.get(str(mid))
+        if not info:
+            continue
+        name, _ = info
+        mod = installed_by_folder.get(safe_module_folder(name, mid))
+        if mod is not None and mod.name not in purchases.module_names:
+            purchases.add_module(mid, mod.name)
+            names_added = True
+
+    if changed or names_added:
+        try:
+            game_globals.save()
+        except Exception:
+            pass
+    return changed
+
+
+def _apply_purchase_entries(purchases, entries) -> dict:
+    """Merge server purchase rows into the local GamePurchases object.
+
+    Records ownership ids per category (module names are reconciled separately
+    by sync_owned_modules once the listing maps id -> name)."""
+    added = {'module': 0, 'cosmetic': 0, 'gameplay': 0, 'item': 0, 'special': 0}
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        ptype = (entry.get('purchase_type') or '').lower()
+        item_id = entry.get('item_id') or entry.get('id')
+        if not item_id:
+            continue
+        item_id = str(item_id)
+        if ptype == 'module':
+            purchases.add_module(item_id)
+            added['module'] += 1
+        elif ptype == 'cosmetic':
+            purchases.add_cosmetic(item_id)
+            added['cosmetic'] += 1
+        elif ptype == 'gameplay':
+            purchases.add_gameplay(item_id)
+            added['gameplay'] += 1
+        elif ptype == 'item':
+            if purchases.items.get(item_id, 0) == 0:
+                purchases.items[item_id] = 1
+            added['item'] += 1
+        elif ptype == 'special':
+            purchases.add_special(item_id)
+            added['special'] += 1
+    return added
+
+
+def sync_account_data(download_missing: bool = False) -> None:
+    """Reconcile coins, purchases and owned modules with the server.
+
+    Run after authentication (boot auto-login or manual login).  With
+    ``download_missing=False`` it only reconciles fast (coins, purchase ids,
+    and the names of already-installed owned modules) — safe to call on the
+    main thread before routing.  With True it also downloads owned modules
+    missing locally (slow — run off the main thread).
+    """
+    from services.omninet_service import omninet_service
+    if not game_globals.is_progress_mode() or not omninet_service.is_logged_in():
+        return
+
+    # Coins — the server is authoritative in Progress Mode.
+    try:
+        ui = omninet_service.get_user_info()
+        if ui and ui.get('coins') is not None:
+            game_globals.coins = int(ui['coins'])
+    except Exception:
+        pass
+
+    # Purchases — pull the server's ownership list into the local record.
+    purchases = getattr(game_globals, 'purchases', None)
+    if purchases is not None:
+        try:
+            ok, data = omninet_service.get_user_purchases()
+            if ok and isinstance(data, dict):
+                added = _apply_purchase_entries(purchases, data.get('purchases') or [])
+                runtime_globals.game_console.log(
+                    f"[AccountSync] Synced purchases from server: {added}")
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[AccountSync] purchases pull failed: {exc}")
+
+    # Owned modules: reconcile local names (and download missing if asked).
+    try:
+        sync_owned_modules(download_missing=download_missing)
+    except Exception as exc:
+        runtime_globals.game_console.log(
+            f"[AccountSync] module sync failed: {exc}")
+
+    try:
+        game_globals.save()
+    except Exception:
+        pass

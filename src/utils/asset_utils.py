@@ -55,28 +55,42 @@ def resolve_path(rel_path: str) -> str:
     else:
         return rel_path
 
+class _PixelFont(pygame.font.Font):
+    """The game's font: always renders without anti-aliasing.
+
+    Omnipet is pixel-art, so text is drawn with sharp pixels (anti-aliasing
+    makes it blurry, especially once the low-res canvas is scaled up).  The
+    antialias argument callers pass is ignored.
+    """
+
+    def render(self, text, antialias=False, color=(255, 255, 255), bgcolor=None):
+        if bgcolor is not None:
+            return super().render(text, False, color, bgcolor)
+        return super().render(text, False, color)
+
+
 def font_load(rel_path: str, size: int):
     """
     Load a font file, adjusting path for Android environment.
     On Android, builds absolute path from APP_ROOT.
     On desktop, uses relative path as-is.
     Pass None as rel_path to use pygame's default font.
-    
+
     Args:
         rel_path: Relative path to font file (e.g., 'assets/DigimonBasic.ttf') or None for default
         size: Font size in pixels
-    
+
     Returns:
         pygame.font.Font: Loaded font
     """
     if size == None or size <= 0:
         size = int(16 * runtime_globals.UI_SCALE)  # Default size if zero provided
-    
-    if runtime_globals.IS_ANDROID and runtime_globals.APP_ROOT:
+
+    if runtime_globals.IS_ANDROID and runtime_globals.APP_ROOT and rel_path:
         full_path = os.path.join(runtime_globals.APP_ROOT, rel_path)
-        return pygame.font.Font(full_path, size)
+        return _PixelFont(full_path, size)
     else:
-        return pygame.font.Font(rel_path, size)
+        return _PixelFont(rel_path, size)
 
 def open_json(rel_path: str, mode='r', encoding='utf-8'):
     """

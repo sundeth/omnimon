@@ -36,7 +36,7 @@ from scenes.scene_training import SceneTraining
 from scenes.scene_debug import SceneDebug
 
 # Game Version
-runtime_globals.VERSION = "1.0.0 Beta 1"
+runtime_globals.VERSION = "1.0.0 Beta 2"
 
 # Global timing variable for system stats updates
 last_stats_update = time.time()
@@ -62,7 +62,18 @@ class VirtualPetGame:
             # Migrate legacy save folder structure (Type0→Default, Type1→<player_id>)
             game_globals.migrate_legacy_saves()
             game_globals.load()
-        
+
+        # The window was created at launch with default config (the save wasn't
+        # loaded yet); now that the configuration is in, resize the window to
+        # the saved size so a restart honours it.  No-op fullscreen / Android.
+        if not runtime_globals.IS_ANDROID:
+            try:
+                from utils import display_utils
+                display_utils.reconcile_window_from_config()
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[VirtualPetGame] window reconcile failed: {exc}")
+
         # Reload input mappings after configuration is loaded
         from input.input_manager import reload_input_mappings
         reload_input_mappings(runtime_globals.game_input)
@@ -76,13 +87,13 @@ class VirtualPetGame:
         
         # Load mouse pointer sprite (only on desktop)
         self.mouse_pointer = None
+        self._mouse_pointer_orig = None
+        self._mouse_pointer_size = None
         if not runtime_globals.IS_ANDROID:
             try:
                 pointer_path = "assets/Pointer.png"
-                self.mouse_pointer = image_load(pointer_path).convert_alpha()
-                # Scale the pointer to an appropriate size
-                pointer_size = int(16 * runtime_globals.UI_SCALE)
-                self.mouse_pointer = pygame.transform.scale(self.mouse_pointer, (pointer_size, pointer_size))
+                self._mouse_pointer_orig = image_load(pointer_path).convert_alpha()
+                self._update_mouse_pointer_scale()
                 print(f"[Init] Mouse pointer sprite loaded: {pointer_path}")
             except (pygame.error, FileNotFoundError) as e:
                 print(f"[Init] Could not load mouse pointer sprite: {e}")
@@ -103,6 +114,24 @@ class VirtualPetGame:
             except Exception as e:
                 self._accel_enabled = False
                 print("[Input] Failed to enable accelerometer:", e)
+
+    def _update_mouse_pointer_scale(self):
+        """Scale the pointer for the current render scale so it stays a
+        constant on-screen size.
+
+        The pointer is drawn on the render canvas, which is then scaled to the
+        window.  ``16 * UI_SCALE`` canvas pixels works out to a constant
+        fraction of the window after that scaling, so the pointer looks the
+        same regardless of render resolution (it was previously fixed at the
+        startup scale and went tiny at 4x)."""
+        if self._mouse_pointer_orig is None:
+            return
+        size = max(8, int(16 * runtime_globals.UI_SCALE))
+        if self._mouse_pointer_size == size and self.mouse_pointer is not None:
+            return
+        self.mouse_pointer = pygame.transform.scale(
+            self._mouse_pointer_orig, (size, size))
+        self._mouse_pointer_size = size
 
     def update(self) -> None:
         """
@@ -153,9 +182,15 @@ class VirtualPetGame:
                 last_stats_update = now
             draw_system_stats(clock, surface, cached_stats, self.stat_font)
 
-        # Draw mouse pointer only when in mouse mode
-        if (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE and 
-            self.mouse_pointer is not None):
+        # Keep the pointer a constant on-screen size as the render scale
+        # changes (e.g. after a Render Res change).
+        self._update_mouse_pointer_scale()
+
+        # Draw mouse pointer only when in mouse mode AND the cursor is
+        # actually over the game window — pygame.mouse.get_focused() is False
+        # once the pointer leaves the window, so we stop drawing the icon then.
+        if (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE and
+            self.mouse_pointer is not None and pygame.mouse.get_focused()):
             mouse_pos = runtime_globals.game_input.get_mouse_position()
             if mouse_pos != (0, 0):  # Only draw if mouse position is valid
                 # Draw pointer slightly offset so the tip points to the actual position

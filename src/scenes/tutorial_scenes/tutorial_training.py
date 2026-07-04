@@ -115,6 +115,21 @@ class TutorialTraining(SceneTraining):
             for pet in get_training_targets():
                 pet.check_disturbed_sleep()
         else:
+            # No eligible pet — log why so the cause is visible (can_train needs
+            # stage>0, not dead, atk_main>0 and the pet not being sleep-blocked).
+            from utils.pet_utils import get_selected_pets
+            selected = get_selected_pets()
+            runtime_globals.game_console.log(
+                f"[TutorialTraining] Dummy blocked — no training targets "
+                f"(selected pets: {len(selected)})")
+            for pet in selected:
+                try:
+                    runtime_globals.game_console.log(
+                        f"[TutorialTraining]   {pet.name}: stage={pet.stage} "
+                        f"state={pet.state} atk_main={pet.atk_main} "
+                        f"sleep_blocked={pet._is_blocked_by_sleep()}")
+                except Exception:
+                    pass
             runtime_globals.game_sound.play("cancel")
     
     def _on_charge_complete(self):

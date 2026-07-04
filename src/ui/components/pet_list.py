@@ -376,11 +376,13 @@ class PetList(UIComponent):
                         target_sprite_size = int(base_sprite_size * min(screen_scale_factor, 2.0))  # Define target_sprite_size here too
                         sprite_size = max(20, target_sprite_size)
                     
-                    # Scale frames to the calculated size, maintaining aspect ratio
+                    # Scale frames to the calculated size, maintaining aspect ratio.
+                    # Nearest-neighbor keeps the pixel art sharp; smoothscale
+                    # smears the edges into blurry artifacts.
                     scaled_frames = []
                     for frame in frames:
                         # Always scale to ensure consistent sizing
-                        scaled_frame = pygame.transform.smoothscale(frame.copy(), (sprite_size, sprite_size))
+                        scaled_frame = pygame.transform.scale(frame.copy(), (sprite_size, sprite_size))
                         scaled_frames.append(scaled_frame)
                     
                     self.pet_sprites[i] = scaled_frames
@@ -733,9 +735,9 @@ class PetList(UIComponent):
                     flag_sprite = runtime_globals.game_module_flag.get(pet.module)
                     if flag_sprite:
                         try:
-                            # Scale flag to match pet sprite size
+                            # Scale flag to match pet sprite size (nearest-neighbor for sharp pixels)
                             flag_size = sprite.get_size()
-                            scaled_flag = pygame.transform.smoothscale(flag_sprite, flag_size)
+                            scaled_flag = pygame.transform.scale(flag_sprite, flag_size)
                             blit_with_cache(surface, scaled_flag, sprite_rect.topleft)
                         except Exception as e:
                             runtime_globals.game_console.log(f"[PetList] Error drawing module flag for pet {pet_index}: {e}")

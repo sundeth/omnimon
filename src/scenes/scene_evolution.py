@@ -601,11 +601,9 @@ class SceneEvolution:
             self.update_light_particles()
 
         if self.frame_counter > 60:
-            if not self._rewards_fired:
-                self._rewards_fired = True
-                omninet_service.claim_reward("evolution", f"evolution:{int(time.time() * 1000)}")
-                if self._evo_is_new_pet:
-                    omninet_service.claim_reward("new_pet", f"new_pet:{self._evo_module}:{self._evo_to_name}:{self._evo_version}")
+            # Evolution / new-pet coin rewards are granted by GamePet.evolve_to
+            # and register_digidex_entry when the pet actually transforms, so
+            # this animation scene no longer claims them (avoids double rewards).
             runtime_globals.game_sound.stop_all()
             change_scene("game")
 

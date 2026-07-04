@@ -35,6 +35,14 @@ def unlock_item(module: str, unlock_type: str, name: str, label: str = None):
         game_globals.unlocks[module].append(unlock_entry)
         runtime_globals.game_message.add_slide(f"{entry_label} unlocked!", (255, 255, 0), 56 * runtime_globals.UI_SCALE, runtime_globals.FONT_SIZE_SMALL)
 
+        # Progress Mode: reward coins the first time this item is unlocked.
+        # (No-op in Free Mode / when logged out.)
+        try:
+            from utils.reward_utils import reward_unlock
+            reward_unlock(module, unlock_type, name)
+        except Exception as exc:
+            runtime_globals.game_console.log(f"[Unlocks] reward failed: {exc}")
+
         # --- Group unlock logic ---
         # After unlocking, check for group unlocks in this module
         for group_unlock in unlocks:

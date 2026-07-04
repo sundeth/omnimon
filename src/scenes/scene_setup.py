@@ -813,11 +813,14 @@ class SceneSetup:
             runtime_globals.game_console.log("[SceneSetup] → SceneLogin (Progress Mode)")
             return
 
-        # Free Mode: migrate saves, create save dir, load, finalize
+        # Free Mode: migrate saves, create save dir, load, finalize.
+        # Carry the current screen/render resolution across the save switch so
+        # pets/poops from the Free save don't end up off-screen/misplaced.
         game_globals.migrate_legacy_saves()
         save_dir = game_globals.get_save_dir()
         os.makedirs(save_dir, exist_ok=True)
-        game_globals.load()
+        from utils import display_utils
+        display_utils.load_preserving_display()
         self.finalize_setup()
 
     # ------------------------------------------------------------------
@@ -930,7 +933,9 @@ class SceneSetup:
         game_globals.migrate_legacy_saves()
         save_dir = game_globals.get_save_dir()
         os.makedirs(save_dir, exist_ok=True)
-        game_globals.load()
+        # Carry the current resolution across the save switch (keep-account).
+        from utils import display_utils
+        display_utils.load_preserving_display()
 
         # Clear setup flags (if any) before routing
         if game_globals.setup_input or game_globals.setup_graphics:

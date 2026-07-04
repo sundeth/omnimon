@@ -56,23 +56,18 @@ def _get_sections():
         v = cfg.max_pets + (1 if increase else -1)
         cfg.max_pets = max(1, min(10, v))
 
-    def _cycle_resolution(increase):
-        cur = cfg.resolution_multiplyer
-        choices = [1, 2, 3, 4]
-        best = min(choices, key=lambda c: abs(c - cur))
-        idx = choices.index(best)
-        idx = (idx + (1 if increase else -1)) % len(choices)
-        new_mult = choices[idx]
-        cfg.resolution_multiplyer = new_mult
-        cfg.screen_width = cfg.base_resolution_width * new_mult
-        cfg.screen_height = cfg.base_resolution_height * new_mult
-        try:
-            pygame.display.set_mode(
-                (cfg.screen_width, cfg.screen_height),
-                pygame.FULLSCREEN if cfg.fullscreen else 0,
-            )
-        except Exception:
-            pass
+    def _cycle_render_res(increase):
+        # Render Res = the 1x-4x internal-resolution multiplier.  Clamp (no
+        # wrap) between 1x and 4x.  apply_render_multiplier recomputes the
+        # internal resolution proportional to the window and rescales the
+        # canvas live; the scene rebuilds its UI when the scale changes
+        # (see SceneSettingsMenu.update).
+        from utils import display_utils
+        cur = max(1, min(4, int(round(cfg.resolution_multiplyer or 1))))
+        new = max(1, min(4, cur + (1 if increase else -1)))
+        if new == cur:
+            return
+        display_utils.apply_render_multiplier(new)
 
     def _cycle_sprite_pref(increase):
         v = cfg.sprite_resolution_preference + (1 if increase else -1)
@@ -175,9 +170,11 @@ def _get_sections():
             "key": "display",
             "title": "DISPLAY",
             "options": [
-                {"key": "resolution",   "label": "Resolution",    "type": "cycle",
-                 "get": lambda: f"{int(cfg.resolution_multiplyer)}x",
-                 "set": _cycle_resolution},
+                {"key": "render_res",   "label": "Render Res",    "type": "cycle",
+                 "get": lambda: f"{max(1, min(4, int(round(cfg.resolution_multiplyer or 1))))}x",
+                 "set": _cycle_render_res},
+                {"key": "window_size",  "label": "Window Size",   "type": "action",
+                 "enabled": not cfg.fullscreen},
                 {"key": "show_clock",    "label": "Show Clock",    "type": "toggle",
                  "get": lambda: "ON" if game_globals.showClock else "OFF",
                  "set": lambda inc: setattr(game_globals, 'showClock', not game_globals.showClock)},
@@ -288,6 +285,11 @@ class SceneSettingsMenu:
         self._unlock_back_button = None
         self._unlock_instruction_labels = []
 
+        # Window-size dialog state
+        self._winsize_presets = []
+        self._winsize_index = 0
+        self._winsize_label = None
+
         self._load_unlockables()
         self._build_section_view()
 
@@ -315,6 +317,7 @@ class SceneSettingsMenu:
         self._unlock_right_button = None
         self._unlock_back_button = None
         self._unlock_instruction_labels = []
+        self._winsize_label = None
 
     def _add_dynamic(self, comp):
         self._dynamic_components.append(comp)
@@ -330,6 +333,8 @@ class SceneSettingsMenu:
             self._build_background_view()
         elif key == "unlockables":
             self._build_unlockables_view()
+        elif key == "window_size":
+            self._build_window_size_view()
         elif key == "service_help":
             self._build_service_help_view()
         else:
@@ -445,6 +450,7 @@ class SceneSettingsMenu:
                 set_value=opt.get("set"),
                 on_activate=lambda o=opt: self._on_option_activate(o),
                 cut_corners={"tl": True, "tr": False, "bl": False, "br": True},
+                enabled=opt.get("enabled", True),
             )
             self._option_rows.append(row)
             self._add_dynamic(row)
@@ -639,6 +645,111 @@ class SceneSettingsMenu:
         self.current_unlock_item_index = 0
 
     # ------------------------------------------------------------------
+    # Window size dialog
+    # ------------------------------------------------------------------
+
+    def _build_window_size_view(self):
+        """Pick the output window size from a preset list (windowed only).
+
+        Cycling only previews the value; the change is committed on Apply,
+        which resizes the window live and rescales the canvas.
+        """
+        from utils import display_utils
+        cfg = game_globals.configuration
+        self.title_scene.set_text("WINDOW SIZE")
+        self.ui_background.visible = True
+
+        self._winsize_presets = display_utils.available_window_presets()
+        cur = (cfg.window_width, cfg.window_height)
+        try:
+            self._winsize_index = self._winsize_presets.index(cur)
+        except ValueError:
+            self._winsize_index = 0
+
+        self._winsize_label = Label(120, 64, "", is_title=True, center=True,
+                                    color_override=YELLOW_BRIGHT, shadow_mode="full")
+        self._add_dynamic(self._winsize_label)
+
+        self._add_dynamic(Label(120, 92, "Output window", center=True,
+                                color_override=(190, 190, 190)))
+        self._add_dynamic(Label(120, 104, "Game is scaled to fit", center=True,
+                                color_override=(150, 150, 150)))
+
+        mouse = self._mouse_enabled()
+        nav_y = 126
+        aw, ah = 36, 30
+        left_btn = Button(28, nav_y, aw, ah, "", lambda: self._cycle_window_size(False),
+                          icon_name="Left", icon_prefix="Settings")
+        left_btn.visible = mouse
+        self._add_dynamic(left_btn)
+        right_btn = Button(BASE_RESOLUTION - 28 - aw, nav_y, aw, ah, "",
+                           lambda: self._cycle_window_size(True),
+                           icon_name="Right", icon_prefix="Settings")
+        right_btn.visible = mouse
+        self._add_dynamic(right_btn)
+
+        ay = BASE_RESOLUTION - 38
+        self._add_dynamic(Button(28, ay, 78, 28, "Apply", self._apply_window_size))
+        self._add_dynamic(Button(BASE_RESOLUTION - 28 - 78, ay, 78, 28, "Cancel",
+                                 self._go_back))
+
+        instr_y = nav_y - 2
+        for i, txt in enumerate(["L/R: Change", "START: Apply", "B: Cancel"]):
+            lbl = Label(6, instr_y + i * 10, txt, shadow_mode="full")
+            lbl.visible = not mouse
+            self._add_dynamic(lbl)
+
+        self._update_window_size_label()
+
+    def _update_window_size_label(self):
+        if not (self._winsize_label and self._winsize_presets):
+            return
+        w, h = self._winsize_presets[self._winsize_index]
+        cfg = game_globals.configuration
+        tag = "  (current)" if (w, h) == (cfg.window_width, cfg.window_height) else ""
+        self._winsize_label.set_text(f"{w} x {h}{tag}")
+
+    def _cycle_window_size(self, increase):
+        if not self._winsize_presets:
+            return
+        n = len(self._winsize_presets)
+        self._winsize_index = (self._winsize_index + (1 if increase else -1)) % n
+        runtime_globals.game_sound.play("menu")
+        self._update_window_size_label()
+
+    def _apply_window_size(self):
+        if not self._winsize_presets:
+            return
+        from utils import display_utils
+        w, h = self._winsize_presets[self._winsize_index]
+        runtime_globals.game_sound.play("menu")
+        display_utils.apply_window_size(w, h)
+        # Return to the Display section.  If the internal resolution changed,
+        # update() rebuilds the whole UI at the new scale on the next frame.
+        if len(self.nav_stack) > 1:
+            self.nav_stack.pop()
+        self._build_section_view()
+
+    def _rebuild_ui(self):
+        """Recreate the UI manager and current view at the current render
+        resolution.  Called after a live resolution change so every component
+        is rebuilt at the new UI scale."""
+        self.window_background = WindowBackground(False)
+        self.ui_manager = UIManager(theme="GRAY")
+        self.ui_manager.set_input_manager(runtime_globals.game_input)
+
+        self.ui_background = Background(BASE_RESOLUTION, BASE_RESOLUTION)
+        self.ui_background.set_regions([(0, BASE_RESOLUTION, "black")])
+        self.ui_manager.add_component(self.ui_background)
+
+        self.title_scene = TitleScene(0, 9, "SETTINGS")
+        self.ui_manager.add_component(self.title_scene)
+
+        self._dynamic_components = []
+        self._option_rows = []
+        self._build_section_view()
+
+    # ------------------------------------------------------------------
     # Navigation helpers
     # ------------------------------------------------------------------
 
@@ -677,6 +788,12 @@ class SceneSettingsMenu:
             return
         if key == "unlockables":
             self._navigate_to("unlockables")
+            return
+        if key == "window_size":
+            # Locked in fullscreen (the window equals the screen there).
+            if game_globals.configuration.fullscreen:
+                return
+            self._navigate_to("window_size")
             return
 
         # Actions that leave the scene
@@ -723,6 +840,13 @@ class SceneSettingsMenu:
     # ------------------------------------------------------------------
 
     def update(self) -> None:
+        # A live Render Res / Window Size change alters the internal render
+        # resolution; rebuild the UI so every component picks up the new scale.
+        cur = (runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT)
+        if self.ui_manager.screen_size != cur:
+            runtime_globals.game_console.log(
+                "[SceneSettingsMenu] Render resolution changed; rebuilding UI")
+            self._rebuild_ui()
         self.ui_manager.update()
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -747,6 +871,18 @@ class SceneSettingsMenu:
                 if event_type == "SELECT":
                     self._toggle_highres()
                     return
+
+        # ---- Window size dialog ----
+        elif section == "window_size":
+            if event_type == "B":
+                self._go_back()
+                return
+            if event_type == "START":
+                self._apply_window_size()
+                return
+            if not self._mouse_enabled() and event_type in ("LEFT", "RIGHT"):
+                self._cycle_window_size(event_type == "RIGHT")
+                return
 
         # ---- Unlockables mode ----
         elif section == "unlockables":

@@ -114,8 +114,13 @@ def main():
         # Update runtime globals to use the game's internal resolution (half)
         runtime_globals.update_resolution_constants(game_width, game_height)
 
-        # Create an offscreen surface at game resolution to render into
+        # Create an offscreen surface at game resolution to render into.
+        # Published as runtime_globals.render_surface so a live render-res
+        # change (display_utils.apply_render_multiplier rebuilds the canvas)
+        # is picked up by the loop below -- otherwise the game keeps drawing
+        # into this stale-size surface and only fills part of the screen.
         offscreen = pygame.Surface((game_width, game_height))
+        runtime_globals.render_surface = offscreen
 
         # Now import game after environment is configured
         from vpet import VirtualPetGame
@@ -133,7 +138,18 @@ def main():
         # SDL2 lifecycle events on Android.
         APP_DIDENTERBACKGROUND = getattr(pygame, "APP_DIDENTERBACKGROUND", None)
         APP_WILLENTERFOREGROUND = getattr(pygame, "APP_WILLENTERFOREGROUND", None)
+        APP_DIDENTERFOREGROUND = getattr(pygame, "APP_DIDENTERFOREGROUND", None)
         APP_TERMINATING = getattr(pygame, "APP_TERMINATING", None)
+        # Window events that fire once SDL has recreated its native window
+        # after a resume -- the safe moment to re-acquire the display.
+        WINDOW_READY_EVENTS = tuple(
+            ev for ev in (
+                getattr(pygame, "WINDOWRESTORED", None),
+                getattr(pygame, "WINDOWSHOWN", None),
+                getattr(pygame, "WINDOWFOCUSGAINED", None),
+                getattr(pygame, "WINDOWSIZECHANGED", None),
+            ) if ev is not None
+        )
 
         # Main game loop
         clock = pygame.time.Clock()
@@ -146,6 +162,25 @@ def main():
         # [0] = needs display re-acquire (set_mode)
         # [1] = needs game state reload from disk
         _resume_flags = [False, False]
+
+        # Deferred display re-acquire state.
+        #
+        # APP_WILLENTERFOREGROUND and the JNI onActivityResumed callback both
+        # fire BEFORE SDL has recreated its native window, so calling
+        # set_mode() at that instant can bind a dead or zero-size surface --
+        # every subsequent frame then scales into nothing and the screen
+        # stays black.  Instead we schedule the re-acquire slightly in the
+        # future, verify the surface has a real size, and retry until it
+        # does.  All mutation happens on the main thread.
+        _reacquire = {"pending": False, "not_before": 0, "attempts": 0}
+        REACQUIRE_DELAY_MS = 400
+        REACQUIRE_RETRY_MS = 250
+        REACQUIRE_MAX_ATTEMPTS = 20
+
+        def _schedule_reacquire(delay_ms=REACQUIRE_DELAY_MS):
+            _reacquire["pending"] = True
+            _reacquire["not_before"] = pygame.time.get_ticks() + delay_ms
+            _reacquire["attempts"] = 0
 
         def _save_and_start_service():
             try:
@@ -197,13 +232,37 @@ def main():
             # --- Resume handling (main thread, pygame-safe) ---
             if _resume_flags[0]:
                 _resume_flags[0] = False
+                _schedule_reacquire()
+
+            if _reacquire["pending"] and pygame.time.get_ticks() >= _reacquire["not_before"]:
                 try:
-                    # Re-acquire the display surface.  SDL2 may have destroyed
-                    # the EGL context while the app was backgrounded; calling
-                    # set_mode() obtains a fresh, valid surface.
-                    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    # Re-acquire the display surface.  SDL2 destroyed the EGL
+                    # surface while the app was backgrounded; set_mode()
+                    # obtains a fresh one -- but only once SDL has rebuilt
+                    # its native window, hence the verify-and-retry.
+                    new_screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    w, h = new_screen.get_size()
+                    if w <= 0 or h <= 0:
+                        raise pygame.error(f"zero-size surface ({w}x{h})")
+                    # If the render canvas was aliased to the (now dead) old
+                    # window surface, rebuild it before anything draws to it.
+                    if runtime_globals.render_surface is screen:
+                        from utils import display_utils
+                        display_utils._rebuild_render_surface()
+                    screen = new_screen
+                    _reacquire["pending"] = False
+                    print(f"[main_android] display re-acquired at {w}x{h} "
+                          f"(attempt {_reacquire['attempts'] + 1})")
                 except Exception as disp_exc:
-                    print(f"[main_android] display re-acquire failed: {disp_exc}")
+                    _reacquire["attempts"] += 1
+                    if _reacquire["attempts"] >= REACQUIRE_MAX_ATTEMPTS:
+                        # Give up for now; any later resume signal (JNI
+                        # callback, window event, failed flip) re-arms us.
+                        _reacquire["pending"] = False
+                        print(f"[main_android] display re-acquire gave up: {disp_exc}")
+                    else:
+                        _reacquire["not_before"] = (
+                            pygame.time.get_ticks() + REACQUIRE_RETRY_MS)
 
             if _resume_flags[1]:
                 _resume_flags[1] = False
@@ -227,6 +286,15 @@ def main():
                     # preventing potential double-execution with the JNI path.
                     _resume_flags[0] = True
                     _resume_flags[1] = True
+                elif APP_DIDENTERFOREGROUND is not None and event.type == APP_DIDENTERFOREGROUND:
+                    # Resume is complete; the native window should exist now.
+                    _schedule_reacquire(delay_ms=100)
+                elif event.type in WINDOW_READY_EVENTS:
+                    # SDL recreated/restored its window -- if a re-acquire is
+                    # in flight, let it run promptly against the new window.
+                    if _reacquire["pending"]:
+                        _reacquire["not_before"] = pygame.time.get_ticks()
+                    game.handle_event(event)
                 elif APP_TERMINATING is not None and event.type == APP_TERMINATING:
                     _save_and_start_service()
                     running = False
@@ -244,14 +312,33 @@ def main():
                     print(f"[main_android] periodic save() failed: {save_exc}")
                 last_periodic_save = now
 
-            # Render the game into the offscreen (half-res) surface
-            game.draw(offscreen, clock)
+            # Render the game into the internal canvas.  Read it from
+            # runtime_globals each frame: a live Render Res change replaces
+            # the canvas with one at the new internal resolution.
+            canvas = runtime_globals.render_surface
+            if canvas is None:
+                canvas = runtime_globals.render_surface = offscreen
+            game.draw(canvas, clock)
 
-            screen.fill((0, 0, 0))
-            scaled = pygame.transform.scale(offscreen, screen.get_size())
-            screen.blit(scaled, (0, 0))
-
-            pygame.display.flip()
+            # A dead or zero-size window surface here means SDL invalidated
+            # the display without us noticing (some devices deliver no
+            # lifecycle event at all) -- schedule a re-acquire instead of
+            # drawing into the void or crashing.
+            try:
+                sw, sh = screen.get_size()
+                if sw <= 0 or sh <= 0:
+                    raise pygame.error(f"zero-size window surface ({sw}x{sh})")
+                screen.fill((0, 0, 0))
+                if canvas.get_size() != (sw, sh):
+                    pygame.transform.scale(canvas, (sw, sh), screen)
+                else:
+                    screen.blit(canvas, (0, 0))
+                pygame.display.flip()
+            except pygame.error as draw_exc:
+                if not _reacquire["pending"]:
+                    print(f"[main_android] frame present failed, scheduling "
+                          f"display re-acquire: {draw_exc}")
+                    _schedule_reacquire()
             clock.tick(game_globals.configuration.frame_rate)
 
         game.save()

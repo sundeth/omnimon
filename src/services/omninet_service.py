@@ -554,11 +554,17 @@ class OmninetService:
             return False, str(e)
     
     def get_shop_modules(self, category: str = None) -> Tuple[bool, list]:
-        """Get list of modules available in shop."""
+        """Get list of modules available in shop.
+
+        Sends the device key (when logged in) so the server can apply
+        per-user pricing — namely 0 for the player's free first module in
+        Progress Mode.  The listing itself is public, so a missing device
+        key simply yields the standard fixed price.
+        """
         endpoint = '/api/v1/shop/modules'
         if category:
             endpoint += f'?category={category}'
-        success, data = self._make_request('GET', endpoint, require_auth=False)
+        success, data = self._make_request('GET', endpoint, require_auth=True)
         if success and isinstance(data, dict):
             return True, data.get('modules', [])
         return success, data if isinstance(data, list) else []
@@ -646,7 +652,7 @@ class OmninetService:
             total = int(response.headers.get('Content-Length', 0) or 0)
             downloaded = 0
             chunks = []
-            for chunk in response.iter_content(chunk_size=32 * 1024):
+            for chunk in response.iter_content(chunk_size=128 * 1024):
                 if not chunk:
                     continue
                 chunks.append(chunk)
@@ -847,12 +853,25 @@ class OmninetService:
                     'idempotency_key': idempotency_key,
                 })
                 if success and isinstance(data, dict):
-                    total = data.get('total_coins')
-                    if total is not None and self._user_info is not None:
-                        self._user_info['coins'] = total
+                    # Different server endpoints name the new balance
+                    # differently; accept the common variants.
+                    total = (data.get('total_coins') if data.get('total_coins') is not None
+                             else data.get('total') if data.get('total') is not None
+                             else data.get('new_balance') if data.get('new_balance') is not None
+                             else data.get('coins'))
+                    if total is not None:
+                        if self._user_info is not None:
+                            self._user_info['coins'] = total
+                        # Mirror the server balance into the local coin total —
+                        # that is what the shop / HUD actually read and spend.
+                        try:
+                            game_globals.coins = int(total)
+                            game_globals.save()
+                        except Exception:
+                            pass
                     runtime_globals.game_console.log(
                         f"[OmninetService] Reward claimed: {event_type} "
-                        f"(+{data.get('coins_awarded', '?')} coins)"
+                        f"(+{data.get('coins_awarded', '?')} coins, total {total})"
                     )
                 else:
                     runtime_globals.game_console.log(

@@ -261,7 +261,8 @@ class SceneTutorial:
         
         # Focus on item list - dialog at bottom
         self.steps.append((self.STEP_FOCUS_WAIT, self._focus_item_list))
-        
+        self.steps.append((self.STEP_DIALOG, ["This is the item list, showing the items you currently have"]))
+
         # Focus on description panel - dialog at bottom since it's short
         self.steps.append((self.STEP_FOCUS_WAIT, self._focus_description_panel))
         self.steps.append((self.STEP_DIALOG, ["Here you can find a brief item description"]))
@@ -694,8 +695,8 @@ class SceneTutorial:
                 target_name = target.get("to")
                 target_version = target.get("version", 1)
                 runtime_globals.game_console.log(f"[SceneTutorial] Forcing egg to evolve to {target_name}")
-                # Directly evolve to Botamon
-                self.tutorial_pet.evolve_to(target_name, target_version)
+                # Directly evolve to Botamon (no coin reward — scripted tutorial)
+                self.tutorial_pet.evolve_to(target_name, target_version, reward=False)
     
     def _force_evolution_to_koromon(self):
         """Force Botamon to evolve to Koromon."""
@@ -706,8 +707,8 @@ class SceneTutorial:
                 target_name = target.get("to")
                 target_version = target.get("version", 1)
                 runtime_globals.game_console.log(f"[SceneTutorial] Forcing Botamon to evolve to {target_name}")
-                # Directly evolve to Koromon
-                self.tutorial_pet.evolve_to(target_name, target_version)
+                # Directly evolve to Koromon (no coin reward — scripted tutorial)
+                self.tutorial_pet.evolve_to(target_name, target_version, reward=False)
     
     def _force_evolution_to_agumon(self):
         """Force Koromon to evolve to Agumon."""
@@ -718,8 +719,8 @@ class SceneTutorial:
                 target_name = target.get("to")
                 target_version = target.get("version", 1)
                 runtime_globals.game_console.log(f"[SceneTutorial] Forcing Koromon to evolve to {target_name}")
-                # Directly evolve to Agumon
-                self.tutorial_pet.evolve_to(target_name, target_version)
+                # Directly evolve to Agumon (no coin reward — scripted tutorial)
+                self.tutorial_pet.evolve_to(target_name, target_version, reward=False)
     
     def _force_poop(self):
         """Force the tutorial pet to poop."""
@@ -1403,7 +1404,8 @@ class SceneTutorial:
     
     def _draw_skip_hint(self, surface: pygame.Surface):
         """Draw a small hint to skip tutorial."""
-        font = pygame.font.Font(None, int(12 * self.ui_scale))
+        from utils.asset_utils import font_load
+        font = font_load(None, int(12 * self.ui_scale))
         text = font.render("START to skip tutorial", True, (150, 150, 150))
         
         # Position at top-right

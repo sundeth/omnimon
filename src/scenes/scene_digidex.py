@@ -282,18 +282,19 @@ class SceneDigidex:
             self.ui_manager.set_active_menu(menu)
         
         elif selected == "Known":
-            # Show yes/no submenu
+            # Filter to known pets directly -- no submenu (a Yes/No prompt
+            # here read as a confirmation dialog and confused players).
+            self._apply_filter("known", True)
+
+        elif selected == "Reset":
+            # Confirm before clearing all filters
             menu = Menu(width=100, height=60)
             menu.open(
                 options=["Yes", "No"],
-                on_select=lambda idx: self._apply_filter("known", idx == 0),
+                on_select=lambda idx: self._clear_filters() if idx == 0 else None,
                 on_cancel=lambda: None
             )
             self.ui_manager.set_active_menu(menu)
-        
-        elif selected == "Reset":
-            # Clear all filters
-            self._clear_filters()
     
     def _apply_filter(self, filter_type, value):
         """Apply a filter and refresh the list"""

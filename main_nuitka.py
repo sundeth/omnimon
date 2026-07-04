@@ -165,14 +165,18 @@ def setup_display():
 
     # The final screen always uses native resolution if scaling is enabled
     final_screen = pygame.display.set_mode(
-        (native_width if scale_to_screen else screen_width,
-         native_height if scale_to_screen else screen_height),
+        (native_width if scale_to_screen else (config.window_width or screen_width),
+         native_height if scale_to_screen else (config.window_height or screen_height)),
         screen_mode,
         bit_depth
     )
 
-    # Create the render surface if scaling
-    render_surface = pygame.Surface((screen_width, screen_height)) if scale_to_screen else final_screen
+    # Render canvas = internal resolution; scaled onto the window each frame.
+    if final_screen.get_size() == (screen_width, screen_height):
+        render_surface = final_screen
+    else:
+        render_surface = pygame.Surface((screen_width, screen_height))
+    runtime_globals.render_surface = render_surface
 
     pygame.display.set_caption(f"Omnipet {VERSION}")
     pygame.mouse.set_visible(False)
@@ -239,15 +243,14 @@ def main():
             # Update game state
             game.update()
             
-            # Draw game
-            game.draw(screen, clock)
+            # Draw to the internal render canvas, then scale it onto the
+            # window (handles fullscreen and windowed window sizes that differ
+            # from the render resolution).
+            from core import runtime_globals
+            from utils import display_utils
+            game.draw(runtime_globals.render_surface, clock)
+            display_utils.present()
 
-            # If scaling, blit scaled render surface to fullscreen display
-            if scale_to_screen:
-                pygame.transform.scale(screen, (native_width, native_height), final_screen)
-
-            pygame.display.flip()
-            
             # Maintain framerate
             clock.tick(game_globals.configuration.frame_rate)
         

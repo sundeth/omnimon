@@ -44,6 +44,8 @@ class SceneMainGame:
         self.fade_out_timer = 1800
         self.selection_mode = "menu"
         self.pet_selection_index = 0
+        # Pet under the mouse cursor (mouse mode only), for the hover outline.
+        self.hovered_pet_index = -1
         self.fade_alpha = 0
         self.lock_inputs = False
         self.lock_updates = False
@@ -164,6 +166,15 @@ class SceneMainGame:
 
         # Check evolution start
         self.check_evolution_start()
+
+        # Track the pet under the mouse cursor for the hover outline
+        # (mouse mode only -- touch has no hover, GPIO/keyboard use the
+        # pet-selection highlight instead).
+        if runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE:
+            self.hovered_pet_index = self.get_pet_index_at(
+                runtime_globals.game_input.get_mouse_position())
+        elif self.hovered_pet_index != -1:
+            self.hovered_pet_index = -1
 
         # Update background and game messages
         self.background.update()
@@ -371,7 +382,17 @@ class SceneMainGame:
         for pet in getattr(game_globals, "pet_list", []):
             if pet and pet not in runtime_globals.pet_sprites:
                 pet.load_sprite()
-        
+
+        # Keep poops seated on the pets' ground plane for the current
+        # resolution.  Their absolute Y can go stale after a resolution change
+        # (e.g. via the settings menu); this is idempotent and leaves pets
+        # untouched, so it's safe on every entry to the game scene.
+        try:
+            from utils.pet_utils import align_poops_to_ground
+            align_poops_to_ground()
+        except Exception:
+            pass
+
         # Prepare food animations for pets that are eating
         self.food_anims = {}
         for pet_index, food_info in getattr(runtime_globals, "game_pet_eating", {}).items():
@@ -475,6 +496,15 @@ class SceneMainGame:
         # Update menu index based on hover (-1 if not hovering any)
         if hovered_index != runtime_globals.main_menu_index:
             runtime_globals.main_menu_index = hovered_index
+
+    def get_pet_index_at(self, mouse_pos):
+        """Return the index of the pet whose sprite rect contains mouse_pos, or -1."""
+        for i, pet in enumerate(game_globals.pet_list):
+            rect = pygame.Rect(pet.x, pet.y,
+                               runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
+            if rect.collidepoint(mouse_pos):
+                return i
+        return -1
 
     def is_mouse_in_pet_area(self, mouse_pos):
         """Check if mouse is in the pet area (from pet Y to pet Y + height across full screen width)."""
@@ -606,6 +636,8 @@ class SceneMainGame:
             draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_BLUE)  # blue outline
         if self.selection_mode == "pet" and index == self.pet_selection_index:
             draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # yellow highlight
+        elif index == self.hovered_pet_index:
+            draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # mouse hover
 
         if show_hearts and pet.stage > 0:
             module = get_module(pet.module)
@@ -668,16 +700,14 @@ class SceneMainGame:
                         # Prevent food from overlapping menu icons
                         y_offset = 20 * runtime_globals.UI_SCALE if game_globals.showClock else 5 * runtime_globals.UI_SCALE
                         y_min = y_offset + 2 * runtime_globals.MENU_ICON_SIZE
-                        if game_globals.configuration.max_pets == 4:
-                            y = max(y_min, pet.y - (food_sprite.get_height() // 2))
-                            surface.blit(food_sprite, (x, y))
-                        else:
-                            # Scale the food sprite
-                            food_size = food_sprite.get_height()
-                            food_size = food_size * max(game_globals.configuration.max_pets, 2) // 4
-                            food_sprite_scaled = pygame.transform.scale(food_sprite, (food_size, food_size))
-                            y = max(y_min, pet.y - (food_size // 2))
-                            surface.blit(food_sprite_scaled, (x, y))
+                        # Draw at half the previous size -- the loaded frames
+                        # covered most of the pet.  (// 8 instead of the old
+                        # // 4; max_pets == 4 used to draw them unscaled.)
+                        food_size = food_sprite.get_height()
+                        food_size = max(1, food_size * max(game_globals.configuration.max_pets, 2) // 8)
+                        food_sprite_scaled = pygame.transform.scale(food_sprite, (food_size, food_size))
+                        y = max(y_min, pet.y - (food_size // 2))
+                        surface.blit(food_sprite_scaled, (x, y))
                 elif idx in self.food_anims:
                     # Clean up if pet is no longer eating
                     game_pet_eating.pop(idx, None)
@@ -824,20 +854,29 @@ class SceneMainGame:
                     runtime_globals.main_menu_index = clicked_index
                     runtime_globals.game_console.log(f"[SceneMainGame] Menu item {clicked_index} clicked")
                     # Don't return here - let handle_action_keys process the click action
-                elif self.is_mouse_in_pet_area(mouse_pos):
-                    # Check if any dying pet needs B presses - LCLICK on pet counts as B press
+                else:
+                    # Check if any dying pet needs B presses - LCLICK in the
+                    # pet area counts as a B press
                     dying_pet_saved = False
-                    for pet in game_globals.pet_list:
-                        if pet.death_save_b_counter > 0:
-                            pet.death_save_b_counter -= 1
-                            dying_pet_saved = True
-                            if pet.death_save_b_counter == 0:
-                                runtime_globals.game_console.log(f"[Death Save] {pet.name} B-press requirement met (touch)!")
+                    if self.is_mouse_in_pet_area(mouse_pos):
+                        for pet in game_globals.pet_list:
+                            if pet.death_save_b_counter > 0:
+                                pet.death_save_b_counter -= 1
+                                dying_pet_saved = True
+                                if pet.death_save_b_counter == 0:
+                                    runtime_globals.game_console.log(f"[Death Save] {pet.name} B-press requirement met (touch)!")
                     if not dying_pet_saved:
-                        # Only toggle hearts if no dying pet needed saving
-                        runtime_globals.show_hearts = not runtime_globals.show_hearts
-                        runtime_globals.game_sound.play("menu")
-                        runtime_globals.game_console.log(f"[SceneMainGame] Hearts view toggled: {runtime_globals.show_hearts}")
+                        # Click directly on a pet toggles its selection (same
+                        # as A on keyboard/joystick); clicking anywhere else
+                        # outside the menu toggles the hearts view.
+                        clicked_pet = self.get_pet_index_at(mouse_pos)
+                        if clicked_pet >= 0:
+                            self.toggle_pet_selection(clicked_pet)
+                            runtime_globals.game_sound.play("menu")
+                        else:
+                            runtime_globals.show_hearts = not runtime_globals.show_hearts
+                            runtime_globals.game_sound.play("menu")
+                            runtime_globals.game_console.log(f"[SceneMainGame] Hearts view toggled: {runtime_globals.show_hearts}")
                     return
                 
         # Handle event system inputs

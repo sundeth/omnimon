@@ -515,7 +515,15 @@ class GamePet:
             if elapsed_sec - (self.time * 60) >= -5:
                 self.set_state("hatch")
 
-    def evolve_to(self, name, version):
+    def evolve_to(self, name, version, reward=True):
+        """Transform this pet into the given form.
+
+        ``reward`` controls whether the Progress-Mode evolution coin is granted
+        for this call.  It defaults to True (normal / armor evolutions and the
+        kept pets of a jogress); a standard jogress passes reward=False for the
+        absorbed second pet so a 2->1 fusion only scores once, while a PenC
+        jogress leaves both True to double the reward.
+        """
         runtime_globals.game_console.log(f"Evolving to {name}")
         runtime_globals.game_sound.play("evolution")
         if not hasattr(self, 'evolution_history'):
@@ -528,7 +536,18 @@ class GamePet:
         self.reset_variables()
         self.load_sprite()
         self.set_state("happy1")
-        register_digidex_entry(self.name, module.name, self.version)
+        # register_digidex_entry grants the first-time "new pet" reward itself
+        # (suppressed when this evolution isn't rewarded, e.g. tutorial / the
+        # absorbed pet of a fusion).
+        register_digidex_entry(self.name, module.name, self.version, reward=reward)
+
+        # Progress Mode: one coin grant per evolution (no-op in Free Mode).
+        if reward:
+            try:
+                from utils.reward_utils import reward_evolution
+                reward_evolution(module.name, self.name)
+            except Exception as exc:
+                runtime_globals.game_console.log(f"[GamePet] evolution reward failed: {exc}")
 
     def armor_evolve(self, item_name):
         """Evolve the pet using an armor item (digimental).

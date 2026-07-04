@@ -75,7 +75,8 @@ class SkipOverlay:
         surface.blit(pill, rect.topleft)
 
         font_size = max(10, int(11 * runtime_globals.UI_SCALE))
-        font = pygame.font.SysFont(None, font_size)
+        from utils.asset_utils import font_load
+        font = font_load(None, font_size)
         text = font.render(self.label, True, (240, 240, 240))
         text_rect = text.get_rect(center=rect.center)
         surface.blit(text, text_rect)

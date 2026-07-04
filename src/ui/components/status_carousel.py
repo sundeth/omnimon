@@ -340,7 +340,9 @@ class StatusCarousel(UIComponent):
                 if scale_factor < 1.0 and scale_factor > 0:
                     new_width = max(1, int(original_size[0] * scale_factor))
                     new_height = max(1, int(original_size[1] * scale_factor))
-                    icon = pygame.transform.smoothscale(icon, (new_width, new_height))
+                    # Nearest-neighbor: keeps the pixel-art icons sharp
+                    # (smoothscale blurred their edges).
+                    icon = pygame.transform.scale(icon, (new_width, new_height))
         
         # Cache the final scaled icon
         self.status_icons[status_name] = icon

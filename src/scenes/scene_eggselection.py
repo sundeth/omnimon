@@ -178,11 +178,19 @@ class SceneEggSelection:
             runtime_globals.game_console.log(f"[SceneEggSelection] Traceback: {traceback.format_exc()}")
             raise
 
-    def _has_modules_for_category(self, category: str) -> bool:
-        """Check if there are any modules with eggs available for the given category."""
+    def _has_modules_for_category(self, category: str, exclude_tutorial: bool = False) -> bool:
+        """Check if there are any modules with eggs available for the given category.
+
+        ``exclude_tutorial`` ignores the bundled tutorial module — used for the
+        "Recommended" flag, which should reflect a real module the player owns
+        (Progress Mode) or has installed (Free Mode), not the tutorial.
+        """
         for module_name, module in runtime_globals.game_modules.items():
             module_category = getattr(module, 'category', 'Custom')
-            
+
+            if exclude_tutorial and module_name.lower() == 'tutorial':
+                continue
+
             # In Progress Mode, skip modules the player doesn't own
             if game_globals.is_progress_mode():
                 if module_name.lower() != 'tutorial' and not game_globals.purchases.owns_module_name(module_name):
@@ -330,8 +338,11 @@ class SceneEggSelection:
         self.ui_manager.add_component(self.classic_button)
         
         # Create Modern button (with recommended decorator if first pet, disabled if no modules)
+        # The Recommended flag only shows when the player actually has a real
+        # Modern module (owned in Progress Mode / installed in Free Mode), not
+        # merely the bundled tutorial module.
         modern_decorators = ["Selection_Modern"]
-        if self.is_first_pet and has_modern:
+        if self.is_first_pet and self._has_modules_for_category('modern', exclude_tutorial=True):
             modern_decorators.append("Selection_Recommended")
         
         self.modern_button = Button(
@@ -788,15 +799,15 @@ class SceneEggSelection:
                 # If no device sprite found or failed to load, fall back to regular pet sprites
                 if sprite is None:
                     sprites_dict = load_pet_sprites(
-                        egg["name"], 
-                        module.folder_path, 
+                        egg["name"],
+                        module.folder_path,
                         module.name_format,
-                        module_high_definition_sprites=module.high_definition_sprites
+                        primary_sprite_format=getattr(module, 'primary_sprite_format', 'Color'),
+                        secondary_sprite_format=getattr(module, 'secondary_sprite_format', 'HD')
                     )
                     
-                    # Get the first frame (0.png)
-                    if "0" in sprites_dict:
-                        sprite = sprites_dict["0"]
+                    # Get the first frame (0.png) -- frame keys are ints
+                    sprite = sprites_dict.get(0) or sprites_dict.get("0")
                 
                 # Create grid item with sprite and egg name
                 grid_item = GridItem(
@@ -1251,8 +1262,8 @@ class SceneEggSelection:
                 if "version" not in unlock or unlock.get("version") == selected_egg["version"]:
                     unlock_item(selected_egg["module"], "egg", unlock["name"])
         
-        # Reward: new pet slot unlocked
-        omninet_service.claim_reward("unlock", f"unlock:{selected_egg['module']}")
+        # (Coin rewards for egg-related unlocks are granted by unlock_item
+        # above when a new item is actually unlocked.)
 
         # Go to game scene
         change_scene("game")

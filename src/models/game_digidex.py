@@ -64,8 +64,13 @@ def save_digidex(entries: list[dict]) -> None:
         json.dump(entries, f, indent=2)
 
 
-def register_digidex_entry(name: str, module: str, version: int) -> None:
-    """Add a pet to the digidex if it is not already present."""
+def register_digidex_entry(name: str, module: str, version: int, reward: bool = True) -> None:
+    """Add a pet to the digidex if it is not already present.
+
+    ``reward`` controls whether the Progress-Mode "new pet" coin is granted on
+    first discovery (the digidex entry is always recorded regardless).  Scripted
+    discoveries like the tutorial pass reward=False.
+    """
     data = load_digidex()
     exists = any(
         p["name"] == name and p["module"] == module and p["version"] == version
@@ -74,6 +79,15 @@ def register_digidex_entry(name: str, module: str, version: int) -> None:
     if not exists:
         data.append({"name": name, "module": module, "version": version})
         save_digidex(data)
+
+        # Progress Mode: reward coins the first time this pet is discovered
+        # (per module + pet + version).  No-op in Free Mode / when logged out.
+        if reward:
+            try:
+                from utils.reward_utils import reward_new_pet
+                reward_new_pet(module, name, version)
+            except Exception:
+                pass
 
 
 def is_pet_unlocked(name: str, module: str, version: int) -> bool:

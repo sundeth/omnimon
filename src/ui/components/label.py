@@ -24,6 +24,7 @@ class Label(UIComponent):
         self.max_width = max_width
         self.center = center  # If True, x position will be treated as center point
         self._center_adjusted = False  # Track if center adjustment has been applied
+        self._center_origin = None  # Remembered centre point (base x) for re-centering
         
         # Scrolling animation variables
         self.scroll_offset = 0
@@ -35,22 +36,29 @@ class Label(UIComponent):
         
     def on_manager_set(self):
         """Called when component is added to a UIManager"""
-        if self.center and not self._center_adjusted:
-            # Need to render first to get text width
-            temp_surface = self.render()
-            if temp_surface and self.base_rect:
-                # Calculate the actual text width in base coordinates
-                text_width = temp_surface.get_width()
-                if self.manager:
-                    # Convert scaled width back to base coordinates
-                    base_text_width = text_width // self.manager.ui_scale
-                    # Adjust base_rect.x to center the text
-                    self.base_rect.x = self.base_rect.x - base_text_width // 2
-                    # Rescale the rect
-                    self.rect = self.manager.scale_rect(self.base_rect)
-                    self._center_adjusted = True
-                    self.needs_redraw = True
-        
+        if self.center and self.base_rect is not None:
+            # Remember the centre point (the original base x) so the label can
+            # be re-centred whenever its text changes.
+            if self._center_origin is None:
+                self._center_origin = self.base_rect.x
+            self._apply_center()
+
+    def _apply_center(self):
+        """Re-position base_rect.x so the rendered text is centred on the
+        remembered centre point.  Safe to call repeatedly (e.g. after
+        set_text changes the text width)."""
+        if not (self.center and self.manager and self.base_rect is not None):
+            return
+        temp_surface = self.render()
+        if not temp_surface:
+            return
+        base_text_width = temp_surface.get_width() // self.manager.ui_scale
+        origin = self._center_origin if self._center_origin is not None else self.base_rect.x
+        self.base_rect.x = origin - base_text_width // 2
+        self.rect = self.manager.scale_rect(self.base_rect)
+        self._center_adjusted = True
+        self.needs_redraw = True
+
     def set_text(self, text):
         """Update the label text"""
         if self.text != text:
@@ -60,6 +68,9 @@ class Label(UIComponent):
             self.scroll_offset = 0
             self.scroll_direction = 1
             self.scroll_pause_timer = 0
+            # Keep centred labels centred when the text width changes.
+            if self.center and self.manager:
+                self._apply_center()
     
     def set_tooltip(self, tooltip_text):
         """Set or update the tooltip text"""
@@ -154,7 +165,7 @@ class Label(UIComponent):
         else:
             colors = self.get_colors()
             color = colors["fg"]
-        
+
         # Handle word wrapping
         if self.word_wrap and (self.max_width or self.fixed_width):
             wrap_width = self.max_width or self.fixed_width
@@ -205,7 +216,7 @@ class Label(UIComponent):
             
         # Render text at proper scale
         text_surface = font.render(self.text, True, color)
-        
+
         # Auto-shrink: if max_width is set and text overflows (no word_wrap, no scroll),
         # reduce font size until the text fits.
         if self.max_width and not self.word_wrap and not self.scroll_text:

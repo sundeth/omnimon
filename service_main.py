@@ -41,6 +41,25 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 os.environ.setdefault("SDL_RENDER_SCALE_QUALITY", "0")
 
+# On Android, SDL_Init() refuses to run ("Application didn't initialize
+# properly, did you include SDL_main.h...") unless SDL_SetMainReady() was
+# called.  The SDL activity glue normally does that, but this service
+# process has no SDL activity -- call it ourselves via ctypes so the dummy
+# video/audio drivers can initialize.  Harmless no-op elsewhere.
+def _sdl_set_main_ready():
+    import ctypes
+    for lib_name in ("libSDL2.so", "libSDL2-2.0.so.0", "SDL2"):
+        try:
+            ctypes.CDLL(lib_name).SDL_SetMainReady()
+            print(f"[Service] SDL_SetMainReady() called via {lib_name}")
+            return True
+        except Exception:
+            continue
+    print("[Service] SDL_SetMainReady unavailable (non-Android or SDL not found)")
+    return False
+
+_sdl_set_main_ready()
+
 # When p4a launches a service, the working directory is the app's private
 # files dir (or the unpacked APK assets dir, depending on bootstrap). We
 # resolve a sensible APP_ROOT and put `src/` on sys.path the same way
@@ -454,14 +473,39 @@ def _has_pets_to_tick(game_globals):
 def main():
     print("[Service] Starting Omnipet background service")
 
-    _init_headless_pygame()
+    # The notifier is created FIRST, before pygame / core imports / save
+    # loading, so every startup outcome is visible on the device without
+    # adb logcat: "started", then "idle"/"running", or the crash text if
+    # anything below fails.  (p4a's own Java-side foreground notification
+    # uses an IMPORTANCE_NONE channel that Android hides, so without these
+    # the service can start and die completely invisibly.)
+    notifier = AndroidNotifier()
+    notifier.show_foreground(
+        "Omnipet service",
+        "Background service starting...",
+    )
+    notifier.notify(
+        "service_status",
+        "Omnipet service started",
+        time.strftime("Service process launched at %H:%M:%S."),
+    )
 
     try:
-        from core import runtime_globals, game_globals
+        _run(notifier)
     except Exception as exc:
-        print(f"[Service] Failed to import core globals: {exc}")
+        print(f"[Service] FATAL: {exc}")
         traceback.print_exc()
-        return
+        notifier.notify(
+            "service_status",
+            "Omnipet service crashed",
+            f"{type(exc).__name__}: {str(exc)[:150]}",
+        )
+
+
+def _run(notifier):
+    _init_headless_pygame()
+
+    from core import runtime_globals, game_globals
 
     runtime_globals.IS_ANDROID = True
     runtime_globals.APP_ROOT = APP_ROOT
@@ -478,6 +522,11 @@ def main():
     # No save -> nothing to do. Exit immediately as required by the brief.
     if not game_globals.has_game_mode_preference():
         print("[Service] No save / game mode preference -- exiting.")
+        notifier.notify(
+            "service_status",
+            "Omnipet service idle",
+            "No save found -- nothing to tick. Exiting.",
+        )
         return
 
     game_globals.load_game_mode_preference()
@@ -485,30 +534,31 @@ def main():
         game_globals.load_player_id()
 
     # Modules must be loaded before pets can tick (pets call get_module()).
-    try:
-        from utils.module_utils import load_modules
-        load_modules()
-    except Exception as exc:
-        print(f"[Service] Failed to load modules: {exc}")
-        traceback.print_exc()
-        return
+    # Failures propagate to main()'s crash notification.
+    from utils.module_utils import load_modules
+    load_modules()
 
-    try:
-        game_globals.migrate_legacy_saves()
-        game_globals.load()
-    except Exception as exc:
-        print(f"[Service] Failed to load save: {exc}")
-        traceback.print_exc()
-        return
+    game_globals.migrate_legacy_saves()
+    game_globals.load()
 
     if not _has_pets_to_tick(game_globals):
         print("[Service] No pets in save -- exiting.")
+        notifier.notify(
+            "service_status",
+            "Omnipet service idle",
+            "Save has no pets -- nothing to tick. Exiting.",
+        )
         return
 
-    notifier = AndroidNotifier()
     notifier.show_foreground(
         "Omnipet running",
         "Your pets are being looked after in the background.",
+    )
+    notifier.notify(
+        "service_status",
+        "Omnipet service running",
+        f"Ticking {len(game_globals.pet_list)} pet(s) every "
+        f"{int(TICK_INTERVAL_SECONDS)}s.",
     )
 
     tracker = StateTracker()

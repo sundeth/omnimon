@@ -94,11 +94,21 @@ def _get_frame_rate():
         return 30  # Default fallback
 
 def _get_screen_width():
-    """Get screen width, with fallback for early initialization."""
+    """Get the live render width, with fallback for early initialization.
+
+    runtime_globals.SCREEN_WIDTH is authoritative: it always matches the
+    canvas actually being rendered.  configuration.screen_width can lag
+    behind it on Android, where the entry point picks the render resolution
+    from the device screen without writing it back to the configuration --
+    scaling attack speed from the config there made attacks crawl across
+    the (much wider) real canvas.
+    """
+    if runtime_globals.SCREEN_WIDTH and runtime_globals.SCREEN_WIDTH > 0:
+        return runtime_globals.SCREEN_WIDTH
     try:
         return game_globals.configuration.screen_width
     except (AttributeError, RuntimeError):
-        return runtime_globals.SCREEN_WIDTH if runtime_globals.SCREEN_WIDTH > 0 else 240
+        return 240
 
 
 # Timing constants - evaluated lazily via update_combat_constants()

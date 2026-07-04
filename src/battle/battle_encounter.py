@@ -1847,7 +1847,20 @@ class BattleEncounter:
             game_globals.battle_round[self.module.name] = 1
 
         if area_advanced:
-            omninet_service.claim_reward("adventure", f"adventure:{self.module.name}:{self.area - 1}")
+            # Adventure coin rewards (Progress Mode only; no-op otherwise).
+            # Special/random encounters already returned earlier, so anything
+            # here is real adventure progression.
+            style = getattr(self.module, 'adventure_style', 'Area Selection')
+            if style in ("Next and Reset", "Area Selection"):
+                from utils.reward_utils import (reward_area_clear,
+                                                reward_adventure_complete)
+                # 1 coin the first time an area is cleared by beating its boss.
+                if self.boss:
+                    reward_area_clear(self.module.name, self.area - 1)
+                # 10 coins the first time the module's whole adventure is
+                # finished — i.e. the area just cleared was the last one.
+                if not self.module.area_exists(self.area):
+                    reward_adventure_complete(self.module.name)
 
         self.return_to_main_scene()
 

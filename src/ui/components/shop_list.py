@@ -39,15 +39,23 @@ def _scaled_coin(size_px: int) -> pygame.Surface:
 
 
 def _blit_price_or_owned(surface, item, font, row_y, row_height, right_edge, padding):
-    """Draw either a green ``Owned`` label, ``Free`` (Free Mode), or
+    """Draw a green ``Installed``/``Owned`` label, ``Free`` (Free Mode), or
     ``<coin icon> N`` on the right.
+
+    Free Mode has no purchases, so "Owned" is meaningless there — what
+    matters is whether the module is installed locally.  Progress Mode
+    keeps showing purchase state ("Owned").
 
     Returns the x of the leftmost pixel drawn (useful for callers that
     want to avoid overlapping the price area).
     """
-    if item.owned:
-        text = "Owned"
-        text_surf = font.render(text, True, (120, 220, 120))
+    is_free_mode = game_globals.is_free_mode()
+    if is_free_mode:
+        label = "Installed" if getattr(item, 'installed', False) else None
+    else:
+        label = "Owned" if item.owned else None
+    if label:
+        text_surf = font.render(label, True, (120, 220, 120))
         x = right_edge - padding - text_surf.get_width()
         y = row_y + (row_height - text_surf.get_height()) // 2
         surface.blit(text_surf, (x, y))
@@ -55,7 +63,7 @@ def _blit_price_or_owned(surface, item, font, row_y, row_height, right_edge, pad
 
     # Free Mode has no economy — render "Free" in green instead of the
     # coin price.  Also covers items the server priced at 0 in any mode.
-    if game_globals.is_free_mode() or item.price <= 0:
+    if is_free_mode or item.price <= 0:
         text_surf = font.render("Free", True, (120, 220, 120))
         x = right_edge - padding - text_surf.get_width()
         y = row_y + (row_height - text_surf.get_height()) // 2
@@ -92,8 +100,9 @@ class ShopModuleItem(ShopListItem):
     def __init__(self, item_id: str, name: str, price: int, owned: bool = False,
                  creator: str = "", version: str = "", official: bool = False,
                  description: str = "", size_mb: float = 0, contributors: str = "",
-                 updated_at: str = "", category: str = ""):
+                 updated_at: str = "", category: str = "", installed: bool = False):
         super().__init__(item_id, name, price, owned)
+        self.installed = installed
         self.creator = creator
         self.version = version
         self.official = official
@@ -262,12 +271,17 @@ class ShopList(BaseList):
         # Simple rectangle with small cut corners
         rect = pygame.Rect(self.items_rect.x, item_y, self.items_rect.width, self.item_size)
         cut = self.manager.scale_value(self.cut_width)
-        
+
+        # rect.right equals the surface width (items_rect spans the whole
+        # component), and pixels are drawn ON the polygon points -- an edge
+        # at x == width falls outside the surface and the right border gets
+        # clipped away entirely.  Keep it on the last drawable column.
+        right = rect.right - 1
         points = [
             (rect.x + cut, rect.y),
-            (rect.right, rect.y),
-            (rect.right, rect.bottom - cut),
-            (rect.right - cut, rect.bottom),
+            (right, rect.y),
+            (right, rect.bottom - cut),
+            (right - cut, rect.bottom),
             (rect.x, rect.bottom),
             (rect.x, rect.y + cut),
         ]

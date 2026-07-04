@@ -81,23 +81,21 @@ class DigidexList(UIComponent):
                         # Load actual sprite for known pets
                         try:
                             module = get_module(pet.module)
-                            module_path = f"modules/{module.name}"
                             sprites_dict = load_pet_sprites(
                                 pet.name,
-                                module_path,
+                                module.folder_path,
                                 module.name_format,
-                                module_high_definition_sprites=module.high_definition_sprites,
                                 size=(self.sprite_size, self.sprite_size),
+                                primary_sprite_format=getattr(module, 'primary_sprite_format', 'Color'),
+                                secondary_sprite_format=getattr(module, 'secondary_sprite_format', 'HD'),
                             )
-                            if "0" in sprites_dict:
-                                pet.sprite = sprites_dict["0"]
-                            else:
-                                pet.sprite = self.unknown_sprite
+                            # Frame keys are ints (see load_sprites_from_directory)
+                            frame0 = sprites_dict.get(0) or sprites_dict.get("0")
+                            pet.sprite = frame0 if frame0 is not None else self.unknown_sprite
                         except Exception as e:
                             runtime_globals.game_console.log(f"[DigidexList] Failed to load sprite {pet.name}: {e}")
                     else:
                         # Unknown pet - set unknown sprite
-                        pet.sprite = self.unknown_sprite
                         pet.sprite = self.unknown_sprite
 
     def update(self):
@@ -446,10 +444,12 @@ class DigidexList(UIComponent):
         elif self.selected_index >= self.scroll_offset + max_visible:
             self.scroll_offset = self.selected_index - max_visible + 1
         
-        # Get theme colors and fonts (scaled)
+        # Get theme colors and fonts (scaled).  Use the UI system's default
+        # text size for both lines -- the previous 14/10 custom sizes were
+        # too small to read comfortably.
         colors = self.get_colors()
-        font = self.get_font("text", custom_size=int(14 * ui_scale))
-        small_font = self.get_font("text", custom_size=int(10 * ui_scale))
+        font = self.get_font("text")
+        small_font = self.get_font("text")
         
         # Draw visible items
         for idx in range(self.scroll_offset, min(self.scroll_offset + max_visible, len(self.pets))):

@@ -51,7 +51,14 @@ from input.shake_detector import ShakeDetector
 
 # --- Android Environment ---
 APP_ROOT = ""  # Set to os.getcwd() on Android for absolute path building
-IS_ANDROID = False  # Set to True when running on Android
+# Auto-detected at import time: python-for-android always sets
+# ANDROID_ARGUMENT in the process environment.  Detecting here (instead of
+# relying on the entry point assigning it later) matters because module-level
+# singletons below (e.g. InputManager, which enables the accelerometer on
+# Android) are constructed during this import, before any entry-point code
+# gets a chance to run.  The Android entry points still assign True
+# explicitly, which is harmless.
+IS_ANDROID = "ANDROID_ARGUMENT" in os.environ
 
 KEYBOARD_MODE = 1
 MOUSE_MODE = 2
@@ -75,6 +82,15 @@ def use_virtual_keyboard() -> bool:
 SCREEN_WIDTH = 240
 SCREEN_HEIGHT = 240
 UI_SCALE = 1.0
+# The internal canvas the scenes render to (SCREEN_WIDTH x SCREEN_HEIGHT).
+# The main loop scales this onto the actual window each frame, so the render
+# resolution and the window size can differ.  Set during display setup.
+render_surface = None
+# The render resolution the currently-loaded save was written at.  Pet/poop
+# coordinates are absolute pixels, so when a save written at a different
+# resolution is loaded they must be re-placed for the current dimensions.
+# Set by game_globals.load(); consumed when the game scene is (re)entered.
+save_render_resolution = None
 PET_WIDTH = 48
 PET_HEIGHT = 48
 MENU_ICON_SIZE = 24

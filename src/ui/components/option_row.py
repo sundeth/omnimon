@@ -33,9 +33,10 @@ class OptionRow(UIComponent):
 
     def __init__(self, x, y, width, height, label, option_type="action",
                  get_value=None, set_value=None, on_activate=None,
-                 cut_corners=None):
+                 cut_corners=None, enabled=True):
         super().__init__(x, y, width, height)
         self.focusable = True
+        self.enabled = enabled
         self.label = label
         self.option_type = option_type  # "cycle", "toggle", "action"
         self.get_value = get_value
@@ -70,19 +71,26 @@ class OptionRow(UIComponent):
 
     def handle_event(self, event):
         """Handle keyboard events when this row is focused."""
-        if not self.visible or not self.focusable:
+        if not self.visible or not self.focusable or not self.enabled:
             return False
         event_type, event_data = event
         if event_type in ("LEFT", "RIGHT") and self._has_arrows:
             self._do_change(event_type == "RIGHT")
             return True  # consume so UIManager doesn't move focus
-        if event_type in ("A", "LCLICK"):
+        if event_type == "LCLICK":
+            # Route clicks through the position-aware handler so the < zone
+            # decreases and the > zone increases (instead of always
+            # activating / increasing regardless of where the row was hit).
+            if event_data and "pos" in event_data:
+                return self.handle_mouse_click(event_data["pos"], "LCLICK")
+            return self._do_activate()
+        if event_type == "A":
             return self._do_activate()
         return False
 
     def handle_mouse_click(self, mouse_pos, event_type):
         """Called by UIManager on LCLICK when mouse is over this component."""
-        if not self.visible:
+        if not self.visible or not self.enabled:
             return False
         if event_type != "LCLICK":
             return False
@@ -144,6 +152,17 @@ class OptionRow(UIComponent):
     # ------------------------------------------------------------------
     # Rendering
     # ------------------------------------------------------------------
+
+    def get_colors(self):
+        """Muted colours when disabled (e.g. Window Size while fullscreen)."""
+        colors = super().get_colors()
+        if not self.enabled:
+            return {
+                "bg": tuple(c // 3 for c in colors["bg"]),
+                "fg": tuple(c // 2 for c in colors["fg"]),
+                "line": tuple(c // 2 for c in colors["line"]),
+            }
+        return colors
 
     def render(self):
         scale = self.manager.ui_scale if self.manager else 1

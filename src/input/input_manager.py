@@ -164,9 +164,13 @@ class InputManager:
         self.android_accel_last_shake_time = 0
         self.android_accel_cooldown = 0.1
         
-        # Initialize Android accelerometer if running on Android
+        # Initialize Android accelerometer if running on Android.
+        # Skipped in the background-service process (PYTHON_SERVICE_ARGUMENT
+        # is only set there): the service imports this module too, and must
+        # not hold the sensor awake while the app is backgrounded.
+        import os as _os
         from core import runtime_globals
-        if runtime_globals.IS_ANDROID:
+        if runtime_globals.IS_ANDROID and "PYTHON_SERVICE_ARGUMENT" not in _os.environ:
             try:
                 from plyer import accelerometer # type: ignore
                 accelerometer.enable()
@@ -280,12 +284,25 @@ class InputManager:
     # Joystick init + mapping
     # ------------------------------------------------------------------
     def init_joysticks(self):
-        pygame.joystick.init()
-        count = pygame.joystick.get_count()
-        print(f"[Input] Found {count} joystick(s)")
-
         self.joysticks = {}
         self.joystick_button_maps.clear()
+        # The Android background service imports this module for the pet
+        # logic but has no SDL activity; its Java-side joystick driver would
+        # crash natively there, so don't even try (no dummy driver exists
+        # for joysticks, unlike video/audio).
+        import os as _os
+        if "PYTHON_SERVICE_ARGUMENT" in _os.environ:
+            print("[Input] service process: joystick init skipped")
+            return
+        # Guarded: SDL_Init(JOYSTICK) hard-fails in processes without the
+        # SDL bootstrap -- treat that as "no joysticks".
+        try:
+            pygame.joystick.init()
+            count = pygame.joystick.get_count()
+        except pygame.error as exc:
+            print(f"[Input] joystick subsystem unavailable: {exc}")
+            return
+        print(f"[Input] Found {count} joystick(s)")
         for i in range(count):
             try:
                 joy = pygame.joystick.Joystick(i)
@@ -336,6 +353,27 @@ class InputManager:
     def get_mouse_position(self):
         """Get the current mouse position."""
         return self.mouse_position
+
+    def _to_render_pos(self, pos):
+        """Map a window-space mouse position to render-canvas coordinates.
+
+        The window size can differ from the internal render resolution
+        (decoupled Render Res / Window Size); mouse events arrive in window
+        pixels but the UI works in render-canvas pixels, so scale them.
+        """
+        from core import runtime_globals
+        dw, dh = self.display_width, self.display_height
+        if not dw or not dh:
+            surf = pygame.display.get_surface()
+            if surf:
+                dw, dh = surf.get_size()
+                self.display_width, self.display_height = dw, dh
+        if dw and dh and (dw != runtime_globals.SCREEN_WIDTH
+                          or dh != runtime_globals.SCREEN_HEIGHT):
+            x = int(pos[0] * runtime_globals.SCREEN_WIDTH / dw)
+            y = int(pos[1] * runtime_globals.SCREEN_HEIGHT / dh)
+            return (x, y)
+        return pos
 
     def _ensure_mouse_detection(self):
         """Ensure mouse detection has been performed"""
@@ -596,12 +634,13 @@ class InputManager:
                 # Auto-detect mouse input mode
                 if not runtime_globals.INPUT_MODE_FORCED:
                     runtime_globals.INPUT_MODE = runtime_globals.MOUSE_MODE
-                
-                self.mouse_position = event.pos
-                
+
+                pos = self._to_render_pos(event.pos)
+                self.mouse_position = pos
+
                 if event.button == 1:  # Left click
                     # Start potential drag
-                    self.touch_start_pos = event.pos
+                    self.touch_start_pos = pos
                     self.is_touching = True
                     # Don't return click yet - wait for button up
                     return None
@@ -620,35 +659,36 @@ class InputManager:
                 return None
                 
             if self.mouse_enabled:
-                self.mouse_position = event.pos
-                
+                pos = self._to_render_pos(event.pos)
+                self.mouse_position = pos
+
                 if event.button == 1:  # Left click release
                     # End drag if dragging
                     if self.mouse_dragging:
-                        runtime_globals.game_console.log(f"[Input] DRAG_END at {event.pos}")
-                        drag_end_event = create_drag_end_event(event.pos, self.mouse_drag_start)
+                        runtime_globals.game_console.log(f"[Input] DRAG_END at {pos}")
+                        drag_end_event = create_drag_end_event(pos, self.mouse_drag_start)
                         self._end_drag()
                         return drag_end_event
-                    
+
                     from core import runtime_globals
-                    runtime_globals.game_console.log(f"[Input] LCLICK at {event.pos}")
+                    runtime_globals.game_console.log(f"[Input] LCLICK at {pos}")
                     self.is_touching = False
                     self.touch_start_pos = None
 
                     # Attach any matching global click regions (if registered)
-                    hits = self.hit_test_click_regions(event.pos)
+                    hits = self.hit_test_click_regions(pos)
                     extra = {}
                     if hits:
                         extra["hit_regions"] = [h["name"] for h in hits]
                         extra["hit"] = hits[0]["name"]
-                    return create_click_event(InputEventType.LCLICK, event.pos, extra)
-                    
+                    return create_click_event(InputEventType.LCLICK, pos, extra)
+
                 elif event.button == 3:  # Right click release
                     from core import runtime_globals
-                    runtime_globals.game_console.log(f"[Input] RCLICK at {event.pos}")
+                    runtime_globals.game_console.log(f"[Input] RCLICK at {pos}")
                     # Right-click currently does not use global regions, but we
                     # keep the same extension point for future use.
-                    return create_click_event(InputEventType.RCLICK, event.pos)
+                    return create_click_event(InputEventType.RCLICK, pos)
             return None
 
         elif event.type == pygame.MOUSEMOTION:
@@ -667,15 +707,16 @@ class InputManager:
                         if dx > 5 or dy > 5:
                             runtime_globals.INPUT_MODE = runtime_globals.MOUSE_MODE
                     self._last_motion_pos = event.pos
-                
-                self.mouse_position = event.pos
-                
+
+                pos = self._to_render_pos(event.pos)
+                self.mouse_position = pos
+
                 # Check for drag start
                 if self.is_touching and not self.mouse_dragging and self.touch_start_pos:
-                    dx = abs(event.pos[0] - self.touch_start_pos[0])
-                    dy = abs(event.pos[1] - self.touch_start_pos[1])
+                    dx = abs(pos[0] - self.touch_start_pos[0])
+                    dy = abs(pos[1] - self.touch_start_pos[1])
                     distance = (dx ** 2 + dy ** 2) ** 0.5
-                    
+
                     if distance > self.drag_threshold:
                         from core import runtime_globals
                         runtime_globals.game_console.log(f"[Input] DRAG_START at {self.touch_start_pos}")
@@ -685,13 +726,13 @@ class InputManager:
                 
                 # Emit drag motion if dragging
                 if self.mouse_dragging:
-                    dx = abs(event.pos[0] - self.mouse_drag_start[0])
-                    dy = abs(event.pos[1] - self.mouse_drag_start[1])
+                    dx = abs(pos[0] - self.mouse_drag_start[0])
+                    dy = abs(pos[1] - self.mouse_drag_start[1])
                     distance = (dx ** 2 + dy ** 2) ** 0.5
-                    return create_drag_motion_event(event.pos, self.mouse_drag_start, distance)
-                
+                    return create_drag_motion_event(pos, self.mouse_drag_start, distance)
+
                 # Return motion event for hover handling
-                return create_motion_event(event.pos)
+                return create_motion_event(pos)
                     
             return None
 

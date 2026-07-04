@@ -758,6 +758,16 @@ def load() -> None:
                         # Old format - copy values from saved object
                         configuration.from_dict(saved_config.to_dict() if hasattr(saved_config, 'to_dict') else {})
 
+                # Remember the render resolution this save was written at so the
+                # pets/poops (absolute pixel coords) can be re-placed for the
+                # current dimensions once the display is finalized.
+                try:
+                    from core import runtime_globals as _rg
+                    _rg.save_render_resolution = (
+                        configuration.screen_width, configuration.screen_height)
+                except Exception:
+                    pass
+
                 # Sprites were loaded in __setstate__ before configuration was applied.
                 # Reload them now that enable_old_sprites and sprite_resolution_preference are correct.
                 for pet in pet_list:

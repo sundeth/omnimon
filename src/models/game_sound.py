@@ -48,8 +48,14 @@ class GameSound:
 
         # Initialize pygame mixer with a small buffer to minimise playback latency.
         # 512 samples @ 44100 Hz ≈ 12 ms latency; safe on both desktop and Pi Zero 2W.
-        if not pygame.mixer.get_init():
-            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        # Guarded: SDL_Init(AUDIO) hard-fails in processes without the SDL
+        # bootstrap (notably the Android background service, which imports
+        # this module for the pet-tick logic) -- sound is simply disabled.
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+        except pygame.error as exc:
+            print(f"[GameSound] mixer unavailable, sound disabled: {exc}")
 
         # NOTE: do NOT eager-load here.  This instance is constructed
         # while ``runtime_globals`` is being imported, which on Android

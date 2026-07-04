@@ -268,11 +268,172 @@
             <a href="https://github.com/sundeth/omnipet/" target="_blank" class="source-link">View source on GitHub</a>
         </div>
 
+        <!-- Version 1.0.0 Beta 2 -->
+        <div class="version">
+            <div class="version-header">
+                Version 1.0.0 Beta 2
+                <span class="release-date">July 4, 2026</span>
+            </div>
+            <div class="version-content">
+                <div class="download-row"><a href="https://github.com/sundeth/omnipet/releases" target="_blank">Download release</a></div>
+
+                <div class="note">
+                    Beta 2 focuses on the Android experience, the new Digimon Database sprite service, and a large round of interface polish. The Android background service now ships and keeps pets progressing while the app is in the background, the sprite library was reorganized and expanded, and the shop, Digidex, and main game scenes received many usability fixes.
+                </div>
+
+                <div class="feature-category">
+                    <h3>Android</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Background service.</strong> The background service announced in Beta 1 now ships. When the app is minimized or closed, a foreground service keeps ticking every active pet once per minute, saves progress periodically, and sends notifications when a pet gets sick, poops, calls for attention, or starts dying. The service reports its own status through notifications (started, running, idle, or the error it hit), and the settings menu shows its state.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Black screen on resume.</strong> Switching to another app and back no longer leaves the game on a black screen. The display is re-acquired only after Android has rebuilt the window, with verification and retries, and the game self-heals if a frame fails to present.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Live render resolution.</strong> Changing the Render Res setting now takes effect immediately instead of drawing in a corner of the screen until the next restart.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Shake detection.</strong> Shake-based interactions (training, saving a dying pet) now work on Android using the phone's accelerometer, matching the Raspberry Pi hardware behavior.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Battery indicator.</strong> The clock bar now shows the phone's real battery level and charging state instead of a permanently empty icon.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Attack speed on wide screens.</strong> Training and battle attack sprites now cross the screen in the same time on every resolution; on phones they previously crawled across the wide display.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Digimon Database and Sprites</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Digimon Database.</strong> A new online sprite service is live. The game checks it once per day at boot and refreshes the sprites of installed modules automatically; freshly downloaded modules fetch their sprites right after install.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Sprite library reorganization.</strong> The bundled sprite library was renamed to a consistent naming standard (for example "Agumon X" is now "Agumon (X Antibody)") and expanded with hundreds of new and updated monster sprite archives.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Accounts and Modules</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Owned module sync.</strong> Modules purchased on an account are now synchronized: missing modules can be re-downloaded automatically when logging in on a new device.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Login flow.</strong> The login scene was reworked, and text fields no longer type a stray character when clicked. Display settings are preserved when switching between accounts and game modes.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Shop</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Download feedback.</strong> Download progress, errors, and completion are now shown on a colored status line ("Downloading 42%", "Error, try again", "Installed"/"Owned") instead of inside the disabled button, and failed downloads can be retried immediately.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Free Mode labels.</strong> Free Mode shows a green "Installed" badge for modules already on the device instead of the meaningless "Owned" flag.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Module details.</strong> The description panel is much taller and slowly auto-scrolls when the text doesn't fit. Long descriptions are finally readable.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>List rendering.</strong> Shop list items now draw their full right border.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Interface and Gameplay</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Pet selection by touch and mouse.</strong> Tapping or clicking a pet now selects/deselects it, exactly like the keyboard and joystick flow. In mouse mode, hovering a pet shows a yellow outline. Clicking empty space still toggles the hearts view.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Pet placement on wide screens.</strong> Pets are distributed around the center of the screen instead of being pushed out to the corners on wide displays.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Digidex.</strong> Pet sprites now load correctly in the list and evolution tree, the name and stage labels use a readable size, the "Known" filter applies immediately, and Reset asks for confirmation.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Pixel-perfect text.</strong> All text renders without anti-aliasing at the fonts' native pixel grid, keeping the interface sharp at every resolution. Input fields, the mode selection description, and several other components were snapped to the grid.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Sharp sprite scaling.</strong> The status screen pet list and carousel icons use nearest-neighbor scaling, removing the blurry edges.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Feeding animation.</strong> Food sprites render at half their previous size, no longer covering the pet.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Settings rows.</strong> Option rows respond to clicks on their &lt; and &gt; zones and show a muted style when disabled.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Module Editor</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Collection tab (Stage 1).</strong> Modules can now define a collection of collectable cards (Soul Plate, DDP Chip, iD Plate, or custom) with cards, effects, and card packs. Includes ZIP import, artwork editing through the Digimon Database card maker, RFID payload export for physical cards, and generated collection documentation. The in-game and server sides of the Collection system are planned for a later release.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Digimon Database integration.</strong> Pets can be added to modules directly from the Digimon Database, sprites can be updated from it, and content reports can be generated against it.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Omninet publishing.</strong> Login and module publishing against the Omninet server were refined, alongside various tab fixes.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Omninet</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Reward endpoints.</strong> The server's reward endpoints were updated.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="note">
+                    <strong>Beta notes.</strong> The Android background service is new and still has a few known issues; if it misbehaves, its status notifications and the settings menu indicator will say why. The Arena remains planned but not yet playable.
+                </div>
+            </div>
+        </div>
+
         <!-- Version 1.0.0 Beta 1 -->
         <div class="version">
             <div class="version-header">
                 Version 1.0.0 Beta 1
-                <span class="release-date">2026</span>
+                <span class="release-date">June 4, 2026</span>
             </div>
             <div class="version-content">
                 <div class="download-row"><a href="https://github.com/sundeth/omnipet/releases" target="_blank">Download release</a></div>

@@ -93,6 +93,10 @@ render_surface = None
 save_render_resolution = None
 PET_WIDTH = 48
 PET_HEIGHT = 48
+# Boss render size: PET size * BOSS_MULTIPLIER snapped to the pixel-perfect
+# ladder (see utils.sprite_utils.snap_pet_sprite_size).
+PET_WIDTH_BOSS = 96
+PET_HEIGHT_BOSS = 96
 MENU_ICON_SIZE = 24
 OPTION_ICON_SIZE = 48
 OPTION_FRAME_WIDTH = 96
@@ -198,7 +202,7 @@ def update_resolution_constants(width: int = None, height: int = None) -> None:
     global SCREEN_WIDTH, SCREEN_HEIGHT, UI_SCALE
     global MENU_ICON_SIZE, OPTION_ICON_SIZE, OPTION_FRAME_WIDTH, OPTION_FRAME_HEIGHT, PET_ICON_SIZE
     global FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_MEDIUM_LARGE, FONT_SIZE_LARGE
-    global PET_WIDTH, PET_HEIGHT
+    global PET_WIDTH, PET_HEIGHT, PET_WIDTH_BOSS, PET_HEIGHT_BOSS
 
     # Get resolution from configuration if not provided
     if width is None or height is None:
@@ -226,13 +230,23 @@ def update_resolution_constants(width: int = None, height: int = None) -> None:
     FONT_SIZE_MEDIUM_LARGE = int(30 * UI_SCALE)
     FONT_SIZE_LARGE = int(40 * UI_SCALE)
 
-    # Prevent oversized sprites when MAX_PETS == 1
+    # Prevent oversized sprites when MAX_PETS == 1. The raw slot size is then
+    # snapped to the pixel-perfect ladder (16/32/48*k) so 48x48 pet art always
+    # renders with uniform pixel blocks; the boss size gets its own snap since
+    # BOSS_MULTIPLIER (1.5x) would land between ladder steps.
+    from utils.sprite_utils import snap_pet_sprite_size
     try:
         from core import game_globals
         max_pets = game_globals.configuration.max_pets
-        PET_WIDTH = PET_HEIGHT = height // max(max_pets, 4)
+        PET_WIDTH = PET_HEIGHT = snap_pet_sprite_size(height // max(max_pets, 4))
     except Exception:
-        PET_WIDTH = PET_HEIGHT = height // 2
+        PET_WIDTH = PET_HEIGHT = snap_pet_sprite_size(height // 2)
+    try:
+        from core import constants
+        boss_target = PET_WIDTH * constants.BOSS_MULTIPLIER
+    except Exception:
+        boss_target = PET_WIDTH * 1.5
+    PET_WIDTH_BOSS = PET_HEIGHT_BOSS = snap_pet_sprite_size(boss_target, allow_up=True)
 
     # Also update combat constants if available
     try:

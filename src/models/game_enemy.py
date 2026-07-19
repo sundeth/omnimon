@@ -27,6 +27,9 @@ class GameEnemy:
     prize: str
     mini_game: int = 0
     special_encounter: bool = False
+    # Battling this enemy registers it in the player's per-module Friend list
+    # (used by Xros temporary evolutions and the digidex Friends view).
+    friend: bool = False
 
     def load_sprite(self, module_path: str, boss: bool = False):
         """
@@ -52,9 +55,11 @@ class GameEnemy:
             primary_format = 'Color'
             secondary_format = 'HD'
         
-        # Calculate size based on boss status
+        # Calculate size based on boss status. Boss size is pre-snapped to the
+        # pixel-perfect ladder in runtime_globals (PET size * BOSS_MULTIPLIER
+        # would land between the 48-multiple steps).
         if boss:
-            size = (runtime_globals.PET_WIDTH * constants.BOSS_MULTIPLIER, runtime_globals.PET_HEIGHT * constants.BOSS_MULTIPLIER)
+            size = (runtime_globals.PET_WIDTH_BOSS, runtime_globals.PET_HEIGHT_BOSS)
         else:
             size = (runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT)
         

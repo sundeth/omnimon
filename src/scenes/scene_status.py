@@ -511,30 +511,36 @@ class SceneStatus:
         # Update Heart meters and DP bar based on module visible_stats
         if "Hunger" in visible_stats:
             self.hunger_meter.set_value(pet.hunger)
-            # care_fixed_4_hearts: when False, dynamically show 1-4 hearts based on pet.stomach
+            stomach = getattr(pet, 'stomach', 4)
             care_fixed_4_hearts = getattr(module, 'care_fixed_4_hearts', True)
-            if care_fixed_4_hearts:
+            if stomach <= 0:
+                # No stomach capacity — the pet can't eat, so show no hearts.
+                self.hunger_meter.factor = 1
+                self.hunger_meter.set_max_value(0)
+            elif care_fixed_4_hearts:
                 self.hunger_meter.factor = 1
                 self.hunger_meter.set_max_value(4)
             else:
                 # Dynamic hearts based on stomach (1-4)
-                stomach = getattr(pet, 'stomach', 4)
                 self.hunger_meter.factor = 2
                 self.hunger_meter.set_max_value(max(1, min(4, stomach // 2)))
             self.hunger_meter.visible = True
         else:
             self.hunger_meter.visible = False
-            
+
         if "Strength" in visible_stats:
             self.strength_meter.set_value(pet.strength)
-            # care_fixed_4_hearts: when False, dynamically show 1-4 hearts based on pet.stomach
+            stomach = getattr(pet, 'stomach', 4)
             care_fixed_4_hearts = getattr(module, 'care_fixed_4_hearts', True)
-            if care_fixed_4_hearts:
+            if stomach <= 0:
+                # No stomach capacity — the pet can't eat, so show no hearts.
+                self.strength_meter.factor = 1
+                self.strength_meter.set_max_value(0)
+            elif care_fixed_4_hearts:
                 self.strength_meter.factor = 1
                 self.strength_meter.set_max_value(4)
             else:
                 # Dynamic hearts based on stomach (1-4)
-                stomach = getattr(pet, 'stomach', 4)
                 self.strength_meter.factor = 2
                 self.strength_meter.set_max_value(max(1, min(4, stomach // 2)))
             self.strength_meter.visible = True

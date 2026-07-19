@@ -463,13 +463,23 @@ class MainMenuView:
             self.config_omninet_button.set_text("CONNECT")
             self.config_omninet_button.enabled = False
         
-        # In Free Mode, block Omninet linking entirely
+        # Free Mode has no Omninet account: show only the connection status
+        # and hide the account row and connect button (they rendered as empty
+        # theme-colored rectangles over the section).
         if is_free:
+            if self._omninet_available is None:
+                self.config_omninet_status_label.set_text("Status: Checking...")
+            elif self._omninet_available:
+                self.config_omninet_status_label.set_text("Status: Online")
+            else:
+                self.config_omninet_status_label.set_text("Status: Offline")
+            self.config_omninet_account_label.visible = False
             self.config_omninet_button.visible = False
             self.config_omninet_button.enabled = False
             self.config_omninet_button.focusable = False
-        
-        # Update Discord status
+
+        # Update Discord status.  Discord battles are available in Free Mode
+        # too, so the button stays enabled regardless of game mode.
         discord_name = self.discord.get_account_name() if self.discord else None
         if discord_name:
             self.config_discord_status_label.set_text("Status: Linked")
@@ -479,6 +489,8 @@ class MainMenuView:
             self.config_discord_status_label.set_text("Status: Not linked")
             self.config_discord_account_label.set_text("Account: None")
             self.config_discord_button.set_text("LINK")
+        self.config_discord_button.enabled = True
+        self.config_discord_button.focusable = True
     
     def _show_main_menu(self):
         """Show main menu buttons."""
@@ -583,11 +595,14 @@ class MainMenuView:
         self.current_submenu = 'config'
         
         runtime_globals.game_console.log("[MainMenuView] Showing config submenu components...")
-        
-        # Show all config components
-        self._update_config_status()
+
+        # Show all config components FIRST, then let the status update apply
+        # its per-mode adjustments (doing it the other way round re-showed
+        # components the status update had hidden, leaving broken rectangles
+        # over the settings in Free Mode).
         for component in self.config_submenu_components:
             component.visible = True
+        self._update_config_status()
         
         # Start checking Omninet availability if not checked yet
         if self._omninet_available is None:
@@ -806,8 +821,20 @@ class MainMenuView:
             self.change_view("link_dialog", is_online_mode=False, return_view="main_menu")
     
     def _on_omninet_connect(self):
-        """Omninet Connect/Disconnect button clicked."""
+        """Omninet Connect/Disconnect button clicked.
+
+        In Free Mode the button reads CHANGE MODE and opens the game-mode
+        selection instead (Omninet accounts are Progress-Mode-only).
+        """
         runtime_globals.game_sound.play("menu")
+
+        if game_globals.is_free_mode():
+            game_globals.setup_input = False
+            game_globals.setup_graphics = False
+            game_globals.setup_game_mode = True
+            game_globals.skip_tutorial_on_mode_switch = bool(game_globals.pet_list)
+            change_scene("setup")
+            return
 
         if omninet_service.is_logged_in():
             # Disconnect: drop the device key and bounce the player into the

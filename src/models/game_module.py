@@ -34,6 +34,7 @@ class GameModule:
         self.load_module_data()
         self.load_sprites()
         self.load_items()
+        self.load_passwords()
 
     def load_module_data(self) -> None:
         json_path = os.path.join(self.folder_path, "module.json")
@@ -95,8 +96,17 @@ class GameModule:
                     self.battle_global_hit_points = int(data.get("battle_global_hit_points", 0))
                     # sequential rounds is a boolean flag in newer module.json files
                     self.battle_sequential_rounds = bool(data.get("battle_sequential_rounds", False))
-                    # battle_minigame determines which minigame to use in adventure battles
-                    self.battle_minigame = data.get("battle_minigame", "Dummy Bar")
+                    # battle_minigame determines which minigame to use in adventure battles.
+                    # Legacy module.json labels are normalized to the current
+                    # names ("Count Match" was ambiguous between the classic
+                    # and Z variants; parenthesized names were dropped).
+                    _minigame_label_fixes = {
+                        "Count Match (Color)": "Count Match Color",
+                        "Count Match (Z)": "Count Match Z",
+                        "Count Match": "Count Match Classic",
+                    }
+                    _minigame = data.get("battle_minigame", "Dummy Bar")
+                    self.battle_minigame = _minigame_label_fixes.get(_minigame, _minigame)
 
                     # Battle cost configuration
                     self.battle_cost_type = data.get("battle_cost_type", "DP")
@@ -195,6 +205,30 @@ class GameModule:
                     runtime_globals.game_console.log(f"Error: Failed to parse {json_path}")
         else:
             self.items = {}
+
+    def load_passwords(self):
+        """Loads redeemable passwords from codes.json if it exists.
+
+        Each entry: {name, code, type (item|pet|unlock|encounter),
+        item/amount | pet/version | unlock | area, cooldown} where cooldown
+        is minutes between redemptions (0 = none, -1 = one use only).
+        """
+        self.passwords = []
+        json_path = os.path.join(self.folder_path, "codes.json")
+        resolved_path = resolve_path(json_path)
+        if not os.path.exists(resolved_path):
+            return
+        try:
+            with open_json(json_path) as file:
+                data = json.load(file)
+                entries = data.get("passwords", []) if isinstance(data, dict) else []
+                self.passwords = [e for e in entries
+                                  if isinstance(e, dict) and e.get("code") and e.get("type")]
+        except json.JSONDecodeError:
+            runtime_globals.game_console.log(f"Error: Failed to parse {json_path}")
+
+    def has_passwords(self) -> bool:
+        return bool(getattr(self, "passwords", None))
 
     def load_quests_json(self) -> List[QuestData]:
         """Loads quest data from quests.json if it exists in the module folder."""

@@ -264,6 +264,12 @@ class DigidexList(UIComponent):
                 self.on_selection_callback(selected)
                 runtime_globals.game_sound.play("menu")
             return True
+        elif event_type == "SCROLL":
+            # Handle wheel directly instead of relying on the manager's
+            # focused/hover fallback chain.
+            return self.handle_scroll(event)
+        elif event_type in ("DRAG_START", "DRAG_MOTION", "DRAG_END"):
+            return self.handle_drag(event)
         return False
     
     def handle_mouse_click(self, mouse_pos, action):
@@ -316,19 +322,32 @@ class DigidexList(UIComponent):
         return False
     
     def handle_scroll(self, action):
-        """Handle scroll wheel events for list navigation"""
+        """Handle scroll wheel events for list navigation.
+
+        The UI manager passes the full ("SCROLL", {"direction": "UP"/"DOWN"})
+        event tuple; legacy "SCROLL_UP"/"SCROLL_DOWN" strings are still
+        accepted for safety.
+        """
         if not (runtime_globals.INPUT_MODE in [runtime_globals.MOUSE_MODE, runtime_globals.TOUCH_MODE]):
             return False
-        
-        if action == "SCROLL_UP":
+
+        direction = None
+        if isinstance(action, tuple) and len(action) == 2 and action[0] == "SCROLL":
+            direction = (action[1] or {}).get("direction")
+        elif action == "SCROLL_UP":
+            direction = "UP"
+        elif action == "SCROLL_DOWN":
+            direction = "DOWN"
+
+        if direction == "UP":
             self.navigate_up()
             runtime_globals.game_sound.play("menu")
             return True
-        elif action == "SCROLL_DOWN":
+        elif direction == "DOWN":
             self.navigate_down()
             runtime_globals.game_sound.play("menu")
             return True
-        
+
         return False
     
     def handle_drag(self, event):
@@ -467,6 +486,13 @@ class DigidexList(UIComponent):
             
             info_text = small_font.render(f"{pet.attribute if pet.attribute != '' else 'Free'} | Stage {constants.STAGES[pet.stage]}", True, (200, 200, 200))
             blit_with_shadow(surface, info_text, (list_x + left_padding + icon_size + int(5 * ui_scale), y_pos + int(28 * ui_scale)))
+
+            # Friend pets carry a small tag in the top-right of the row
+            if getattr(pet, 'avaliability', 'Normal') == 'Friend':
+                tag_text = small_font.render("Friend", True, (120, 220, 120))
+                blit_with_shadow(surface, tag_text,
+                                 (list_x + list_width - tag_text.get_width() - int(6 * ui_scale),
+                                  y_pos + int(4 * ui_scale)))
             
             # Highlight selected or hovered item
             is_hovered = (idx == self.hover_index)

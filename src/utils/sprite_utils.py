@@ -15,7 +15,7 @@ import os
 import zipfile
 import pygame
 import io
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from core import runtime_globals, game_globals
 from utils.asset_utils import image_load, resolve_path
 
@@ -35,6 +35,37 @@ def get_sprite_name(pet_name: str, name_format: str = "$_dmc") -> str:
     # Replace $ with pet name and : with _
     sprite_name = name_format.replace("$", pet_name).replace(":", "_")
     return sprite_name
+
+
+def snap_pet_sprite_size(target: int, allow_up: bool = False) -> int:
+    """Snap a desired pet-sprite size to the pixel-perfect ladder.
+
+    Pet art is authored at 48x48. Integer multiples (48, 96, 144, ...) keep
+    every source pixel an exact k x k block for ANY sprite; below 1x only the
+    66% (32) and 33% (16) reductions keep the 3x3 art blocks uniform. Any
+    other size smears the pixel grid, so every place that scales a pet/enemy
+    sprite must pick its size through this function.
+
+    By default returns the largest allowed size <= target so sprites never
+    overflow their layout slot (floors at 16). With allow_up=True returns the
+    nearest allowed size, rounding ties up — for elements allowed to exceed
+    their nominal box, like the boss sprite.
+    """
+    target = int(target)
+    if target < 48:
+        candidates = [16, 32, 48]
+    else:
+        floor_48 = (target // 48) * 48
+        candidates = [floor_48, floor_48 + 48]
+    below = [c for c in candidates if c <= target]
+    down = max(below) if below else 16
+    if not allow_up:
+        return down
+    above = [c for c in candidates if c >= target]
+    if not above:
+        return down
+    up = min(above)
+    return up if (up - target) <= (target - down) else down
 
 
 def scale_sprite_proportionally(sprite: pygame.Surface, target_size: tuple) -> pygame.Surface:
@@ -285,67 +316,78 @@ def load_pet_sprites(
     Returns:
         Dictionary mapping frame number (int) to pygame Surface
     """
-    sprite_name = get_sprite_name(pet_name, name_format)
-    sprites = {}
-    
-    # Get configuration settings
+    sprites, _ = load_pet_sprites_resolved(
+        pet_name, module_path, name_format, size, scale,
+        primary_sprite_format, secondary_sprite_format
+    )
+    return sprites
+
+
+def _compute_sprite_load_order(primary_sprite_format: str, secondary_sprite_format: str) -> List[str]:
+    """Return the ordered list of sprite formats to try, per the current config.
+
+    Mirrors the priority table documented on load_pet_sprites().
+    """
     preference = getattr(game_globals.configuration, 'sprite_resolution_preference', 0)
     enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
-    
+
+    all_types = ["Color", "Dot", "HD"]
+
+    if preference == 1:  # Color preference
+        return ["Dot", "Color", "HD"] if enable_old else ["Color", "HD"]
+    if preference == 2:  # HD preference
+        return ["HD", "Color", "Dot"] if enable_old else ["HD", "Color"]
+
+    # preference == 0: Default - use module's declared preferences
+    if enable_old:
+        load_order = [primary_sprite_format, secondary_sprite_format]
+        for sprite_type in all_types:
+            if sprite_type not in load_order:
+                load_order.append(sprite_type)
+        return load_order
+    # Old sprites disabled: primary then secondary, excluding Dot
+    load_order = [f for f in [primary_sprite_format, secondary_sprite_format] if f != "Dot"]
+    return load_order or ["Color", "HD"]
+
+
+def load_pet_sprites_resolved(
+    pet_name: str,
+    module_path: str,
+    name_format: str = "$_dmc",
+    size: tuple = None,
+    scale: float = 1.0,
+    primary_sprite_format: str = "Color",
+    secondary_sprite_format: str = "HD"
+) -> Tuple[Dict[int, pygame.Surface], Optional[str]]:
+    """Like load_pet_sprites() but also reports which format was actually used.
+
+    Returns (sprites, format) where format is "Color" / "Dot" / "HD", or
+    (empty dict, None) when nothing was found.  The resolved format lets
+    callers pick matching overlays (e.g. HD pets get the *_hd overlay icons).
+    """
+    sprite_name = get_sprite_name(pet_name, name_format)
+
+    preference = getattr(game_globals.configuration, 'sprite_resolution_preference', 0)
+    enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
     runtime_globals.game_console.log(
         f"[Sprite] Loading {pet_name} - preference={preference}, enable_old={enable_old}, "
         f"primary={primary_sprite_format}, secondary={secondary_sprite_format}"
     )
-    
-    # All three available sprite types
+
     all_types = ["Color", "Dot", "HD"]
-    
-    # Determine loading order based on configuration
-    load_order = []
-    
-    if preference == 0:  # Default - use module's declared preferences
-        if enable_old:
-            # Use primary, then secondary, then remaining
-            load_order = [primary_sprite_format, secondary_sprite_format]
-            # Add any remaining type
-            for sprite_type in all_types:
-                if sprite_type not in load_order:
-                    load_order.append(sprite_type)
-        else:
-            # Use primary, then secondary only — exclude Dot when old sprites are disabled
-            load_order = [f for f in [primary_sprite_format, secondary_sprite_format] if f != "Dot"]
-            if not load_order:
-                load_order = ["Color", "HD"]
-    
-    elif preference == 1:  # Color preference
-        if enable_old:
-            # Old behavior: try Dot, Color, HD
-            load_order = ["Dot", "Color", "HD"]
-        else:
-            # Try Color first, then HD
-            load_order = ["Color", "HD"]
-    
-    elif preference == 2:  # HD preference
-        if enable_old:
-            # Old behavior: try HD, Color, Dot (HD has priority in old mode too)
-            load_order = ["HD", "Color", "Dot"]
-        else:
-            # Try HD first, then Color
-            load_order = ["HD", "Color"]
-    
-    # Try loading in order
+    load_order = _compute_sprite_load_order(primary_sprite_format, secondary_sprite_format)
+
     for sprite_type in load_order:
         if sprite_type in all_types:  # Safety check
             sprites = try_load_sprite_type(sprite_type, module_path, sprite_name, size, scale)
             if sprites:
-                return sprites
-    
-    # No sprites found - log warning and return empty dict
+                return sprites, sprite_type
+
     runtime_globals.game_console.log(
         f"[Sprite] No sprites found for {pet_name} ({sprite_name}) - "
         f"tried types: {load_order}"
     )
-    return {}
+    return {}, None
 
 
 def load_enemy_sprites(

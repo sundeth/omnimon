@@ -11,7 +11,8 @@ from ui.components.animated_sprite import AnimatedSprite
 from battle import combat_constants
 import core.constants as constants
 from utils.pet_utils import distribute_pets_evenly, get_training_targets
-from utils.pygame_utils import blit_with_shadow, load_attack_sprites, load_crit_attack_sprites, module_attack_sprites, module_crit_attack_sprites
+from utils.sprite_utils import snap_pet_sprite_size
+from utils.pygame_utils import blit_with_cache, blit_with_shadow, load_attack_sprites, load_crit_attack_sprites, module_attack_sprites, module_crit_attack_sprites
 from utils.scene_utils import change_scene
 from models.game_quest import QuestType
 from utils.quest_event_utils import update_quest_progress
@@ -246,6 +247,12 @@ class Training:
                 and self.current_wave_index != prev_idx
                 and self.current_wave_index < len(self.attack_waves)):
             self._wave_in_prep = True
+            # Waves after the first skip the idle lead-in of the prep window
+            # so the bursts chain faster. Crit waves keep the full timeline —
+            # the SPECIAL slide-in starts inside the skipped region.
+            if not self._is_current_wave_crit():
+                self.frame_counter = int(
+                    combat_constants.JUMP_START_F * (constants.FRAME_RATE / 30))
 
     def _prep_total_frames(self):
         """Total frames in the per-wave prep window, scaled to the active FPS."""
@@ -361,7 +368,13 @@ class Training:
         entrance animation.
         """
         self._pet_sprite_cache = {}
-        self._special_sprite_cache = {}  # pet → Surface at (OPTION_ICON_SIZE*2, OPTION_ICON_SIZE)
+        self._special_sprite_cache = {}  # pet → Surface at (sprite_size*2, sprite_size)
+        # Pixel-perfect display size: largest ladder step (16/32/48*k) that
+        # fits the OPTION_ICON_SIZE slot; the offset centers the sprite when
+        # the slot itself isn't a ladder size.
+        self._pet_sprite_size = snap_pet_sprite_size(runtime_globals.OPTION_ICON_SIZE)
+        self._pet_slot_offset = (runtime_globals.OPTION_ICON_SIZE - self._pet_sprite_size) // 2
+        sprite_size = self._pet_sprite_size
         for pet in self.pets:
             self._pet_sprite_cache[pet] = {}
             frames = runtime_globals.pet_sprites.get(pet, [])
@@ -370,17 +383,15 @@ class Training:
                     self._pet_sprite_cache[pet][frame_enum] = None
                     continue
                 sprite = frames[frame_enum.value]
-                scaled_sprite = pygame.transform.scale(sprite, (runtime_globals.OPTION_ICON_SIZE, runtime_globals.OPTION_ICON_SIZE))
+                scaled_sprite = pygame.transform.scale(sprite, (sprite_size, sprite_size))
                 self._pet_sprite_cache[pet][frame_enum] = scaled_sprite
 
             # Pre-scale SPECIAL frame at double width for the slide-in animation
             special_idx = PetFrame.SPECIAL.value
             special_raw = frames[special_idx] if special_idx < len(frames) else None
             if special_raw is not None:
-                special_w = runtime_globals.OPTION_ICON_SIZE * 2
-                special_h = runtime_globals.OPTION_ICON_SIZE
                 self._special_sprite_cache[pet] = pygame.transform.scale(
-                    special_raw, (special_w, special_h)
+                    special_raw, (sprite_size * 2, sprite_size)
                 )
             else:
                 self._special_sprite_cache[pet] = None
@@ -422,6 +433,7 @@ class Training:
                   - int(16 * runtime_globals.UI_SCALE))
         ui_scale = runtime_globals.UI_SCALE
 
+        slot_off = self._pet_slot_offset
         for i, pet in enumerate(self.pets):
             y_base = start_y + i * spacing
 
@@ -430,7 +442,7 @@ class Training:
                 if slide_x is not None:
                     special_sprite = self._special_sprite_cache.get(pet)
                     if special_sprite is not None:
-                        blit_with_shadow(surface, special_sprite, (slide_x, y_base))
+                        blit_with_cache(surface, special_sprite, (slide_x, y_base + slot_off))
                         continue
                 pet_sprite = (self._pet_sprite_cache[pet].get(pet_frame)
                               or self._pet_sprite_cache[pet].get(PetFrame.IDLE1))
@@ -442,7 +454,7 @@ class Training:
                 x = base_x
                 y = y_base
 
-            blit_with_shadow(surface, pet_sprite, (x, y))
+            blit_with_cache(surface, pet_sprite, (x + slot_off, y + slot_off))
 
     def draw_alert(self, screen):
         # Use AnimatedSprite component with predefined ready animation

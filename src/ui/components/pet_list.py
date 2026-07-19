@@ -425,9 +425,11 @@ class PetList(UIComponent):
         if self.left_arrow_pressed and now - self.arrow_press_time > 100:
             self.left_arrow_pressed = False
             self.static_layer = None
+            self.needs_redraw = True
         if self.right_arrow_pressed and now - self.arrow_press_time > 100:
             self.right_arrow_pressed = False
             self.static_layer = None
+            self.needs_redraw = True
             
         # Handle scrolling animation
         if self.scrolling:
@@ -613,8 +615,10 @@ class PetList(UIComponent):
             line_color = colors["highlight"]
             fg_color = colors["highlight"]
         
-        # Pressed state: brief visual feedback
-        if pressed and self.clicked:
+        # Pressed state: brief visual feedback (color flip like the standard
+        # Button). Keyed on the arrow's own pressed flag — the component-wide
+        # self.clicked is never set on the arrow click path.
+        if pressed:
             bg_color = colors["highlight"]
             fg_color = colors["bg"]
             line_color = colors["bg"]
@@ -1128,12 +1132,14 @@ class PetList(UIComponent):
             self.left_arrow_pressed = True
             self.arrow_press_time = pygame.time.get_ticks()
             self.static_layer = None
+            self.needs_redraw = True
             return
         elif relative_x >= self.rect.width - scaled_arrow_width:  # Right arrow
             self.select_next()
             self.right_arrow_pressed = True
             self.arrow_press_time = pygame.time.get_ticks()
             self.static_layer = None
+            self.needs_redraw = True
             return
             
         # Otherwise, select the current item

@@ -82,7 +82,8 @@ def _invalidate_scaled_caches():
     poops and misc UI sprites are rebuilt at the new internal resolution."""
     runtime_globals.pet_sprites = {}
     try:
-        from utils.pygame_utils import load_misc_sprites
+        from utils.pygame_utils import load_misc_sprites, clear_sprite_folder_cache
+        clear_sprite_folder_cache()
         runtime_globals.misc_sprites = load_misc_sprites()
     except Exception as exc:
         runtime_globals.game_console.log(

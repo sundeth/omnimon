@@ -4,11 +4,16 @@ from core import constants
 def get_selected_pets():
     """
     Returns the list of currently selected pets, or all alive pets if none are selected.
+
+    Note: eggs (stage 0) are excluded via ``stage > 0``.  Stomach is NOT used as
+    an eligibility gate here — a pet with stomach 0 can still train/battle and
+    use non-food items; only food (hunger/strength) is blocked, handled at the
+    point of use (SceneInventory).
     """
     if runtime_globals.selected_pets:
-        pet_list = [pet for pet in runtime_globals.selected_pets if pet.state != "dead" and pet.stomach > 0 and pet.stage > 0]
+        pet_list = [pet for pet in runtime_globals.selected_pets if pet.state != "dead" and pet.stage > 0]
     else:
-        pet_list = [pet for pet in game_globals.pet_list if pet.state != "dead" and pet.stomach > 0 and pet.stage > 0]
+        pet_list = [pet for pet in game_globals.pet_list if pet.state != "dead" and pet.stage > 0]
     return pet_list
 
 def get_training_targets():

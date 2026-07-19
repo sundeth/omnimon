@@ -22,6 +22,7 @@ from scenes.scene_eggselection import SceneEggSelection
 from scenes.scene_evolution import SceneEvolution
 from scenes.scene_freezerbox import SceneFreezerBox
 from scenes.scene_library import SceneLibrary
+from scenes.scene_collection import SceneCollection
 from scenes.scene_settingsmenu import SceneSettingsMenu
 from scenes.scene_setup import SceneSetup
 from scenes.scene_tutorial import SceneTutorial
@@ -280,6 +281,7 @@ class VirtualPetGame:
             "evolution": SceneEvolution,
             "freezer": SceneFreezerBox,
             "library": SceneLibrary,
+            "collection": SceneCollection,
             "debug": SceneDebug,
         }
 

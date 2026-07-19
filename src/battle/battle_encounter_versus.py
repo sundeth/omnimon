@@ -340,9 +340,11 @@ class BattleEncounterVersus(BattleEncounter):
             
             surface.blit(pet_sprite, (pet_x, pet_y))
         else:
-            # Draw both pets for a tie (smaller and side by side)
-            sprite_width = runtime_globals.PET_WIDTH // 2
-            sprite_height = runtime_globals.PET_HEIGHT // 2
+            # Draw both pets for a tie (smaller and side by side), snapped to
+            # the pixel-perfect ladder (PET//2 can land between steps).
+            from utils.sprite_utils import snap_pet_sprite_size
+            sprite_width = snap_pet_sprite_size(runtime_globals.PET_WIDTH // 2)
+            sprite_height = sprite_width
             
             # Both pets animate between IDLE1 and HAPPY
             frame_id = PetFrame.IDLE1.value if anim_toggle == 0 else PetFrame.HAPPY.value

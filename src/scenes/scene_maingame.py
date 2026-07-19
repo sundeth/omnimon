@@ -18,7 +18,7 @@ from core import game_globals, runtime_globals
 import core.constants as constants
 from models.game_evolution_entity import GameEvolutionEntity
 from utils.pet_utils import all_pets_hatched, distribute_pets_evenly, draw_pet_outline, get_selected_pets
-from utils.pygame_utils import blit_with_cache, get_font
+from utils.pygame_utils import blit_with_cache, get_flipped_sprite, get_font
 from utils.scene_utils import change_scene
 from utils.inventory_utils import add_to_inventory, get_item_by_name
 from utils.module_utils import get_module
@@ -76,11 +76,7 @@ class SceneMainGame:
         self.frame_counter = 0  # Tracks frames for time updates
         # Ensure the global last-input frame is synced when the scene is created
         runtime_globals.last_input_frame = self.frame_counter
-        self._static_last_frame = 0
-        self.last_menu_index = -1
-        self.cached_static_surface = None
         self._screensaver_cache = None
-        self._screensaver_cache_last_frame = 0
         # Screensaver rendering caches (create fonts/sprites once)
         from utils.asset_utils import font_load
         try:
@@ -95,14 +91,17 @@ class SceneMainGame:
             self._ss_call_font = font_load(TEXT_FONT, int(28 * runtime_globals.UI_SCALE))
             self._ss_poop_font = font_load(TEXT_FONT, int(24 * runtime_globals.UI_SCALE))
 
-        # Cached sprites (pulled lazily from main menu / runtime globals)
-        self._ss_call_sprite = None
-        self._ss_poop_sprite = None
-        # Track state used in screensaver to allow immediate cache invalidation
-        self._ss_last_pet_alert = bool(getattr(runtime_globals, 'pet_alert', False))
-        self._ss_last_poop_count = len(game_globals.poop_list)
-        # Track sick state for cache invalidation (show sick icon if any pet is sick)
-        self._ss_last_sick_flag = any(p.sick > 0 for p in game_globals.pet_list)
+        # Latched screensaver alert flags. Alerts can only be cleared through
+        # the menus, which dismisses the screensaver — so once a flag latches
+        # True while the screensaver is up, we stop re-validating it. The
+        # flags reset on every screensaver entry and OFF→ON transitions are
+        # polled about once per second (not per frame).
+        self._ss_active = False
+        self._ss_show_alert = False
+        self._ss_show_poop = False
+        self._ss_show_sick = False
+        self._ss_last_check_frame = 0
+        self._ss_time_str = ""
 
         # Screensaver position randomizer: change position every minute (frame-based)
         self._ss_position = (0, 0)  # offset from center (x_offset, y_offset)
@@ -400,46 +399,34 @@ class SceneMainGame:
             anim_frames = food_info.get("anim_frames")
             icon = food_info.get("sprite")
             if anim_frames and isinstance(anim_frames, list) and len(anim_frames) == 4:
-                self.food_anims[pet_index] = anim_frames
+                frames = anim_frames
             else:
                 # Fallback: use the icon itself as all frames
-                self.food_anims[pet_index] = [icon] * 4
+                frames = [icon] * 4
+            # Pre-scale the display frames once — draw_food_anims used to run
+            # pygame.transform.scale on every frame while a pet was eating.
+            # Draw at half the source size (// 8 instead of the old // 4;
+            # max_pets == 4 used to draw them unscaled).
+            scaled_frames = []
+            for f in frames:
+                food_size = f.get_height()
+                food_size = max(1, food_size * max(game_globals.configuration.max_pets, 2) // 8)
+                scaled_frames.append(pygame.transform.scale(f, (food_size, food_size)))
+            self.food_anims[pet_index] = scaled_frames
 
         # Also sync last-input-frame when the scene is (re)loaded so screensaver timing is correct
         runtime_globals.last_input_frame = getattr(self, 'frame_counter', 0)
 
-    def update_static_surface(self) -> None:
-        """
-        Updates the cached surface for the background, menu, and clock.
-        """
-        menu_index_changed = self.last_menu_index != runtime_globals.main_menu_index
-        clock_changed = (self.frame_counter - self._static_last_frame) > constants.FRAME_RATE  # Update once per second
-
-        if not self.cached_static_surface or menu_index_changed or clock_changed:
-            self._static_last_frame = self.frame_counter
-            self.cached_static_surface = pygame.Surface((runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT))
-            
-            # Draw background
-            self.background.draw(self.cached_static_surface)
-            
-            # Draw menu
-            self.menu.draw(self.cached_static_surface)
-            self.last_menu_index = runtime_globals.main_menu_index
-            
-            # Draw clock
-            if game_globals.showClock:
-                self.clock.draw(self.cached_static_surface)
-
     def _render_screensaver_surface(self):
-        """Render the full screensaver surface (clock + call sign + poop count)."""
-        # Create surface once per cache refresh
+        """Render the full screensaver surface (clock + latched alert icons).
+
+        Called only when the cached surface was invalidated (minute change,
+        position change, or an alert latching on) — never per frame.
+        """
         surf = pygame.Surface((runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT))
         surf.fill((0, 0, 0))
 
-        self.menu.check_alert()  # Ensure alert state is updated
-
-        now_dt = datetime.datetime.now()
-        time_str = now_dt.strftime("%H:%M")
+        time_str = self._ss_time_str or datetime.datetime.now().strftime("%H:%M")
         text = self._ss_time_font.render(time_str, True, constants.FONT_COLOR_DEFAULT)
 
         # Use randomized offset from center (set once per minute)
@@ -450,33 +437,22 @@ class SceneMainGame:
         y = center_y - (text.get_height() // 2)
         blit_with_cache(surf, text, (x, y))
 
-        # Call sign: only show when pet_alert is true
-        call_drawn = None
-        if runtime_globals.pet_alert:
-            call_drawn = True
-            call_sprite = runtime_globals.misc_sprites.get('CallSignInverted')
-
-        # Poop count with icon (always show count even if 0)
-        poop_count = len(game_globals.poop_list)
-
-        # Lazily grab poop and sick sprites from runtime globals
-        poop_sprite = runtime_globals.misc_sprites.get('PoopInverted')
-
-        sick_sprite = runtime_globals.misc_sprites.get('SickInverted')
-
-        # Determine if any pet is sick right now
-        sick_flag = any(p.sick > 0 for p in game_globals.pet_list)
-
-        # place group under clock
+        # Alert icons under the clock — driven by the latched flags.
         group_y = y + text.get_height()
-        if poop_count > 0:
-            blit_with_cache(surf, poop_sprite, (x, group_y))
+        if self._ss_show_poop:
+            poop_sprite = runtime_globals.misc_sprites.get('PoopInverted')
+            if poop_sprite:
+                blit_with_cache(surf, poop_sprite, (x, group_y))
 
-        if sick_flag:
-            blit_with_cache(surf, sick_sprite, (center_x - (sick_sprite.get_width() // 2), group_y))
+        if self._ss_show_sick:
+            sick_sprite = runtime_globals.misc_sprites.get('SickInverted')
+            if sick_sprite:
+                blit_with_cache(surf, sick_sprite, (center_x - (sick_sprite.get_width() // 2), group_y))
 
-        if call_drawn:
-            blit_with_cache(surf, call_sprite, (x + text.get_width() - call_sprite.get_width(), group_y))
+        if self._ss_show_alert:
+            call_sprite = runtime_globals.misc_sprites.get('CallSignInverted')
+            if call_sprite:
+                blit_with_cache(surf, call_sprite, (x + text.get_width() - call_sprite.get_width(), group_y))
 
         return surf
 
@@ -484,8 +460,12 @@ class SceneMainGame:
         """Update menu selection based on mouse hover and handle pet area clicks."""
         if not (runtime_globals.INPUT_MODE == runtime_globals.MOUSE_MODE) or self.lock_inputs:
             return
-        
+
         mouse_pos = runtime_globals.game_input.get_mouse_position()
+        # Menu hitboxes are static — skip the hit-test while the mouse is still.
+        if mouse_pos == getattr(self, '_last_menu_hover_pos', None):
+            return
+        self._last_menu_hover_pos = mouse_pos
         # Ask WindowMenu for the hovered index using its authoritative hitboxes
         hovered_index = self.menu.get_menu_index_at(mouse_pos)
         
@@ -540,19 +520,39 @@ class SceneMainGame:
 
         if (timeout and timeout > 0 and elapsed_frames >= timeout_frames
                 and not getattr(self, '_screensaver_disabled', False)):
-            # Use cached screensaver surface and refresh every 5 seconds using the frame counter
-            # Invalidate cache immediately if relevant state changed
-            current_pet_alert = bool(getattr(runtime_globals, 'pet_alert', False))
-            current_poop_count = len(game_globals.poop_list)
-            current_sick_flag = any(p.sick > 0 for p in game_globals.pet_list)
-            if current_pet_alert != self._ss_last_pet_alert or current_poop_count != self._ss_last_poop_count:
+            # Entering the screensaver: reset latched alert flags and force an
+            # immediate condition check + render.
+            if not self._ss_active:
+                self._ss_active = True
+                self._ss_show_alert = False
+                self._ss_show_poop = False
+                self._ss_show_sick = False
+                self._ss_time_str = datetime.datetime.now().strftime("%H:%M")
+                self._ss_last_check_frame = self.frame_counter - constants.FRAME_RATE
                 self._screensaver_cache = None
-                self._ss_last_pet_alert = current_pet_alert
-                self._ss_last_poop_count = current_poop_count
-            # Invalidate if sick state changed
-            if current_sick_flag != self._ss_last_sick_flag:
-                self._screensaver_cache = None
-                self._ss_last_sick_flag = current_sick_flag
+
+            # Poll OFF→ON transitions about once per second. Latched flags are
+            # never re-validated: clearing them requires the menus, which
+            # dismisses the screensaver (and resets the flags on re-entry).
+            if (self.frame_counter - self._ss_last_check_frame) >= constants.FRAME_RATE:
+                self._ss_last_check_frame = self.frame_counter
+                changed = False
+                if not self._ss_show_alert and self.menu.check_alert():
+                    self._ss_show_alert = True
+                    changed = True
+                if not self._ss_show_poop and game_globals.poop_list:
+                    self._ss_show_poop = True
+                    changed = True
+                if not self._ss_show_sick and any(p.sick > 0 for p in game_globals.pet_list):
+                    self._ss_show_sick = True
+                    changed = True
+                # The screensaver clock has no seconds, so it changes 1/min.
+                time_str = datetime.datetime.now().strftime("%H:%M")
+                if time_str != self._ss_time_str:
+                    self._ss_time_str = time_str
+                    changed = True
+                if changed:
+                    self._screensaver_cache = None
 
             # Change screensaver position once per minute (frame-based). If position changes, invalidate cache.
             minute_frames = constants.FRAME_RATE * 60
@@ -566,8 +566,7 @@ class SceneMainGame:
                     self._screensaver_cache = None
                 self._ss_last_position_frame = self.frame_counter
 
-            refresh_frames = constants.FRAME_RATE * 5
-            if (not self._screensaver_cache) or (self.frame_counter - self._screensaver_cache_last_frame) >= refresh_frames:
+            if self._screensaver_cache is None:
                 try:
                     self._screensaver_cache = self._render_screensaver_surface()
                 except Exception:
@@ -575,18 +574,22 @@ class SceneMainGame:
                     s = pygame.Surface((runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT))
                     s.fill((0, 0, 0))
                     self._screensaver_cache = s
-                self._screensaver_cache_last_frame = self.frame_counter
 
-            from utils.pygame_utils import blit_with_cache
             blit_with_cache(surface, self._screensaver_cache, (0, 0))
             return
+        elif self._ss_active:
+            # Leaving the screensaver — latches re-arm on next entry.
+            self._ss_active = False
 
-        # Update the cached static surface if needed
-        self.update_static_surface()
-
-        # Blit the cached static surface
-        from utils.pygame_utils import blit_with_cache
-        blit_with_cache(surface, self.cached_static_surface, (0, 0))
+        # Draw the static layers directly: the background is one cached blit,
+        # the menu is two cached strips, the clock is one cached bar. Each
+        # keeps its own cache, so nothing full-screen is rebuilt per second
+        # (the old composite re-allocated a screen-sized surface every second
+        # just because the clock shows seconds).
+        self.background.draw(surface)
+        self.menu.draw(surface)
+        if game_globals.showClock:
+            self.clock.draw(surface)
 
         # Draw pets and their overlays
         pets = game_globals.pet_list
@@ -626,18 +629,24 @@ class SceneMainGame:
         """
         pet.draw(surface)
 
-        frame_enum = pet.animation_frames[pet.frame_index]
-        frame = runtime_globals.pet_sprites[pet][frame_enum.value]
+        # Only fetch (and flip) the frame when an outline is actually drawn —
+        # the common case draws no outline and used to pay a flip per pet per
+        # frame anyway.
+        is_selected = pet in selected_pets
+        is_highlighted = (self.selection_mode == "pet" and index == self.pet_selection_index)
+        is_hovered = index == self.hovered_pet_index
+        if is_selected or is_highlighted or is_hovered:
+            frame_enum = pet.animation_frames[pet.frame_index]
+            frame = runtime_globals.pet_sprites[pet][frame_enum.value]
+            if pet.direction == 1:
+                frame = get_flipped_sprite(frame)
 
-        if pet.direction == 1:
-            frame = pygame.transform.flip(frame, True, False)
-
-        if pet in selected_pets:
-            draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_BLUE)  # blue outline
-        if self.selection_mode == "pet" and index == self.pet_selection_index:
-            draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # yellow highlight
-        elif index == self.hovered_pet_index:
-            draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # mouse hover
+            if is_selected:
+                draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_BLUE)  # blue outline
+            if is_highlighted:
+                draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # yellow highlight
+            elif is_hovered:
+                draw_pet_outline(surface, frame, pet.x, pet.y, color=constants.FONT_COLOR_YELLOW)  # mouse hover
 
         if show_hearts and pet.stage > 0:
             module = get_module(pet.module)
@@ -669,12 +678,12 @@ class SceneMainGame:
         """
         Draws the fade overlay, caching the surface for efficiency.
         """
-        if not self._fade_overlay_cache or self._fade_overlay_cache.get_alpha() != self.fade_alpha:
+        if not self._fade_overlay_cache:
             fade_overlay = pygame.Surface((runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT))
             fade_overlay.fill((0, 0, 0))
-            fade_overlay.set_alpha(self.fade_alpha)
             self._fade_overlay_cache = fade_overlay
-        from utils.pygame_utils import blit_with_cache
+        if self._fade_overlay_cache.get_alpha() != self.fade_alpha:
+            self._fade_overlay_cache.set_alpha(self.fade_alpha)
         blit_with_cache(surface, self._fade_overlay_cache, (0, 0))
 
     def draw_food_anims(self, surface: pygame.Surface) -> None:
@@ -695,19 +704,15 @@ class SceneMainGame:
                             frame_idx = total_frames - 1
                         else:
                             frame_idx = (pet.animation_counter // frame_duration) % total_frames
+                        # Frames are pre-scaled in load()
                         food_sprite = anim_frames[frame_idx]
                         x = pet.x
                         # Prevent food from overlapping menu icons
                         y_offset = 20 * runtime_globals.UI_SCALE if game_globals.showClock else 5 * runtime_globals.UI_SCALE
                         y_min = y_offset + 2 * runtime_globals.MENU_ICON_SIZE
-                        # Draw at half the previous size -- the loaded frames
-                        # covered most of the pet.  (// 8 instead of the old
-                        # // 4; max_pets == 4 used to draw them unscaled.)
                         food_size = food_sprite.get_height()
-                        food_size = max(1, food_size * max(game_globals.configuration.max_pets, 2) // 8)
-                        food_sprite_scaled = pygame.transform.scale(food_sprite, (food_size, food_size))
                         y = max(y_min, pet.y - (food_size // 2))
-                        surface.blit(food_sprite_scaled, (x, y))
+                        surface.blit(food_sprite, (x, y))
                 elif idx in self.food_anims:
                     # Clean up if pet is no longer eating
                     game_pet_eating.pop(idx, None)
@@ -1049,7 +1054,8 @@ class SceneMainGame:
             if blocked:
                 runtime_globals.game_sound.play("cancel")
                 return
-            runtime_globals.game_sound.play("cancel")
+            # start_scene already plays the "menu" sound — playing "cancel"
+            # here too made both sounds fire together.
             self.start_scene("settings")
 
         elif event_type == "L":  # Rotate screen upside-down

@@ -171,14 +171,17 @@ class TextPanel(UIComponent):
             font = self.get_font("text")
             
             if font:
-                # Calculate text area (inside the cut rectangle with padding)
-                cut = self.manager.scale_value(self.cut_size) if self.manager else self.cut_size
-                padding = self.manager.scale_value(8) if self.manager else 8
-                
-                text_x = cut + padding
-                text_y = cut + padding
-                text_width = self.rect.width - (cut * 2) - (padding * 2)
-                text_height = self.rect.height - (cut * 2) - (padding * 2)
+                # Text area: keep side margins at just a few pixels (the old
+                # cut+padding inset wasted ~19px per side and cut text off).
+                # The small vertical offset keeps the first line clear of the
+                # top-left corner cut diagonal.
+                margin_x = self.manager.scale_value(4) if self.manager else 4
+                margin_y = self.manager.scale_value(8) if self.manager else 8
+
+                text_x = margin_x
+                text_y = margin_y
+                text_width = self.rect.width - (margin_x * 2)
+                text_height = self.rect.height - (margin_y * 2)
                 
                 # Wrap text to fit
                 lines = self._wrap_text(self.text, font, text_width)

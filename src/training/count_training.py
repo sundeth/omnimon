@@ -8,7 +8,7 @@ from ui.ui_manager import UIManager
 from ui.minigames.count_match import CountMatch
 from battle import combat_constants
 import core.constants as constants
-from utils.pygame_utils import blit_with_shadow
+from utils.pygame_utils import blit_with_cache
 from utils.scene_utils import change_scene
 
 class CountMatchTraining(Training):
@@ -187,8 +187,8 @@ class CountMatchTraining(Training):
 
         self.attack_waves[self.current_wave_index] = new_wave
 
-        # Wait at least 10 frames (at 30fps) before next wave
-        if all_off_screen and self.frame_counter >= int(10 * (game_globals.configuration.frame_rate / 30)):
+        # Short breather (at 30fps) before the next wave
+        if all_off_screen and self.frame_counter >= int(4 * (game_globals.configuration.frame_rate / 30)):
             self.current_wave_index += 1
             self.frame_counter = 0
 
@@ -205,7 +205,7 @@ class CountMatchTraining(Training):
         for wave in self.attack_waves:
             for sprite, x, y in wave:
                 if x < runtime_globals.SCREEN_WIDTH - (90 * runtime_globals.UI_SCALE):
-                    blit_with_shadow(surface, sprite, (x, y))
+                    blit_with_cache(surface, sprite, (x, y))
 
     def draw_result(self, screen):
         pets = self.pets

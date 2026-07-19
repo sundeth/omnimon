@@ -46,9 +46,6 @@ class AnimatedSprite(UIComponent):
         self._surface_cache = {}  # Cache for rendered surfaces
         self._overlay_cache = {}  # Cache for blurred overlays
         self._last_screen_size = (0, 0)
-        # Reusable full-screen render target to avoid per-frame allocations
-        self._render_target = None
-        self._render_target_size = (0, 0)
         # Predefined colors (use shared UI constants)
         # NOTE: we store them as attributes for backwards compatibility with
         # existing code that accessed self.COMBAT_BLUE/self.BLACK/self.YELLOW
@@ -219,12 +216,12 @@ class AnimatedSprite(UIComponent):
         if surface is not None:
             return surface
             
-        # Ensure reusable render target exists and matches current size
+        # Each cached frame needs its own surface: rendering every frame into a
+        # shared target makes all cache keys alias whatever rendered last, which
+        # froze two-frame animations (battle/impact flashes) on a single frame.
+        # Rendered once per key, so there is no per-frame allocation cost.
         target_size = (runtime_globals.SCREEN_WIDTH, runtime_globals.SCREEN_HEIGHT)
-        if self._render_target is None or self._render_target_size != target_size:
-            self._render_target = pygame.Surface(target_size)
-            self._render_target_size = target_size
-        surface = self._render_target
+        surface = pygame.Surface(target_size)
         
         # Fill with background color
         surface.fill(bg_color)
@@ -242,7 +239,6 @@ class AnimatedSprite(UIComponent):
             from utils.pygame_utils import blit_with_cache
             blit_with_cache(surface, sprite, sprite_rect.topleft)
         
-        # Cache the surface reference (render target is reused)
         self._surface_cache[cache_key] = surface
         return surface
     

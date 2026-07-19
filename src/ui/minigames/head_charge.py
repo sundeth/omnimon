@@ -31,7 +31,9 @@ class HeadCharge:
         self.left_attack_sprite = left_attack_sprite
         self.right_attack_sprite = right_attack_sprite
 
-        self.pet_size = 36 * runtime_globals.UI_SCALE
+        from utils.sprite_utils import snap_pet_sprite_size
+        # Snapped to the pixel-perfect ladder (36*scale lands between steps).
+        self.pet_size = snap_pet_sprite_size(36 * runtime_globals.UI_SCALE)
 
         self.pattern = ""
         self.current_index = 0

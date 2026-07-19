@@ -7,10 +7,10 @@ from core import game_globals, runtime_globals
 from models.animation import Animation, PetFrame
 import core.constants as constants
 from models.game_digidex import register_digidex_entry
-from utils.sprite_utils import load_pet_sprites, convert_sprites_to_list
+from utils.sprite_utils import load_pet_sprites_resolved, convert_sprites_to_list
 from models.game_poop import GamePoop
 from utils.module_utils import get_module
-from utils.pygame_utils import blit_with_cache, sprite_load
+from utils.pygame_utils import blit_with_cache, get_flipped_sprite, sprite_load
 from utils.scene_utils import change_scene
 from utils.utils_unlocks import is_unlocked, unlock_item
 from utils.asset_utils import image_load
@@ -103,6 +103,11 @@ class GamePet:
 
         self.condition_hearts_max = int(data.get("condition_hearts", 0))
         self.jogress_avaliable = int(data.get("jogress_avaliable", 0))
+
+        # Battle-only temporary evolutions (Mode Change / Xros) and availability
+        # ("Normal" default; "Unobtainable" / "Friend" pets aren't hatchable).
+        self.temp_evolve = data.get("temporary-evolution") or []
+        self.avaliability = data.get("avaliability") or "Normal"
 
 
     def reset_variables(self):
@@ -236,16 +241,18 @@ class GamePet:
         primary_format = getattr(module_obj, 'primary_sprite_format', 'Color')
         secondary_format = getattr(module_obj, 'secondary_sprite_format', 'HD')
         
-        # Load sprites using the new utility function with format parameters
-        sprites_dict = load_pet_sprites(
-            self.name, 
-            module_path, 
+        # Load sprites using the new utility function with format parameters.
+        # Capture the resolved format ("Color"/"Dot"/"HD") so draw() can pick
+        # matching overlay icons (dot pets -> *_dot, HD pets -> *_hd).
+        sprites_dict, self.sprite_format = load_pet_sprites_resolved(
+            self.name,
+            module_path,
             name_format,
             size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT),
             primary_sprite_format=primary_format,
             secondary_sprite_format=secondary_format
         )
-        
+
         # Convert to list format expected by existing code
         sprite_list = convert_sprites_to_list(sprites_dict)
         
@@ -279,10 +286,10 @@ class GamePet:
         
         frame_key = self.animation_frames[self.frame_index].value
         frame = sprite_list[frame_key]
-        
-        # Flip if facing right
+
+        # Flip if facing right (cached — flipping allocated a surface per frame)
         if self.direction == 1:
-            frame = pygame.transform.flip(frame, True, False)
+            frame = get_flipped_sprite(frame)
         
         # Draw base pet sprite
         blit_with_cache(surface, frame, (self.x, self.y))
@@ -293,16 +300,22 @@ class GamePet:
 
         sick = False
 
-        # Dot-format modules have their own Sick/Cheer overlays (coloured pixels
-        # instead of the default black-on-transparent ones).
-        # Only use dot overlays when enable_old_sprites is active.
-        module = get_module(self.module)
-        enable_old = getattr(game_globals.configuration, 'enable_old_sprites', False)
-        is_dot = enable_old and getattr(module, "primary_sprite_format", "Color") == "Dot"
+        # Overlays come in three flavors keyed off the sprite the pet is
+        # actually rendering with (resolved by load_sprite -> self.sprite_format):
+        #   Dot -> *_dot overlays, HD -> *_hd overlays, everything else -> default.
+        # _misc() prefers the matching variant and falls back to the default
+        # when a given overlay has no variant (e.g. Dots has no _hd).
+        sprite_format = getattr(self, "sprite_format", None)
+        is_dot = sprite_format == "Dot"
+        is_hd = sprite_format == "HD"
 
         def _misc(name):
-            """Return the Dot variant of a misc sprite when enabled, else the default."""
-            if is_dot:
+            """Return the format-matching variant of a misc sprite, else the default."""
+            if is_hd:
+                hd = runtime_globals.misc_sprites.get(f"{name}_hd")
+                if hd:
+                    return hd
+            elif is_dot:
                 dot = runtime_globals.misc_sprites.get(f"{name}_dot")
                 if dot:
                     return dot
@@ -310,7 +323,7 @@ class GamePet:
 
         if self.state != "dead":
             if self.state == "nap":
-                overlay = runtime_globals.misc_sprites.get(f"Sleep{anim_phase + 1}")
+                overlay = _misc(f"Sleep{anim_phase + 1}")
             elif self.state in {"happy2", "happy3"} and anim_phase == 0:
                 overlay = _misc("Cheer")
             elif self.sick > 0:
@@ -320,7 +333,7 @@ class GamePet:
                     overlay = _misc(f"Sick{anim_phase + 1}")
                 sick = True
             elif self.state == "angry":
-                overlay = runtime_globals.misc_sprites.get(f"Mad{anim_phase + 1}")
+                overlay = _misc(f"Mad{anim_phase + 1}")
             elif getattr(self, "dying", False) or self.death_save_b_counter > 0 or self.death_save_shake_counter > 0:
                 overlay = _misc(f"Sick{anim_phase + 1}")
 
@@ -374,12 +387,14 @@ class GamePet:
             if self.state in ("moving", "idle") and self.should_sleep():
                 self.set_state("tired")
 
-        # Age at midnight
-        today = datetime.now().date()
-        if today > self._last_age_date:
-            self.age += (today - self._last_age_date).days
-            self._last_age_date = today
-            runtime_globals.game_console.log(f"{self.name} aged to {self.age}")
+            # Age at midnight. Checked at the same 0.5s cadence — the date
+            # flips once a day, and datetime.now() per pet per frame was one
+            # of the scene's biggest per-frame costs.
+            today = datetime.now().date()
+            if today > self._last_age_date:
+                self.age += (today - self._last_age_date).days
+                self._last_age_date = today
+                runtime_globals.game_console.log(f"{self.name} aged to {self.age}")
 
         # Per-minute gameplay tick
         elapsed_min = int((now - self._rt_origin) / 60)
@@ -575,8 +590,13 @@ class GamePet:
         # Get module for care settings
         module = get_module(self.module)
         cfg = game_globals.configuration
-        module_primary_format = getattr(module, "primary_sprite_format", "Color") if module else "Color"
-        use_dot_poop_sprite = bool(getattr(cfg, "enable_old_sprites", False) and module_primary_format == "Dot")
+        # Poop sprite matches the sprite format the pet is actually rendering,
+        # so its overlays and poop stay visually consistent (dot pet -> dot
+        # poop, HD pet -> HD poop). JumboPoop has no _hd variant; GamePoop.draw
+        # falls back to the base sprite in that case.
+        sprite_format = getattr(self, "sprite_format", None)
+        use_dot_poop_sprite = (sprite_format == "Dot")
+        use_hd_poop_sprite = (sprite_format == "HD")
         
         # care_poop_alarm: play sound on poop if True (default True for backwards compatibility)
         care_poop_alarm = getattr(module, 'care_poop_alarm', True)
@@ -613,17 +633,17 @@ class GamePet:
         
         # Create poop(s) based on type
         if poop_type == 0:  # Single
-            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
         elif poop_type == 1:  # Double
-            game_globals.poop_list.append(GamePoop(base_x - (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
-            game_globals.poop_list.append(GamePoop(base_x + (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x - (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x + (12 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
         elif poop_type == 2:  # Triple
-            game_globals.poop_list.append(GamePoop(base_x - (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
-            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite))
-            game_globals.poop_list.append(GamePoop(base_x + (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x - (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x, base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x + (18 * runtime_globals.UI_SCALE), base_y, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
         elif poop_type == 3:  # Giga (jumbo)
             giga_y = self.y + (runtime_globals.PET_HEIGHT - (48 * runtime_globals.UI_SCALE))
-            game_globals.poop_list.append(GamePoop(base_x, giga_y, jumbo=True, use_dot_sprite=use_dot_poop_sprite))
+            game_globals.poop_list.append(GamePoop(base_x, giga_y, jumbo=True, use_dot_sprite=use_dot_poop_sprite, use_hd_sprite=use_hd_poop_sprite))
         
         if self.weight > self.min_weight:
             self.weight -= 1
@@ -886,7 +906,7 @@ class GamePet:
         primary_format = getattr(module_obj, 'primary_sprite_format', 'Color')
         secondary_format = getattr(module_obj, 'secondary_sprite_format', 'HD')
         
-        sprites_dict = load_pet_sprites(
+        sprites_dict, resolved_format = load_pet_sprites_resolved(
             "Burpmon",
             module_obj.folder_path,
             module_obj.name_format,
@@ -895,6 +915,7 @@ class GamePet:
             secondary_sprite_format=secondary_format
         )
         if sprites_dict:
+            self.sprite_format = resolved_format
             runtime_globals.pet_sprites[self] = convert_sprites_to_list(sprites_dict)
             runtime_globals.game_console.log(f"[99g] {self.name} became Burpmon!")
         else:
@@ -1684,6 +1705,13 @@ class GamePet:
             self.atk_alt_2 = getattr(self, "atk_alt2", 0)
         if not hasattr(self, "evolution_history"):
             self.evolution_history = []
+        if not hasattr(self, "temp_evolve"):
+            self.temp_evolve = []
+        if not hasattr(self, "avaliability"):
+            self.avaliability = "Normal"
+        # Xros battle state (never persisted mid-battle, but be safe)
+        if not hasattr(self, "xros_evolved"):
+            self.xros_evolved = None
         # Migrate / repair real-time timer attributes
         now = time.monotonic()
         if not hasattr(self, '_rt_origin'):

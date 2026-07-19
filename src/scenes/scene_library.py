@@ -124,12 +124,21 @@ class SceneLibrary:
         )
         self.ui_manager.add_component(self.settings_button)
         
-        # EXIT button (text)
-        exit_x = settings_x + button_width + button_spacing
-        self.exit_button = Button(
-            exit_x, button_y, button_width, button_height,
-            "EXIT", self._on_exit
+        # Collection button (takes the old EXIT slot; B still exits, and the
+        # small back arrow next to the title covers touch users)
+        collection_x = settings_x + button_width + button_spacing
+        self.collection_button = Button(
+            collection_x, button_y, button_width, button_height,
+            "CARDS", self._on_collection
         )
+        self.ui_manager.add_component(self.collection_button)
+
+        # EXIT button next to the title (same style/placement as the Digidex)
+        exit_button_width = 50
+        exit_button_height = 20
+        self.exit_button = Button(ui_width - exit_button_width - 5, 5,
+                                  exit_button_width, exit_button_height,
+                                  "EXIT", self._on_exit)
         self.ui_manager.add_component(self.exit_button)
         
         # Reward popup (centered, overlays everything)
@@ -198,6 +207,11 @@ class SceneLibrary:
         """Handle Settings button press."""
         runtime_globals.game_sound.play("menu")
         change_scene("settings")
+
+    def _on_collection(self):
+        """Handle Collection (CARDS) button press."""
+        runtime_globals.game_sound.play("menu")
+        change_scene("collection")
     
     def _on_exit(self):
         """Handle EXIT button press."""

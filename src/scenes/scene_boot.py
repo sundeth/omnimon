@@ -383,6 +383,8 @@ class SceneBoot:
             pet_data = module.get_monster(pet.name, pet.version)
             if pet_data:
                 pet.evolve = pet_data.get("evolve", [])
+                pet.temp_evolve = pet_data.get("temporary-evolution") or []
+                pet.avaliability = pet_data.get("avaliability") or "Normal"
             if pet.state not in ["dead", "hatch", "nap"]:
                 pet.set_state("idle")
             pet.patch()

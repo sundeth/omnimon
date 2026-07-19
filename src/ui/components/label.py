@@ -350,21 +350,13 @@ class Label(UIComponent):
             # Draw highlight if focused and has tooltip
             # Skip in touch mode - focus highlights are for keyboard/mouse navigation only
             if self.focused and self.tooltip_text and runtime_globals.INPUT_MODE != runtime_globals.TOUCH_MODE:
-                # Create a new surface to include the highlight border
-                highlight_surface = pygame.Surface((text_surface.get_width() + 4, text_surface.get_height() + 4), pygame.SRCALPHA)
+                # Draw the border on a same-size surface (like the scroll and
+                # align branches do): enlarging the surface and blitting the
+                # text at (2, 2) visibly nudged the label whenever hovered.
+                highlight_surface = text_surface.copy()
                 colors = self.get_colors()
                 highlight_color = colors.get("highlight", colors["fg"])  # Safe fallback
-                
-                # Draw highlight border
                 pygame.draw.rect(highlight_surface, highlight_color, highlight_surface.get_rect(), 2)
-                
-                # Blit text centered in the highlight surface with tracked blit
-                blit_with_cache(highlight_surface, text_surface, (2, 2))
-                
-                # Update component screen size
-                self.rect.width = highlight_surface.get_width()
-                self.rect.height = highlight_surface.get_height()
-                
                 return highlight_surface
             
             return text_surface

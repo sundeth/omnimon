@@ -95,6 +95,13 @@ class OptionRow(UIComponent):
         if event_type != "LCLICK":
             return False
 
+        # A focused row receives clicks made anywhere on screen (the UI
+        # manager dispatches to the focused component first) — only react
+        # when the click actually lands on this row, otherwise clicking e.g.
+        # the BACK button would re-trigger the last-used option.
+        if not self.rect or not self.rect.collidepoint(mouse_pos):
+            return False
+
         scale = self.manager.ui_scale if self.manager else 1
         arrow_w = int(self.ARROW_ZONE_WIDTH * scale)
         local_x = mouse_pos[0] - self.rect.x

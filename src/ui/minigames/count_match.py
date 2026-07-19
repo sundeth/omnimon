@@ -169,9 +169,9 @@ class CountMatch:
         
         if self.phase == "count" and event_type in ("Y", "SHAKE"):
             self.press_counter += 1
-            if self.press_counter % 2 == 0:
-                # First press (counter=2): move from Count4 to Count3
-                # After that, cycle through 3->2->1->3->2->1...
+            if self.press_counter % 3 == 0:
+                # Every 3 shakes/presses advance one color: Count4 -> Count3,
+                # then cycle 3->2->1->3->2->1...
                 if self.rotation_index == 4:
                     self.rotation_index = 3
                 else:

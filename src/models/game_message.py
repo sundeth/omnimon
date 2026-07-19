@@ -20,9 +20,18 @@ class GameMessage:
         surface = font.render(text, True, color).convert_alpha()
         self.messages.append([surface, list(pos), 255, 0])
 
-    def add_slide(self, text: str, color: tuple[int, int, int], y: int, font_size=None):
-        if font_size is None:
-            font_size = runtime_globals.FONT_SIZE_MEDIUM_LARGE
+    def add_slide(self, text: str, color: tuple[int, int, int], y: int = None, font_size=None):
+        """Queue a sliding alert message.
+
+        The y / font_size arguments are kept for API compatibility but are
+        standardized by the component: slides always render right below the
+        top menu icons in the regular UI text size (callers were passing a
+        mix of large fonts and positions that covered the screen).
+        """
+        from core import game_globals
+        icons_top = (20 if game_globals.showClock else 5) * runtime_globals.UI_SCALE
+        y = int(icons_top + 2 * runtime_globals.MENU_ICON_SIZE + 2 * runtime_globals.UI_SCALE)
+        font_size = int(16 * runtime_globals.UI_SCALE)  # standard UI text size
         self.slide_queue.append((text, color, y, font_size))
 
     def update(self):
@@ -42,7 +51,16 @@ class GameMessage:
         # === Slide Messages ===
         if self.current_slide:
             surf, pos, alpha = self.current_slide
-            if pos[0] > (runtime_globals.SCREEN_WIDTH - surf.get_width()) // 2:
+            # Messages that fit on screen stop centered; longer messages keep
+            # scrolling until their end is visible, so the whole text can be
+            # read before the hold + fade.
+            sw = runtime_globals.SCREEN_WIDTH
+            margin = int(4 * runtime_globals.UI_SCALE)
+            if surf.get_width() <= sw:
+                target_x = (sw - surf.get_width()) // 2
+            else:
+                target_x = sw - surf.get_width() - margin
+            if pos[0] > target_x:
                 pos[0] -= self.slide_speed
             else:
                 self.slide_timer += 1

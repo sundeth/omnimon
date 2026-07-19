@@ -69,6 +69,9 @@ class _PixelFont(pygame.font.Font):
         return super().render(text, False, color)
 
 
+_font_cache = {}
+
+
 def font_load(rel_path: str, size: int):
     """
     Load a font file, adjusting path for Android environment.
@@ -86,11 +89,21 @@ def font_load(rel_path: str, size: int):
     if size == None or size <= 0:
         size = int(16 * runtime_globals.UI_SCALE)  # Default size if zero provided
 
+    # Fonts are immutable in this codebase (nothing calls set_bold/italic),
+    # so share one Font per (path, size) — constructing a Font opens the TTF
+    # from disk, and several draw paths request fonts every frame.
+    key = (rel_path, size)
+    font = _font_cache.get(key)
+    if font is not None:
+        return font
+
     if runtime_globals.IS_ANDROID and runtime_globals.APP_ROOT and rel_path:
         full_path = os.path.join(runtime_globals.APP_ROOT, rel_path)
-        return _PixelFont(full_path, size)
+        font = _PixelFont(full_path, size)
     else:
-        return _PixelFont(rel_path, size)
+        font = _PixelFont(rel_path, size)
+    _font_cache[key] = font
+    return font
 
 def open_json(rel_path: str, mode='r', encoding='utf-8'):
     """

@@ -11,7 +11,7 @@ from ui.ui_manager import UIManager
 from ui.minigames.shake_punch import ShakePunch
 from battle import combat_constants
 import core.constants as constants
-from utils.pygame_utils import blit_with_shadow
+from utils.pygame_utils import blit_with_cache
 from utils.scene_utils import change_scene
 
 class ShakeTraining(Training):
@@ -142,10 +142,10 @@ class ShakeTraining(Training):
             else:
                 self.draw_pets(surface, PetFrame.ATK1)
         else:
-            blit_with_shadow(surface, self.bag1, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - self.bag1.get_height() // 2))
+            blit_with_cache(surface, self.bag1, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - self.bag1.get_height() // 2))
 
         for sprite, (x, y) in self.attack_positions:
-            blit_with_shadow(surface, sprite, (int(x), int(y)))
+            blit_with_cache(surface, sprite, (int(x), int(y)))
 
     def draw_result(self, surface):
         # Use AnimatedSprite component with predefined result animations

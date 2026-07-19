@@ -425,6 +425,9 @@ xai = 1
 xai_date = datetime.date.today()
 inventory = {}
 battle_effects = {}
+# Password redemptions: "module@CODE" -> unix timestamp of the last
+# redemption. Used to enforce codes.json cooldowns (-1 = one use only).
+redeemed_codes = {}
 quests = []
 event = None
 event_time = None
@@ -432,6 +435,16 @@ total_victories = {}  # Track total battle victories per module: {module_name: c
 purchases = GamePurchases()  # Shop purchases
 configuration = GameConfiguration()  # Centralized configuration
 coins = 0  # Player's coin balance
+# Per-module Friend lists: {module_name: [pet_name, ...]}.  A pet is added by
+# battling an enemy marked as Friend; used by Xros temporary evolutions and
+# the digidex "Friends" view.
+friends = {}
+
+# Card collection state (see utils.card_utils):
+#   card_collection: {module_name: {card_id: {"digital": n, "physical": n}}}
+#   card_cooldowns:  {card_id: unix timestamp of last digital use}
+card_collection = {}
+card_cooldowns = {}
 
 # Pets currently uploaded to an active arena team are kept in this side list
 # instead of pet_list while the season is running.  Functions that walk
@@ -584,6 +597,7 @@ def save() -> None:
         "xai_date": xai_date,
         "inventory": inventory,
         "battle_effects": battle_effects,
+        "redeemed_codes": redeemed_codes,
         "background_high_res": background_high_res,
         "quests": quests,
         "event": event,
@@ -591,6 +605,9 @@ def save() -> None:
         "total_victories": total_victories,
         "purchases": purchases.to_dict(),
         "coins": coins,
+        "friends": friends,
+        "card_collection": card_collection,
+        "card_cooldowns": card_cooldowns,
         "configuration": configuration.to_dict(),
         "setup_input": setup_input,
         "setup_graphics": setup_graphics,
@@ -624,8 +641,9 @@ def load() -> None:
     or if in Progress Mode without a player_id.
     """
     global pet_list, poop_list, traited, gcell_fragments, unlocks, battle_area, battle_round, last_adventure_module, xai, xai_date, background_high_res
-    global game_background, background_module_name, showClock, inventory, battle_effects
+    global game_background, background_module_name, showClock, inventory, battle_effects, redeemed_codes
     global quests, event, event_time, total_victories, purchases, coins, configuration, setup_input, setup_graphics, show_tutorial, game_mode
+    global friends, card_collection, card_cooldowns
 
     if not _can_access_save_dir():
         print("[Save] Skipping load - save directory not accessible")
@@ -730,6 +748,7 @@ def load() -> None:
                 xai_date = data.get("xai_date", datetime.date.today())
                 inventory = data.get("inventory", {})
                 battle_effects = data.get("battle_effects", {})
+                redeemed_codes = data.get("redeemed_codes", {})
                 background_high_res = data.get("background_high_res", False)
                 quests = data.get("quests", [])
                 event = data.get("event", None)
@@ -737,6 +756,9 @@ def load() -> None:
                 total_victories = data.get("total_victories", {})
                 purchases = GamePurchases.from_dict(data.get("purchases", None))
                 coins = data.get("coins", 0)
+                friends = data.get("friends", {})
+                card_collection = data.get("card_collection", {})
+                card_cooldowns = data.get("card_cooldowns", {})
                 setup_input = data.get("setup_input", True)
                 setup_graphics = data.get("setup_graphics", True)
                 show_tutorial = data.get("show_tutorial", True)
@@ -801,10 +823,14 @@ def load() -> None:
     xai_date = datetime.date.today()
     inventory = {}
     battle_effects = {}
+    redeemed_codes = {}
     background_high_res = False
     total_victories = {}
     purchases = GamePurchases()
     coins = 0
+    friends = {}
+    card_collection = {}
+    card_cooldowns = {}
     # Configuration keeps its system-detected defaults
 
 def autosave() -> None:

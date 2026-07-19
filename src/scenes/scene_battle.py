@@ -15,7 +15,9 @@ from scenes.battle_views import (
     VersusBattleView,
     AdventureModuleSelectionView,
     AdventureAreaSelectionView,
-    AdventureBattleView
+    AdventureBattleView,
+    SpecialsView,
+    PasswordView
 )
 
 
@@ -81,6 +83,8 @@ class SceneBattle:
             "adventure_module_selection": AdventureModuleSelectionView,
             "adventure_area_selection": AdventureAreaSelectionView,
             "adventure_battle": AdventureBattleView,
+            "specials": SpecialsView,
+            "password": PasswordView,
         }
         
         view_class = view_map.get(view_name)
@@ -124,8 +128,12 @@ class SceneBattle:
     def handle_event(self, event):
         """Handle input events."""
         if not isinstance(event, tuple) or len(event) != 2:
+            # Raw pygame events (physical keyboard) go to views that want
+            # them — the password view's code entry uses TEXTINPUT/KEYDOWN.
+            if hasattr(event, 'type') and self.current_view and hasattr(self.current_view, 'handle_raw_event'):
+                return self.current_view.handle_raw_event(event)
             return
-        
+
         event_type, event_data = event
         
         # For MOUSE_MOTION events, let the view handle them first (for minigame shake detection)

@@ -350,28 +350,44 @@ class SceneInventory:
             
         self.text_panel.set_text(description)
             
+    def _is_food_item(self, item):
+        """True if using the item feeds hunger/strength (capped by the pet's
+        stomach).  A pet with stomach 0 cannot accept these, so they are
+        greyed out for such pets."""
+        gi = item.game_item
+        if gi.effect in ("component", "status_boost"):
+            return False
+        if gi.effect == "status_change" and gi.status not in ("hunger", "strength"):
+            return False
+        return gi.status in ("hunger", "strength")
+
     def _update_pet_selector_for_item(self, item):
         """Update pet selector enable/disable flags based on selection strategy and item requirements"""
         if not self.pet_selector:
             return
-            
+
         # Pet selector should always show ALL pets from game_globals.pet_list
         all_pets = game_globals.pet_list
         selected_pets = get_selected_pets()  # Pets that can interact with items
-        
+
         # Only set pets if the list has changed (to avoid unnecessary redraws)
         if not hasattr(self, '_last_pet_count') or self._last_pet_count != len(all_pets):
             self.pet_selector.set_pets(all_pets)
             self._last_pet_count = len(all_pets)
-        
+
         # Create a mapping of selected pets for quick lookup
         selected_pet_set = set(selected_pets)
-        
+
+        # Food (hunger/strength) items can't be used by a pet with stomach 0.
+        is_food = self._is_food_item(item)
+
         if runtime_globals.strategy_index == 0:
             # Strategy 0: Enable all pets that are in selected_pets list
             enabled_indices = []
             for i, pet in enumerate(all_pets):
                 if pet in selected_pet_set and not pet._is_blocked_by_sleep():
+                    if is_food and pet.stomach <= 0:
+                        continue  # Can't eat — grey out
                     enabled_indices.append(i)
             self.pet_selector.set_enabled_pets(enabled_indices)
         else:
@@ -383,7 +399,9 @@ class SceneInventory:
                     continue  # Skip pets not in selected_pets
                 if pet._is_blocked_by_sleep():
                     continue  # Skip pets blocked by sleep window
-                    
+                if is_food and pet.stomach <= 0:
+                    continue  # Can't eat — grey out
+
                 pet_needs_item = False
                 if item_status == "hunger":
                     pet_needs_item = pet.hunger < 4
@@ -402,6 +420,9 @@ class SceneInventory:
         """Internal method to use an item - dispatches to effect-specific handlers"""
         # Get targets (selected pets), excluding sleep-blocked pets
         targets = [pet for pet in get_selected_pets() if not pet._is_blocked_by_sleep()]
+        # Food items (hunger/strength) can't be eaten by a pet with stomach 0.
+        if self._is_food_item(item):
+            targets = [pet for pet in targets if pet.stomach > 0]
         if runtime_globals.strategy_index != 0:
             # NEED mode: only pets that actually need this item
             item_status = item.game_item.status

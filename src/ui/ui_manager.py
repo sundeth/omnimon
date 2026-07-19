@@ -2,12 +2,19 @@
 UI Manager - Core component for handling UI scaling, themes, focus, and event management
 """
 import math
+import time
 import pygame
 from ui.ui_constants import *
 from core import runtime_globals
 import core.constants as constants
 from ui.components.background import Background
 from utils.asset_utils import image_load
+from utils.pygame_utils import blit_with_cache
+
+# UI sprites loaded via load_sprite_integer_scaling, shared across UIManager
+# instances and keyed by (filepath, ui_scale) — without this every call hit
+# the disk, and some draw paths request sprites per frame.
+_integer_sprite_cache = {}
 
 DEBUG_SCALE = False  # Set to True to enable detailed scaling debug logs
 
@@ -581,8 +588,14 @@ class UIManager:
         event_type, event_data = event
 
         # Modal components have highest priority (like tooltips)
-        # Stats panel blocks all events while visible
+        # Stats panel blocks all events while visible.  Mouse-wise it only
+        # closes on an actual click (LCLICK) — hover/motion, scroll and drags
+        # are swallowed without closing.  Keyboard / joystick buttons keep the
+        # original close-on-any-press behaviour.
         if self.active_stats_panel and self.active_stats_panel.visible:
+            if event_type in ("MOUSE_MOTION", "RCLICK", "SCROLL",
+                              "DRAG_START", "DRAG_MOTION", "DRAG_END"):
+                return True  # Block, but keep the panel open
             self.remove_component(self.active_stats_panel)
             self.active_stats_panel = None
             runtime_globals.game_sound.play("cancel")
@@ -837,11 +850,15 @@ class UIManager:
         if direction == "UP":
             anchor = (current_rect.left, current_rect.top)  # top_left
         elif direction == "LEFT":
-            anchor = (current_rect.left, current_rect.top)  # top_left  
+            anchor = (current_rect.left, current_rect.top)  # top_left
         elif direction == "RIGHT":
             anchor = (current_rect.right, current_rect.bottom)  # bottom_right
         else:  # DOWN
-            anchor = (current_rect.left, current_rect.bottom)  # bottom_left
+            # Compare top edges (like UP does) rather than the source's
+            # bottom: a tall source whose rect overlaps the next component
+            # below made that component unreachable going down while still
+            # reachable going up (e.g. Status scene: name -> Stage skipped).
+            anchor = (current_rect.left, current_rect.top)  # top_left
         
         candidates = []
         
@@ -1232,17 +1249,22 @@ class UIManager:
                 if result:
                     return True
         
-        # If no focused component handled it, try mouse hover
+        # If no focused component handled it, try mouse hover. Invisible
+        # components must be skipped — scenes stack alternative views on the
+        # same rect (e.g. the digidex's module/pet/tree lists) and a hidden
+        # one would otherwise swallow the scroll meant for the visible one.
         mouse_pos = runtime_globals.game_input.get_mouse_position()
         for component in self.components:
+            if hasattr(component, 'visible') and not component.visible:
+                continue
             if hasattr(component, 'handle_scroll') and hasattr(component, 'rect'):
                 if component.rect.collidepoint(mouse_pos):
                     result = component.handle_scroll(event)
                     if result:
                         return True
-        
+
         return False
-    
+
     def handle_drag(self, event):
         """Handle drag events"""
         # Route to components that support dragging
@@ -1335,26 +1357,29 @@ class UIManager:
         
         # Track if any STATIC components need redraw (dynamic components don't affect master cache)
         static_needs_redraw = False
-        redraw_components = []
+        dirty_components = None
         for component in self.components:
             component.update()
             # Only mark master surface dirty if a static component needs redraw
             # Dynamic components render separately and don't affect the cached master surface
             if not component.is_dynamic and (component.needs_redraw or component.cached_surface is None):
                 static_needs_redraw = True
-                # Include reason in component name
-                reason = "needs_redraw" if component.needs_redraw else "cached_surface_None"
-                redraw_components.append(f"{component.__class__.__name__}({reason})")
-        
-        # Log once per second to avoid spam
+                if dirty_components is None:
+                    dirty_components = []
+                dirty_components.append(component)
+
+        # Log once per second to avoid spam; the name strings are only built
+        # when a log is actually due.
         if static_needs_redraw and hasattr(self, '_last_redraw_log'):
-            import time
             current_time = time.time()
             if current_time - self._last_redraw_log >= 1.0:
-                runtime_globals.game_console.log(f"[UIManager] Static components needing redraw: {', '.join(set(redraw_components))}")
+                names = set(
+                    f"{c.__class__.__name__}({'needs_redraw' if c.needs_redraw else 'cached_surface_None'})"
+                    for c in dirty_components
+                )
+                runtime_globals.game_console.log(f"[UIManager] Static components needing redraw: {', '.join(names)}")
                 self._last_redraw_log = current_time
         elif static_needs_redraw:
-            import time
             self._last_redraw_log = time.time()
         
         # Only invalidate master cache if static components changed
@@ -1370,7 +1395,6 @@ class UIManager:
         
         # Single blit of entire static UI from cached master surface
         if self.master_ui_surface:
-            from utils.pygame_utils import blit_with_cache
             blit_with_cache(surface, self.master_ui_surface, (self.ui_offset_x, self.ui_offset_y))
         
         # Draw dynamic components separately (not cached in master surface)
@@ -1396,7 +1420,6 @@ class UIManager:
         # Draw modal components on top (menu first, then tooltip on top of everything)
         if self.active_menu and self.active_menu.visible:
             menu_surface = self.active_menu.render()
-            from utils.pygame_utils import blit_with_cache
             blit_with_cache(surface, menu_surface, (self.active_menu.rect.x, self.active_menu.rect.y))
         
         # Draw tooltip at scaled position (on top of everything including menu)
@@ -1508,13 +1531,18 @@ class UIManager:
             filename = f"{prefix}_{name}_{sprite_scale}.png"
             
         filepath = f"assets/ui/{filename}"
-        
+
+        cache_key = (filepath, self.ui_scale)
+        cached = _integer_sprite_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         if DEBUG_SCALE:
             runtime_globals.game_console.log(f"[UIManager] Loading _1 sprite: {filepath} (will scale by ui_scale: {self.ui_scale})")
-        
+
         try:
             sprite = image_load(filepath)
-            
+
             # Apply integer scaling to match UI scale
             if self.ui_scale > 1:
                 original_size = sprite.get_size()
@@ -1522,9 +1550,10 @@ class UIManager:
                 sprite = pygame.transform.scale(sprite, new_size)
                 if DEBUG_SCALE:
                     runtime_globals.game_console.log(f"[UIManager] Scaled _1 sprite from {original_size} to {new_size} for {self.ui_scale}x UI scale")
-            
+
             if DEBUG_SCALE:
                 runtime_globals.game_console.log(f"[UIManager] Successfully loaded sprite: {filepath}")
+            _integer_sprite_cache[cache_key] = sprite
             return sprite
         except pygame.error as e:
             if DEBUG_SCALE:

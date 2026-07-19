@@ -12,7 +12,7 @@ from ui.ui_manager import UIManager
 from battle import combat_constants
 import core.constants as constants
 from models.game_module import sprite_load
-from utils.pygame_utils import blit_with_shadow
+from utils.pygame_utils import blit_with_cache
 from ui.minigames.dummy_charge import DummyCharge
 from utils.scene_utils import change_scene
 
@@ -148,10 +148,10 @@ class DummyTraining(Training):
             else:
                 self.draw_pets(surface, PetFrame.ATK1)
         else:
-            blit_with_shadow(surface, self.bag1, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - self.bag1.get_height() // 2))
+            blit_with_cache(surface, self.bag1, (int(50 * runtime_globals.UI_SCALE), runtime_globals.SCREEN_HEIGHT // 2 - self.bag1.get_height() // 2))
 
         for sprite, (x, y) in self.attack_positions:
-            blit_with_shadow(surface, sprite, (int(x), int(y)))
+            blit_with_cache(surface, sprite, (int(x), int(y)))
 
     def draw_result(self, surface):
         self.strength = self.minigame.strength
@@ -167,7 +167,7 @@ class DummyTraining(Training):
             if result_img:
                 x = int(50 * runtime_globals.UI_SCALE)
                 y = runtime_globals.SCREEN_HEIGHT // 2 - result_img.get_height() // 2
-                blit_with_shadow(surface, result_img, (x, y))
+                blit_with_cache(surface, result_img, (x, y))
         else:
             # Use AnimatedSprite component with predefined result animations
             if not self.animated_sprite.is_animation_playing():

@@ -126,20 +126,23 @@ class CountMatch:
         self.set_phase("ready")
 
     def get_pet_attribute_ready_frame(self):
-        """Get the ready frame index (0-3) based on pet's attribute to match Ready0-Ready3 sprites."""
+        """Ready frame for the pet's target color.
+
+        Ready0 is the generic sprite; Ready1/2/3 are the colored ones that
+        match the Count1/2/3 colors the player must land on:
+        Free/Vaccine -> Ready1 (red), Data -> Ready2 (yellow),
+        Virus -> Ready3 (green).
+        """
         if not self.pet:
-            return 0
-            
+            return 1
+
         attr = getattr(self.pet, "attribute", "")
-        
-        if attr in ["", "Va"]:
-            return 0  # Default/Vaccine -> Ready0
-        elif attr == "Da":
-            return 1  # Data -> Ready1
+
+        if attr == "Da":
+            return 2  # Data -> Ready2 (yellow)
         elif attr == "Vi":
-            return 2  # Virus -> Ready2
-        else:
-            return 0
+            return 3  # Virus -> Ready3 (green)
+        return 1      # ""/Va (Free/Vaccine) -> Ready1 (red)
 
     def set_phase(self, phase):
         """Set the current phase (ready or count)."""

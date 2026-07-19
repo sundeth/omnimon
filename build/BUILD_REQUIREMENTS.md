@@ -430,3 +430,19 @@ For build issues, check:
 
 Last updated: August 31, 2025
 Game Version: 0.9.8
+
+## NFC reader + battery gauge dependencies
+
+The NFC card reading service (`src/services/nfc_service.py`) and the battery
+gauge (`src/input/i2c_utils.py`) use optional, platform-specific packages.
+Everything degrades gracefully when a package is missing (NFC Read button
+disabled / battery icon neutral), but ship them for full functionality:
+
+- **Windows / desktop**: `pip install pyscard` (PC/SC readers such as the
+  ACR122U). The PyInstaller specs list the `smartcard.*` hidden imports.
+- **Raspberry Pi**: `pip install adafruit-circuitpython-pn532 adafruit-blinka`
+  for the PN532 I2C NFC reader; `smbus` + `RPi.GPIO` for the UPS-Lite V1.3
+  battery hat (MAX17040 fuel gauge on I2C 0x36, external-power sense on
+  GPIO4). Enable I2C in raspi-config.
+- **Android**: battery uses `plyer` with a `pyjnius` fallback (both in
+  buildozer requirements). Phone NFC reading is not implemented yet.

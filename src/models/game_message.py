@@ -31,7 +31,7 @@ class GameMessage:
         from core import game_globals
         icons_top = (20 if game_globals.showClock else 5) * runtime_globals.UI_SCALE
         y = int(icons_top + 2 * runtime_globals.MENU_ICON_SIZE + 2 * runtime_globals.UI_SCALE)
-        font_size = int(16 * runtime_globals.UI_SCALE)  # standard UI text size
+        font_size = int(8 * runtime_globals.UI_SCALE)  # half the UI text size
         self.slide_queue.append((text, color, y, font_size))
 
     def update(self):

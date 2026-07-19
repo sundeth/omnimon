@@ -154,6 +154,8 @@ class BattleEncounter:
         self._enemy_flip_cache = {}
         self._special_slide_cache = {}
         self._attack_entry_cache = {}
+        # Launch tick per projectile slot, for the acceleration curve
+        self._proj_launch = {}
         
         # Reset result screen cache
         self.result_surface_cache = None
@@ -1024,6 +1026,12 @@ class BattleEncounter:
                     self._do_xai_bar_stop()
                 else:
                     self.xai_bar.update()
+                # The bar lingers for half a second after stopping so the
+                # player can see which color they landed on.
+                if getattr(self.xai_bar, 'stopped', False) and self.xai_bar.is_finished():
+                    self.strength = self.xai_bar.get_result() or 1
+                    self.xai_phase = 3
+                    self.bar_timer = pygame.time.get_ticks()
 
         # Check if minigame time is up and transition to battle
         time_up = False
@@ -1058,11 +1066,8 @@ class BattleEncounter:
             self.calculate_combat_for_pairs()
 
     def _do_xai_bar_stop(self):
-        """Freeze the XAI bar, record strength, and advance to the attack phase."""
+        """Freeze the XAI bar; the result is applied after its 0.5s hold."""
         self.xai_bar.stop()
-        self.strength = self.xai_bar.get_result() or 1
-        self.xai_phase = 3
-        self.bar_timer = pygame.time.get_ticks()
 
     def calculate_results(self):
         self.correct_color = self.get_first_pet_attribute()
@@ -1374,6 +1379,7 @@ class BattleEncounter:
         rotated_sprite = pygame.transform.rotate(atk_sprite, angle)
 
         self.battle_player.team1_projectiles[pet_index] = []
+        self._proj_launch[("pet", pet_index)] = pygame.time.get_ticks()
         s = runtime_globals.UI_SCALE
         if self.module.battle_damage_limit < 3:
             # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
@@ -1532,6 +1538,7 @@ class BattleEncounter:
         for attack_entry in attack_entries:
             defender_idx = attack_entry.defender if attack_entry else 0
             self.battle_player.team2_projectiles[defender_idx] = []
+            self._proj_launch[("enemy", defender_idx)] = pygame.time.get_ticks()
             # Target position
             if defender_idx < len(self.battle_player.team1):
                 target_pet_x = self.get_team1_x(defender_idx) - (runtime_globals.PET_WIDTH // 2)
@@ -1629,6 +1636,17 @@ class BattleEncounter:
                 [base_target[0] + min_ox, base_target[1] + min_oy],
                 attack_entry]
 
+    @staticmethod
+    def _shot_speed_factor(launch_tick, now):
+        """Ease-in launch curve for attack sprites.
+
+        Shots leave the attacker at ~45% of the base speed and accelerate
+        quadratically to ~2.5x over half a second, so they read as fired
+        projectiles instead of a constant slow drift.
+        """
+        t = min(1.0, max(0.0, (now - launch_tick) / 500.0))
+        return 0.45 + 2.05 * t * t
+
     def move_towards(self, pos, target, speed):
         dx = target[0] - pos[0]
         dy = target[1] - pos[1]
@@ -1655,11 +1673,13 @@ class BattleEncounter:
             if len(main_data) == 0:
                 continue
 
-            # Move projectiles
+            # Move projectiles with the launch acceleration curve
+            slot_speed = speed * self._shot_speed_factor(
+                self._proj_launch.get(("pet", i), now), now)
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, speed)
+                new_pos = self.move_towards(pos, target, slot_speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False
@@ -1718,11 +1738,13 @@ class BattleEncounter:
             if len(main_data) == 0:
                 continue
 
-            # Move projectiles
+            # Move projectiles with the launch acceleration curve
+            slot_speed = speed * self._shot_speed_factor(
+                self._proj_launch.get(("enemy", i), now), now)
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, speed)
+                new_pos = self.move_towards(pos, target, slot_speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False

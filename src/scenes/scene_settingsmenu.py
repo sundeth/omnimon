@@ -54,7 +54,26 @@ def _get_sections():
 
     def _cycle_max_pets(increase):
         v = cfg.max_pets + (1 if increase else -1)
-        cfg.max_pets = max(1, min(10, v))
+        new_value = max(1, min(10, v))
+        if new_value == cfg.max_pets:
+            return
+        cfg.max_pets = new_value
+        # PET_WIDTH/HEIGHT derive from max_pets — recompute immediately and
+        # reload the cached pet sprites so the change doesn't need a reboot.
+        from core import runtime_globals as rg
+        from core import game_globals
+        rg.update_resolution_constants()
+        rg.pet_sprites = {}
+        for pet in game_globals.pet_list:
+            try:
+                pet.load_sprite()
+            except Exception as exc:
+                rg.game_console.log(f"[Settings] pet sprite reload failed: {exc}")
+        try:
+            from utils.pet_utils import distribute_pets_evenly
+            distribute_pets_evenly()
+        except Exception as exc:
+            rg.game_console.log(f"[Settings] pet reposition failed: {exc}")
 
     def _cycle_render_res(increase):
         # Render Res = the 1x-4x internal-resolution multiplier.  Clamp (no

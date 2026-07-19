@@ -26,10 +26,12 @@ class ExciteTraining(Training):
         # Remove separate sprite assignments; use self._sprite_cache from base class
 
     def _do_xaibar_stop(self):
-        """Freeze the bar, record strength, and advance to the attack phase."""
+        """Freeze the bar; the phase advances after its 0.5s result hold."""
         runtime_globals.game_sound.play("menu")
         self.xaibar.stop()
         runtime_globals.game_console.log(f"XaiBar phase ended strength {self.xaibar.selected_strength}.")
+
+    def _finish_xaibar_phase(self):
         self.phase = "wait_attack"
         self.frame_counter = 0
         self.prepare_attacks()
@@ -43,14 +45,17 @@ class ExciteTraining(Training):
             self._do_xaibar_stop()
             return
 
+        # After stopping, linger half a second so the landed color is visible
+        if getattr(self.xaibar, 'stopped', False):
+            if self.xaibar.is_finished():
+                self._finish_xaibar_phase()
+            return
+
         self.xaibar.update()
         # Auto-stop after the time limit
         if self.frame_counter > int(30 * 3 * (constants.FRAME_RATE / 30)):
             self.xaibar.stop()
             runtime_globals.game_console.log(f"XaiBar phase ended strength {self.xaibar.selected_strength}.")
-            self.phase = "wait_attack"
-            self.frame_counter = 0
-            self.prepare_attacks()
 
     def move_attacks(self):
         """Handles the attack movement towards the bag, all in one phase."""
@@ -70,7 +75,7 @@ class ExciteTraining(Training):
             self._last_atk_tick = now
         dt_ms = min(100, max(1, now - self._last_atk_tick))
         self._last_atk_tick = now
-        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000
+        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000 * self.attack_speed_factor()
 
         for sprite, x, y in wave:
             x -= speed

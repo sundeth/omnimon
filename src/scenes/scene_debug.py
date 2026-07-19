@@ -286,13 +286,30 @@ class SceneDebug:
 
     # Debug action methods
     def _add_60min(self) -> bool:
-        """Add 60 minutes to pet timers."""
+        """Add 60 minutes to pet timers WITHOUT gameplay events.
+
+        Shifting only _rt_origin used to make the per-minute tick see 60
+        elapsed minutes at once, so pets instantly lost hunger/strength and
+        pooped. Instead: advance the real-time clocks (hatch timers), swallow
+        the jump in the minute tick (no hunger/poop/care/death events), and
+        credit the evolution clock directly so evolution still progresses.
+        """
         selected_pets = get_selected_pets()
         if not selected_pets:
             return False
 
+        from utils.module_utils import get_module
         for pet in selected_pets:
-            pet._rt_origin -= 60 * 60  # shift origin 60 minutes into the past
+            pet._rt_origin -= 60 * 60      # real-time clocks move forward
+            pet._rt_last_minute += 60      # minute tick skips the jump: no events
+
+            # Evolution time still advances (same conditions as the tick)
+            module = get_module(pet.module)
+            counts_asleep = getattr(module, 'count_evolution_while_sleeping', True)
+            if pet.state not in ("nap", "dead") or (pet.state == "nap" and counts_asleep):
+                pet._evol_minutes += 60
+                pet.update_evolution()
+
             pet.edited = True
         return True
 

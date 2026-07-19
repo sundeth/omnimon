@@ -465,7 +465,7 @@ class SceneInventory:
             runtime_globals.game_console.log(f"[SceneInventory] Not enough {item.game_item.name} (have {current_amount}, need {required_amount})")
             return
         
-        runtime_globals.game_sound.play("menu")
+        # BaseList already played the activation sound
         remove_from_inventory(item.id, required_amount)
         
         # Find the component item in the same module
@@ -491,8 +491,7 @@ class SceneInventory:
     
     def _use_status_boost_item(self, item, targets):
         """Handle status boost items (battle effects)"""
-        runtime_globals.game_sound.play("menu")
-        
+
         eff = game_globals.battle_effects.get(item.game_item.status, {"amount": 0, "boost_time": 0, "module": item.game_item.module})
         eff["amount"] = item.game_item.amount
         eff["boost_time"] += item.game_item.boost_time
@@ -575,7 +574,6 @@ class SceneInventory:
             runtime_globals.game_console.log(f"[SceneInventory] No pets affected by {item.game_item.name}")
             return
 
-        runtime_globals.game_sound.play("menu")
         for pet in affected_pets:
             pet.check_disturbed_sleep()
             pet.set_state("eat", True)
@@ -592,8 +590,7 @@ class SceneInventory:
     
     def _use_feeding_item(self, item, targets):
         """Handle regular feeding items (hunger/strength)"""
-        runtime_globals.game_sound.play("menu")
-        
+
         food_status = item.game_item.status
         food_amount = item.game_item.amount
         accepted_pets = []

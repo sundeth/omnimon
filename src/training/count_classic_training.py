@@ -71,7 +71,7 @@ class CountMatchClassicTraining(Training):
             self._last_atk_tick = now
         dt_ms = min(100, max(1, now - self._last_atk_tick))
         self._last_atk_tick = now
-        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000
+        speed = combat_constants.ATTACK_SPEED * 30 * dt_ms / 1000 * self.attack_speed_factor()
 
         finished = False
         new_positions = []

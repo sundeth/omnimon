@@ -13,7 +13,7 @@ from typing import List, Optional, Dict
 from battle.dcom.dcom_controller import DComController
 from battle.dcom.dcom_protocol import ProtocolType
 from battle.sim.models import Digimon, BattleResult, DigimonStatus
-from battle.sim.battle_simulator import BattleSimulator, DM20Device, DMCDevice, Pen20Device, DMXDevice
+from battle.sim.battle_simulator import BattleSimulator, DM20Device, DMCDevice, PEN20Device, DMXDevice
 from core import runtime_globals
 from battle.sim.battle_utils import get_dm20_single_battle_attack_pattern
 
@@ -192,7 +192,7 @@ class DComBattleSimulator:
                 
             elif self.protocol == ProtocolType.PEN_X:
                 # Pendulum X protocol
-                device = Pen20Device(digimon)
+                device = PEN20Device(digimon)
                 packets = device.generate_all_packets_for_dcom()
                 
             else:

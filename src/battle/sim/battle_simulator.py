@@ -13,61 +13,51 @@ try:
     from battle_utils import get_attack_pattern
     from battle_utils import get_dm20_attack_pattern, get_dm20_single_battle_attack_pattern
     from models import *
+    import protocol_constants
 except ImportError:
     # Absolute imports for direct testing
     from battle.sim.battle_utils import get_attack_pattern
     from battle.sim.battle_utils import get_dm20_attack_pattern, get_dm20_single_battle_attack_pattern
     from battle.sim.models import *
-
-# Import protocol handler
-try:
-    from battle import ProtocolHandler
-except ImportError:
-    # Add path and retry
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-    from battle import ProtocolHandler
+    from battle.sim import protocol_constants
 
 
 class BattleSimulator:
-    def __init__(self, protocol: BattleProtocol, protocol_name: str = None):
+    """Packet-accurate simulator for the real device protocols.
+
+    Protocol constants and documented packet layouts live in
+    ``protocol_constants``; the DCom exchange path is the tested reference.
+    """
+
+    # BattleProtocol enum -> constants class in protocol_constants
+    PROTOCOL_CONSTANTS = {
+        BattleProtocol.DM_BS: protocol_constants.DM,
+        BattleProtocol.DMC_BS: protocol_constants.DMC,
+        BattleProtocol.DM20_BS: protocol_constants.DM20,
+        BattleProtocol.DMX_BS: protocol_constants.DMX,
+        BattleProtocol.PEN20_BS: protocol_constants.PEN20,
+    }
+
+    def __init__(self, protocol: BattleProtocol, verbose: bool = False):
         """
         Initialize BattleSimulator with protocol.
-        
+
         Args:
-            protocol: BattleProtocol enum value (for backwards compatibility)
-            protocol_name: Optional protocol name to load from JSON (e.g., 'DM20', 'DMC')
+            protocol: BattleProtocol enum value
+            verbose: Print packet dumps and battle logs to stdout (debug/tests)
         """
         self.protocol = protocol
-        self.protocol_name = protocol_name or self._get_protocol_name_from_enum(protocol)
-        
-        # Load protocol definition from JSON
-        self.protocol_handler = ProtocolHandler()
-        self.protocol_def = self.protocol_handler.load_protocol(self.protocol_name, 'battle')
-        
-        if not self.protocol_def:
-            print(f"[BattleSimulator] Warning: Could not load protocol definition for {self.protocol_name}")
-    
-    def _get_protocol_name_from_enum(self, protocol: BattleProtocol) -> str:
-        """Map BattleProtocol enum to protocol name."""
-        mapping = {
-            BattleProtocol.DM_BS: 'DM',
-            BattleProtocol.DMC_BS: 'DMC',
-            BattleProtocol.DM20_BS: 'DM20',
-            BattleProtocol.DMX_BS: 'DMX',
-            BattleProtocol.PEN20_BS: 'PEN20'
-        }
-        return mapping.get(protocol, 'DM20')
+        self.constants = self.PROTOCOL_CONSTANTS.get(protocol, protocol_constants.DM20)
+        self.protocol_name = self.constants.NAME
+        self.verbose = verbose
 
     def simulate(self, device1: Digimon, device2: Digimon) -> BattleResult:
         """
-        Simulate a battle using the loaded protocol definition.
+        Simulate a battle using the protocol's packet exchange.
         """
-        if self.protocol_def:
-            print(f"[BattleSimulator] Using protocol: {self.protocol_def.display_name}")
-            print(f"  - Packet count: {self.protocol_def.packet_count}")
-            print(f"  - Fixed HP: {self.protocol_def.fixed_hp}")
-            print(f"  - Uses minigame: {self.protocol_def.uses_minigame}")
-        
+        if self.verbose:
+            print(f"[BattleSimulator] Using protocol: {self.constants.DISPLAY_NAME}")
+
         if self.protocol == BattleProtocol.DM_BS:
             result = self._simulate_dm_bs(device1, device2)
         elif self.protocol == BattleProtocol.DMC_BS:
@@ -80,9 +70,10 @@ class BattleSimulator:
             result = self._simulate_pen20_bs(device1, device2)
         else:
             raise NotImplementedError("Protocol not implemented")
-        
-        self.print_battle_log(result)
-        self.print_dcom_code(result)
+
+        if self.verbose:
+            self.print_battle_log(result)
+            self.print_dcom_code(result)
         return result
     
     def print_battle_log(self, result):
@@ -292,8 +283,10 @@ class BattleSimulator:
         attacker_slot, attacker_slot_idx = self._get_dm_slot_from_power(attacker.power)
         defender_slot, defender_slot_idx = self._get_dm_slot_from_power(defender.power)
         
-        print(f"[DM] {attacker.name} slot: {attacker_slot} (power {attacker.power})")
-        print(f"[DM] {defender.name} slot: {defender_slot} (power {defender.power})")
+        if self.verbose:
+            print(f"[DM] {attacker.name} slot: {attacker_slot} (power {attacker.power})")
+        if self.verbose:
+            print(f"[DM] {defender.name} slot: {defender_slot} (power {defender.power})")
         
         # Calculate win probability for attacker
         # In DM, boost comes from pills (0-4), here we'll use effort/16 as proxy
@@ -305,13 +298,15 @@ class BattleSimulator:
             attacker_boost, defender_boost
         )
         
-        print(f"[DM] Attacker win probability: {win_probability}/16")
+        if self.verbose:
+            print(f"[DM] Attacker win probability: {win_probability}/16")
         
         # Roll for outcome
         roll = random.randint(1, 16)
         attacker_wins = roll <= win_probability
         
-        print(f"[DM] Roll: {roll}, Attacker wins: {attacker_wins}")
+        if self.verbose:
+            print(f"[DM] Roll: {roll}, Attacker wins: {attacker_wins}")
         
         # Generate packets (DM format)
         device1_packets = []
@@ -423,10 +418,10 @@ class BattleSimulator:
         Uses protocol definition from JSON for constants and configuration.
         """
         # Get protocol constants
-        turns = self.protocol_def.get_constant('TURNS') if self.protocol_def else 5
-        
-        dev_att = DMCDevice(attacker, self.protocol_def)
-        dev_def = DMCDevice(defender, self.protocol_def)
+        turns = protocol_constants.DMC.TURNS
+
+        dev_att = DMCDevice(attacker)
+        dev_def = DMCDevice(defender)
 
         # Initialize packet storage
         device1_packets = []
@@ -546,13 +541,13 @@ class BattleSimulator:
         Uses protocol definition from JSON for constants and configuration.
         """
         # Get protocol constants
-        EOL = self.protocol_def.get_constant('EOL') if self.protocol_def else 0b1110
-        VERSION = self.protocol_def.get_constant('VERSION') if self.protocol_def else 0b0001
-        fixed_hp = self.protocol_def.fixed_hp if self.protocol_def else 4
+        EOL = protocol_constants.DM20.EOL
+        VERSION = protocol_constants.DM20.DEFAULT_VERSION
+        # 5 HP — the DCom-tested value (the old JSON said 4, which was wrong)
+        fixed_hp = protocol_constants.DM20.FIXED_HP
         
-        # Initialize DM20Device instances with protocol
-        device1 = DM20Device(attacker, self.protocol_def)
-        device2 = DM20Device(defender, self.protocol_def)
+        device1 = DM20Device(attacker)
+        device2 = DM20Device(defender)
 
         # Constants
         COU = 0b00    # Constant Or Unknown
@@ -764,13 +759,12 @@ class BattleSimulator:
         - Traited and egg_shake provide power bonuses
         """
         # Get protocol constants
-        EOL = self.protocol_def.get_constant('EOL') if self.protocol_def else 0b1110
-        VERSION = self.protocol_def.get_constant('VERSION') if self.protocol_def else 0b0001
-        fixed_hp = self.protocol_def.fixed_hp if self.protocol_def else 5  # PEN20 uses 5 HP like DM20
+        EOL = protocol_constants.PEN20.EOL
+        VERSION = protocol_constants.PEN20.DEFAULT_VERSION
+        fixed_hp = protocol_constants.PEN20.FIXED_HP  # 5 HP like DM20
         
-        # Initialize PEN20Device instances with protocol
-        device1 = Pen20Device(attacker, self.protocol_def)
-        device2 = Pen20Device(defender, self.protocol_def)
+        device1 = PEN20Device(attacker)
+        device2 = PEN20Device(defender)
 
         # Constants
         COU = 0b00    # Constant Or Unknown
@@ -968,11 +962,10 @@ class BattleSimulator:
         Uses protocol definition from JSON for constants and configuration.
         """
         # Get protocol constants
-        turns = self.protocol_def.get_constant('TURNS') if self.protocol_def else 5
-        
-        # Initialize DMXDevice instances with protocol
-        device1 = DMXDevice(attacker, self.protocol_def)
-        device2 = DMXDevice(defender, self.protocol_def)
+        turns = protocol_constants.DMX.TURNS
+
+        device1 = DMXDevice(attacker)
+        device2 = DMXDevice(defender)
 
         # Initialize packet storage
         packets_device1 = []
@@ -1129,9 +1122,8 @@ class DMCDevice:
     Represents a Digimon device in a battle, able to generate and parse packets.
     Uses protocol definition for constants.
     """
-    def __init__(self, data: Digimon, protocol_def=None):
+    def __init__(self, data: Digimon):
         self.data = data
-        self.protocol_def = protocol_def
         self.hp = self.data.hp
         self.power = self.data.power
         self.attribute = self.data.attribute
@@ -1287,9 +1279,8 @@ class DM20Device:
     Handles packet generation, processing, and state management.
     Uses protocol definition for constants.
     """
-    def __init__(self, digimon: Digimon, protocol_def=None):
+    def __init__(self, digimon: Digimon):
         self.digimon = digimon
-        self.protocol_def = protocol_def
         self.hp = digimon.hp
         self.power = digimon.power
         self.attribute = digimon.attribute
@@ -1626,12 +1617,12 @@ class DMCBSPacket:
             check                # Final checksum
         )
 
-class Pen20Device:
+class PEN20Device:
     """
     Represents a Digimon device in the PEN20_BS protocol.
     Handles packet generation, processing, and state management.
-    Uses protocol definition for constants.
-    
+    Packet layouts are documented in protocol_constants.PEN20.
+
     PEN20 uses Dummy minigame (0-14 taps) similar to DM20.
     Power bonuses:
     - Egg shake (shook): +10 power
@@ -1647,9 +1638,8 @@ class Pen20Device:
     }
     EGG_SHAKE_BONUS = 10
     
-    def __init__(self, digimon: Digimon, protocol_def=None):
+    def __init__(self, digimon: Digimon):
         self.digimon = digimon
-        self.protocol_def = protocol_def
         self.hp = digimon.hp
         self.attribute = digimon.attribute
         self.index = digimon.index
@@ -1880,6 +1870,54 @@ class Pen20Device:
         check = (16 - (checksum % 16)) % 16
         return check
 
+    def generate_all_packets_for_dcom(self, order=0, cou=0b00, version=None,
+                                      eol=protocol_constants.PEN20.EOL):
+        """
+        Generate all 10 PEN20 packets for DCom battle communication.
+
+        Mirrors DM20Device.generate_all_packets_for_dcom (the DCom-tested
+        pattern): packets 1-9 carry our data, packet A claims all hits with
+        a checksum over our own transmission. Target remainder 0 — matching
+        the tested _validate_pen20_packets rule (see protocol_constants.PEN20
+        for the note about the doc claiming 12).
+        """
+        if version is None:
+            try:
+                v = int(getattr(self.digimon, 'version', 1))
+            except Exception:
+                v = 1
+            v_min, v_max = protocol_constants.PEN20.VERSION_RANGE
+            version = max(v_min, min(v_max, v))
+
+        packets = [
+            self.generate_packet1(order, version, eol),
+            self.generate_packet2(cou, eol),
+            self.generate_packet3(0, eol),
+            self.generate_packet4(0, eol),
+            self.generate_packet5(cou, eol),
+            self.generate_packet6(eol),
+            self.generate_packet7(0, eol),
+            self.generate_packet8(0, eol),
+            self.generate_packet9(0, eol),
+        ]
+
+        # Sum every nibble of packets 1-9
+        checksum = 0
+        for pkt in packets:
+            for byte in pkt:
+                checksum += (byte >> 4) & 0x0F
+                checksum += byte & 0x0F
+
+        # Packet A: Check(4) | Dodges(4) | Hits(4) | EOL(4)
+        dodges = 0x0
+        hits = 0xF
+        checksum += dodges + hits + (eol & 0xF)
+        target = protocol_constants.PEN20.CHECKSUM_REMAINDER
+        check = (target - (checksum % 16)) % 16
+
+        packets.append(struct.pack(">BB", (check << 4) | dodges, (hits << 4) | eol))
+        return packets
+
 class DMXDevice:
     """
     Represents a Digimon device in the DMX/PENZ protocol.
@@ -1895,9 +1933,8 @@ class DMXDevice:
     """
     MAX_POWER = 255
     
-    def __init__(self, digimon: Digimon, protocol_def=None):
+    def __init__(self, digimon: Digimon):
         self.digimon = digimon
-        self.protocol_def = protocol_def
         self.hp = digimon.hp
         # Cap power at 255 to prevent Version 1 overflow bug
         self.power = min(self.MAX_POWER, digimon.power)
@@ -2077,13 +2114,47 @@ class DMXDevice:
         """
         self.received_packets.append(packet)
 
-    def calculate_check(self):
+    def generate_all_packets_for_dcom(self, eol=protocol_constants.DMX.EOL):
         """
-        Calculates the Check value for Packet 6.
+        Generate all 6 DMX/PENZ packets for DCom battle communication.
+
+        Unlike generate_packet6 (which needs the opponent's packets to roll
+        hit chances), the DCom listen-and-reply flow sends before knowing the
+        opponent — so packet 6 claims all 5 hits, mirroring the DCom-tested
+        DM20 convention (hits=0xF there). Checksum: nibble sum of all six
+        packets ≡ 8 (mod 16), matching _validate_dmx_packets.
         """
-        total_sum = (self.hits & 0b1111) + (0b000 & 0b1111) + (0b1110 & 0b1111)
-        intended_remainder = 11
-        self.check = (intended_remainder - (total_sum % 16)) % 16
+        packets = [
+            self.generate_packet1(),
+            self.generate_packet2(),
+            self.generate_packet3(),
+            self.generate_packet4(),
+            self.generate_packet5(),
+        ]
+
+        checksum = 0
+        for pkt in packets:
+            for byte in pkt:
+                checksum += (byte >> 4) & 0x0F
+                checksum += byte & 0x0F
+
+        # Packet 6: Check(4) | COU(3) | Hits(5) | EOL(4)
+        hits = 0b11111
+        cou3 = 0
+        byte1_without_check = (cou3 << 1) | ((hits >> 4) & 0x1)
+        byte2 = ((hits & 0x0F) << 4) | (eol & 0xF)
+
+        checksum += byte1_without_check & 0x0F
+        checksum += (byte2 >> 4) & 0x0F
+        checksum += byte2 & 0x0F
+
+        target = protocol_constants.DMX.CHECKSUM_REMAINDER
+        check = (target - (checksum % 16)) % 16
+        self.hits = hits
+        self.check = check
+
+        packets.append(struct.pack(">BB", (check << 4) | byte1_without_check, byte2))
+        return packets
 
 # --- Test code ---
 if __name__ == "__main__":
@@ -2133,37 +2204,25 @@ if __name__ == "__main__":
     print("=" * 70)
     print()
     
-    # Get list of all protocols to test
-    from battle import ProtocolHandler
-    handler = ProtocolHandler()
-    protocols = handler.get_protocol_list('battle')
-    
-    # Map protocol names to BattleProtocol enum
+    # NOTE: the maintained protocol test suite lives in
+    # tests/test_battle_protocols.py — this block is just a quick smoke run.
     protocol_map = {
         'DM20': BattleProtocol.DM20_BS,
-        #'DMC': BattleProtocol.DMC_BS,
-        #'DMX': BattleProtocol.DMX_BS,
-        #'PEN20': BattleProtocol.PEN20_BS
+        'DMC': BattleProtocol.DMC_BS,
+        'DMX': BattleProtocol.DMX_BS,
+        'PEN20': BattleProtocol.PEN20_BS,
     }
-    
+
     test_results = []
-    
-    for protocol_info in protocols:
-        protocol_name = protocol_info['name']
-        
-        # Skip protocols not yet implemented in BattleProtocol enum
-        if protocol_name not in protocol_map:
-            print(f"[!] Skipping {protocol_name} - not yet mapped to BattleProtocol enum")
-            print()
-            continue
-        
+
+    for protocol_name in protocol_map:
         print(f"{'='*70}")
-        print(f"TESTING: {protocol_info['display_name']}")
+        print(f"TESTING: {protocol_name}")
         print(f"{'='*70}")
-        
+
         try:
             # Create simulator with protocol
-            simulator = BattleSimulator(protocol=protocol_map[protocol_name])
+            simulator = BattleSimulator(protocol=protocol_map[protocol_name], verbose=True)
             
             # Run battle
             result = simulator.simulate(device1, device2)

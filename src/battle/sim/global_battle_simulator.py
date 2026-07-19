@@ -11,11 +11,22 @@ except ImportError:
 
 
 class GlobalBattleSimulator:
-    def __init__(self, attribute_advantage=5, damage_limit=3, force_winner=True, pvp_mode=False):
+    """Stat-based team battle simulator (the "global protocol").
+
+    Used for adventure-mode battles (parties vs enemies/bosses) and the
+    arena (full party vs full party). It plays like the DMX/PENZ rules but
+    with configurable damage_limit (attack limitation) and caller-supplied
+    HP so each module's adventure feel can be matched. Not a wire protocol:
+    nothing here is exchanged with real devices.
+    """
+
+    def __init__(self, attribute_advantage=5, damage_limit=3, force_winner=True,
+                 pvp_mode=False, verbose=False):
         self.attribute_advantage = attribute_advantage
         self.damage_limit = damage_limit
         self.force_winner = force_winner
         self.pvp_mode = pvp_mode
+        self.verbose = verbose
 
     def _attribute_advantage(self, att_attr, def_attr):
         # Vaccine > Virus > Data > Vaccine
@@ -214,7 +225,8 @@ class GlobalBattleSimulator:
             device1_packets=[],
             device2_packets=[]
         )
-        self.print_battle_log(result)
+        if self.verbose:
+            self.print_battle_log(result)
         return result
 
     def print_battle_log(self, result):

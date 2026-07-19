@@ -1,17 +1,17 @@
 import json
 import os
 
-# Use direct JSON loading to avoid circular imports
-def open_json_direct(file_path):
-    """Direct JSON file loading without dependencies."""
+
+def _load_json(file_path):
+    """Load a JSON file directly.
+
+    Paths here are built from __file__ and are already absolute, so no
+    Android APP_ROOT resolution is needed. (The old optional import of
+    utils.asset_utils.open_json had a broken fallback that returned parsed
+    JSON where a file handle was expected, crashing any standalone use.)
+    """
     with open(file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
-
-# Try to import from core, but fall back to direct loading
-try:
-    from utils.asset_utils import open_json
-except ImportError:
-    open_json = open_json_direct
 
 
 DMX_PATTERN_TABLE = None
@@ -126,8 +126,7 @@ def get_attack_pattern(level, mini_game, protocol="DMX"):
         global DMX_PATTERN_TABLE
         if DMX_PATTERN_TABLE is None:
             pattern_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "attack_patterns", "DMX.json")
-            with open_json(pattern_path) as f:
-                DMX_PATTERN_TABLE = json.load(f)
+            DMX_PATTERN_TABLE = _load_json(pattern_path)
         # Find the pattern_id for this level and mini_game
         for assign in DMX_PATTERN_TABLE["assignments"]:
             if assign["level"] == level and assign["mini-game"] == mini_game:
@@ -164,8 +163,7 @@ def get_dm20_attack_pattern(tag_meter, taps):
     if DM20_PATTERN_TABLE is None:
         # Load the DM20 pattern table from the JSON file
         pattern_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "attack_patterns", "DM20.json")
-        with open_json(pattern_path) as f:
-            DM20_PATTERN_TABLE = json.load(f)
+        DM20_PATTERN_TABLE = _load_json(pattern_path)
 
     # Search for the matching pattern in the table
     for entry in DM20_PATTERN_TABLE:

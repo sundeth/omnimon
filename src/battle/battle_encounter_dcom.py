@@ -409,6 +409,9 @@ class BattleEncounterDCom(BattleEncounter):
         for i, pet in enumerate(self.battle_player.team1):
             try:
                 pet.pvp_battles += 1
+                # Charge the module's battle cost (the parent PvP path does
+                # this too; the override was skipping it, making DCom free)
+                pet._deduct_battle_cost()
                 if hasattr(self.battle_player, 'winners') and i < len(self.battle_player.winners):
                     winner = self.battle_player.winners[i]
                     local_won = (winner == 'team1') or (self.victory_status == 'Victory')

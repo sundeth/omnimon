@@ -92,7 +92,12 @@ class VersusView:
         selector_y = buttons_y + button_height + 5
         selector_height = 50
         self.pet_selector = PetSelector(10, selector_y, ui_width - 20, selector_height)
-        self.pet_selector.set_pets(get_selected_pets())
+        versus_pets = get_selected_pets()
+        self.pet_selector.set_pets(versus_pets)
+        # Pets without battle resources (module battle cost: DP/hunger) or
+        # otherwise unable to fight can't be picked for versus.
+        self.pet_selector.set_enabled_pets(
+            [i for i, pet in enumerate(versus_pets) if pet.can_battle()])
         self.pet_selector.set_interactive(True)
         self.pet_selector.activation_callback = self._handle_pet_activation
         self.ui_manager.add_component(self.pet_selector)

@@ -195,14 +195,33 @@ class JogressView:
                 theme = self.pet_theme_assignments[pet_index]
                 self.pet_selector.set_pet_custom_theme(pet_index, theme)
     
-    # Jogress cost stats: attribute name + per-pet maximum. Both pets must be
-    # at max to jogress; the stat is zeroed on the evolved pets afterwards.
+    # Jogress cost stats: attribute name + per-pet "full" value. Both pets
+    # must be at (or above — effort can exceed 16) that value to jogress;
+    # the stat is zeroed on the evolved pets afterwards.
     JOGRESS_COST_STATS = {
         "DP": ("dp", lambda pet: getattr(pet, "energy", 0)),
         "Effort": ("effort", lambda pet: 16),
-        "Strength": ("strength", lambda pet: getattr(pet, "stomach", 4)),
-        "Hunger": ("hunger", lambda pet: getattr(pet, "stomach", 4)),
+        "Strength": ("strength", lambda pet: JogressView._care_stat_max(pet)),
+        "Hunger": ("hunger", lambda pet: JogressView._care_stat_max(pet)),
     }
+
+    @staticmethod
+    def _care_stat_max(pet):
+        """Full-hearts value for hunger/strength, mirroring SceneStatus.
+
+        Fixed-4-hearts modules: 4 (1 unit per heart). Otherwise the heart
+        count comes from the stomach (stomach // 2, clamped 1-4) with 2
+        units per heart. A pet with no stomach has no hearts to fill, so
+        the requirement is trivially met.
+        """
+        from utils.module_utils import get_module
+        module = get_module(getattr(pet, "module", None))
+        stomach = getattr(pet, "stomach", 4)
+        if stomach <= 0:
+            return 0
+        if getattr(module, "care_fixed_4_hearts", True):
+            return 4
+        return max(1, min(4, stomach // 2)) * 2
 
     def _get_jogress_cost(self, pet):
         """The module's jogress cost stat name ('Nothing' disables the cost)."""

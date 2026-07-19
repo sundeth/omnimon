@@ -195,6 +195,42 @@ class JogressView:
                 theme = self.pet_theme_assignments[pet_index]
                 self.pet_selector.set_pet_custom_theme(pet_index, theme)
     
+    # Jogress cost stats: attribute name + per-pet maximum. Both pets must be
+    # at max to jogress; the stat is zeroed on the evolved pets afterwards.
+    JOGRESS_COST_STATS = {
+        "DP": ("dp", lambda pet: getattr(pet, "energy", 0)),
+        "Effort": ("effort", lambda pet: 16),
+        "Strength": ("strength", lambda pet: getattr(pet, "stomach", 4)),
+        "Hunger": ("hunger", lambda pet: getattr(pet, "stomach", 4)),
+    }
+
+    def _get_jogress_cost(self, pet):
+        """The module's jogress cost stat name ('Nothing' disables the cost)."""
+        from utils.module_utils import get_module
+        module = get_module(pet.module)
+        return getattr(module, "jogress_cost", "DP") if module else "DP"
+
+    def _pets_meet_jogress_cost(self, pet1, pet2):
+        """True when both pets have the cost stat at its maximum."""
+        entry = self.JOGRESS_COST_STATS.get(self._get_jogress_cost(pet1))
+        if entry is None:  # "Nothing" (or unknown value): no requirement
+            return True
+        attr, max_fn = entry
+        return all(getattr(p, attr, 0) >= max_fn(p) for p in (pet1, pet2))
+
+    def _apply_jogress_cost(self, pets):
+        """Consume the cost: zero the stat on the evolved (surviving) pets."""
+        if not pets:
+            return
+        entry = self.JOGRESS_COST_STATS.get(self._get_jogress_cost(pets[0]))
+        if entry is None:
+            return
+        attr, _ = entry
+        for pet in pets:
+            setattr(pet, attr, 0)
+        runtime_globals.game_console.log(
+            f"[Jogress] Consumed {attr} from {len(pets)} evolved pet(s)")
+
     def _check_pet_compatibility(self, pet1, pet2):
         """Check if two pets are compatible for Jogress."""
         if not pet1 or not pet2:
@@ -283,7 +319,17 @@ class JogressView:
             runtime_globals.game_console.log("[JogressView] Pets are not compatible")
             runtime_globals.game_sound.play("cancel")
             return
-        
+
+        # Module jogress cost: both pets must have the stat at max
+        if not self._pets_meet_jogress_cost(pet1, pet2):
+            cost = self._get_jogress_cost(pet1)
+            runtime_globals.game_console.log(
+                f"[JogressView] Jogress requires both pets at full {cost}")
+            runtime_globals.game_message.add_slide(
+                f"Both pets need full {cost}!", (255, 80, 80))
+            runtime_globals.game_sound.play("cancel")
+            return
+
         # Start evolution animation (original implementation)
         self._start_evolution_animation()
     
@@ -317,6 +363,7 @@ class JogressView:
                     if pet2.shook:
                         pet1.shook = True
                     game_globals.pet_list.remove(pet2)
+                    self._apply_jogress_cost([pet1])
                     runtime_globals.game_sound.play("evolution")
                     runtime_globals.game_console.log(f"[Jogress] {pet1.name} jogressed to {evo['to']}!")
                     
@@ -344,6 +391,7 @@ class JogressView:
                     if pet2.shook:
                         pet1.shook = True
                     game_globals.pet_list.remove(pet2)
+                    self._apply_jogress_cost([pet1])
                     runtime_globals.game_sound.play("evolution")
                     runtime_globals.game_console.log(f"[Jogress] {pet1.name} jogressed to {evo['to']}!")
                     
@@ -364,9 +412,11 @@ class JogressView:
                         # Both pets evolve - this is dual evolution
                         pet1.evolve_to(evo["to"], pet1.version)
                         pet2.evolve_to(evo2["to"], pet2.version)
+                        self._apply_jogress_cost([pet1, pet2])
                     else:
                         # Only pet1 evolves if pet2 doesn't have matching evolution
                         pet1.evolve_to(evo["to"], pet1.version)
+                        self._apply_jogress_cost([pet1])
 
                     runtime_globals.game_sound.play("evolution")
                     runtime_globals.game_console.log(f"[Jogress] {pet1.name} jogressed to {evo['to']}!")

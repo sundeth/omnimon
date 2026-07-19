@@ -814,7 +814,7 @@ class BattleEncounter:
         # Reset minigames before alert phase
         self.reset_minigames()
 
-        if self.module.ruleset == "penc":
+        if self.module.ruleset == "pen":
             # For PenC, initialize count match minigame early for alert phase drawing
             pets = get_battle_targets()
             self.count_match = CountMatch(self.ui_manager, pets[0], self.animated_sprite)
@@ -2270,7 +2270,7 @@ class BattleEncounter:
         """
         Draws the alert phase, showing readiness sprites using AnimatedSprite component.
         """
-        if self.module.ruleset == "penc":
+        if self.module.ruleset == "pen":
             self.animated_sprite.stop()
             # PenC ruleset: Count match minigame shows in both alert and charge phases
             self.count_match.set_phase("ready")
@@ -3258,7 +3258,7 @@ class BattleEncounter:
         Returns the selected strength for the mini-game, defaulting to 1 if not set.
         Maps minigame results to battle simulator strength values.
         """
-        if self.module.ruleset == "dmc":
+        if self.module.ruleset == "dm":
             # DMC: Dummy charge strength 0-14
             if self.strength < 5:
                 return 0
@@ -3271,7 +3271,7 @@ class BattleEncounter:
         elif self.module.ruleset == "dmx":
             # DMX: XAI bar strength (varies by XAI roll)
             return self.strength
-        elif self.module.ruleset == "penc":
+        elif self.module.ruleset == "pen":
             # PenC: Count match super hits
             return self.super_hits
         elif self.module.ruleset == "vb":

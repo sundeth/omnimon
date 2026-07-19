@@ -1174,13 +1174,13 @@ class GamePet:
     def set_traited_egg(self):
         ruleset = get_module(self.module).ruleset
 
-        if ruleset == "dmc":
+        if ruleset == "dm":
             if self.stage in [6, 7] and random.randint(0, 10) <= 3:
                 key = f"{self.module}@{self.version}"
                 if key not in game_globals.traited:
                     game_globals.traited.append(key)
                     runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
-        elif ruleset == "penc":
+        elif ruleset == "pen":
             win_ratio = (self.win * 100) // self.battles if self.battles > 0 else 0
             if self.stage >= 6 and self.age >= 2:
                 if win_ratio >= 60:
@@ -1284,7 +1284,7 @@ class GamePet:
         if hasattr(self, 'bonus_stats') and len(self.bonus_stats) > 2:
             power += self.bonus_stats[2]
 
-        if ruleset == "dmc":
+        if ruleset == "dm":
             multi = 1
             if self.traited:
                 multi = 2
@@ -1299,7 +1299,7 @@ class GamePet:
                 elif self.stage >= 6:
                     power += (25 * multi)
             return power
-        elif ruleset == "penc":
+        elif ruleset == "pen":
             strength_bonus = 0
             traited_bonus = 0
             shaken_bonus = 0

@@ -45,7 +45,14 @@ class GameModule:
                     data = json.load(file)
                     self.name = data.get("name", "default")
                     self.name_format = data.get("name_format", "$_dmc")
-                    self.ruleset = data.get("ruleset", "dmc")
+                    # Ruleset (legacy names normalized: dmc -> dm, penc -> pen)
+                    _ruleset_fixes = {"dmc": "dm", "penc": "pen"}
+                    _ruleset = data.get("ruleset", "dm")
+                    self.ruleset = _ruleset_fixes.get(_ruleset, _ruleset)
+                    # Stat both pets must have at max to jogress; consumed
+                    # (set to 0) on the evolved pets after the fusion.
+                    # "Nothing", "DP", "Effort", "Strength" or "Hunger".
+                    self.jogress_cost = data.get("jogress_cost", "DP")
                     self.author = data.get("author", "Unknown")
                     self.version = data.get("version", "1.0")
                     self.category = data.get("category", "Custom")

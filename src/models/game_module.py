@@ -18,6 +18,37 @@ from models.quest_event_data import QuestData, EventData
 # GameModule - Manages module data (monsters and metadata)
 #=====================================================================
 
+def _training_table(value, won, lost, scaled=None):
+    """A four-slot training payout, indexed by outcome level 0-3.
+
+    A list is taken as written. Anything else is a module from before the
+    tables existed, and is rebuilt from the win/lose pair it used to carry:
+    level 0 is the failed attempt and pays ``lost``, and the three winning
+    levels pay ``won``, multiplied by the level when the old
+    ``training_strengh_multiplier`` was in play - which is what
+    ``gain * grade * multiplier`` used to compute.
+    """
+    if isinstance(value, list) and value:
+        table = [int(v) for v in value][:4]
+        return table + [table[-1]] * (4 - len(table))
+    won, lost = int(won or 0), int(lost or 0)
+    if scaled:
+        return [lost, won, won * 2, won * 3]
+    return [lost, won, won, won]
+
+
+# What a module written before traited_egg_rule / power_bonus_rule existed
+# should fall back to, as ``ruleset -> (traited egg rule, power bonus rule)``.
+# Chosen to reproduce what that ruleset already did, so an old module behaves
+# the same way after the migration.
+LEGACY_RULESET_RULES = {
+    "dm":  ("Stage V Chance", "Stage Table"),
+    "pen": ("Win Ratio (Stage 5)", "Stage Table + Shaken"),
+    "dmx": ("Evolution Timer (Area 45)", "Strength and Level"),
+    "vb":  ("None", "Star"),
+}
+
+
 class GameModule:
     """
     Represents a game module, capable of loading metadata and monsters from its folder.
@@ -30,8 +61,10 @@ class GameModule:
         self.ruleset = ""
         self.unlocks = {"eggs": [], "backgrounds": [], "evolutions": []}
         self.backgrounds = []
+        self.devices = []
         self.visible_stats = []
         self.load_module_data()
+        self.load_devices()
         self.load_sprites()
         self.load_items()
         self.load_passwords()
@@ -46,9 +79,18 @@ class GameModule:
                     self.name = data.get("name", "default")
                     self.name_format = data.get("name_format", "$_dmc")
                     # Ruleset (legacy names normalized: dmc -> dm, penc -> pen)
+                    # Superseded by traited_egg_rule and power_bonus_rule; it
+                    # is still read so a module written before those existed
+                    # keeps working.
                     _ruleset_fixes = {"dmc": "dm", "penc": "pen"}
                     _ruleset = data.get("ruleset", "dm")
                     self.ruleset = _ruleset_fixes.get(_ruleset, _ruleset)
+                    _legacy = LEGACY_RULESET_RULES.get(self.ruleset,
+                                                       LEGACY_RULESET_RULES["dm"])
+                    # How a Traited Egg is earned, and where a pet's power
+                    # bonus comes from. See the two tables in game_pet.
+                    self.traited_egg_rule = data.get("traited_egg_rule") or _legacy[0]
+                    self.power_bonus_rule = data.get("power_bonus_rule") or _legacy[1]
                     # Stat both pets must have at max to jogress; consumed
                     # (set to 0) on the evolved pets after the fusion.
                     # "Nothing", "DP", "Effort", "Strength" or "Hunger".
@@ -84,14 +126,22 @@ class GameModule:
 
                     self.sleep_care_mistake_timer = int(data.get("care_sleep_care_mistake_timer"))
 
-                    self.training_effort_gain = int(data.get("training_effort_gain", 0))
-
-                    self.training_strengh_gain_win = int(data.get("training_strengh_gain_win", 1))
-                    self.training_strengh_gain_lose = int(data.get("training_strengh_gain_lose", 0))
-                    self.training_strengh_multiplier = float(data.get("training_strengh_multiplier", 1.0))
-
-                    self.training_weight_win = int(data.get("training_weight_win", 1))
-                    self.training_weight_lose = int(data.get("training_weight_lose", 1))
+                    # What one training pays out, indexed by its outcome level
+                    # 0-3 (Bad, Good, Great, Excellent) - the four levels the
+                    # connection protocols carry. A module written before
+                    # these existed is read from the old win/lose pair.
+                    self.training_effort_gain = _training_table(
+                        data.get("training_effort_gain"),
+                        won=data.get("training_effort_gain", 1), lost=0)
+                    self.training_strength_gain = _training_table(
+                        data.get("training_strength_gain"),
+                        won=data.get("training_strengh_gain_win", 1),
+                        lost=data.get("training_strengh_gain_lose", 0),
+                        scaled=data.get("training_strengh_multiplier", 1))
+                    self.training_weight_loss = _training_table(
+                        data.get("training_weight_loss"),
+                        won=data.get("training_weight_win", 1),
+                        lost=data.get("training_weight_lose", 1))
 
                     self.traited_egg_starting_level = int(data.get("traited_egg_starting_level"))
 
@@ -100,6 +150,10 @@ class GameModule:
                     self.battle_base_sick_chance_win = int(data.get("battle_base_sick_chance_win"))
                     self.battle_base_sick_chance_lose = int(data.get("battle_base_sick_chance_lose"))
                     self.battle_atribute_advantage = int(data.get("battle_atribute_advantage", 5))
+                    # The X devices add the advantage to Power before working
+                    # out the hit rate rather than to the hit rate itself.
+                    self.battle_atribute_advantage_power = bool(
+                        data.get("battle_atribute_advantage_power", False))
                     self.battle_global_hit_points = int(data.get("battle_global_hit_points", 0))
                     # sequential rounds is a boolean flag in newer module.json files
                     self.battle_sequential_rounds = bool(data.get("battle_sequential_rounds", False))
@@ -118,6 +172,10 @@ class GameModule:
                     # Battle cost configuration
                     self.battle_cost_type = data.get("battle_cost_type", "DP")
                     self.battle_cost_amount = float(data.get("battle_cost_amount", 1.0))
+                    # Weight (g) shed per battle, on top of the cost resource.
+                    # 0 for every device that doesn't do this; the original
+                    # Digital Monster loses 4g a fight.
+                    self.battle_weight_loss = int(data.get("battle_weight_loss", 0))
                     self.battle_enable_feeding = bool(data.get("battle_enable_feeding", False))
 
                     # Care settings for fixed hearts and poop
@@ -198,6 +256,42 @@ class GameModule:
         else:
             runtime_globals.game_console.log(f"⚠️ Module metadata file {json_path} not found.")
 
+    def load_devices(self) -> None:
+        """Load optional physical-device definitions from ``devices.json``.
+
+        Device versions are protocol values and intentionally live outside
+        ``module.json`` so they remain independent from evolution-line
+        versions. Modules without this file keep their existing egg flow.
+        """
+        self.devices = []
+        json_path = os.path.join(self.folder_path, "devices.json")
+        resolved_path = resolve_path(json_path)
+        if not os.path.exists(resolved_path):
+            return
+        try:
+            with open_json(json_path) as file:
+                data = json.load(file)
+            entries = data.get("devices", []) if isinstance(data, dict) else []
+            if not isinstance(entries, list):
+                return
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                eggs = entry.get("eggs", [])
+                if not isinstance(eggs, list):
+                    eggs = []
+                device = dict(entry)
+                device["eggs"] = [
+                    egg for egg in eggs
+                    if isinstance(egg, dict) and egg.get("name") is not None
+                ]
+                self.devices.append(device)
+            runtime_globals.game_console.log(
+                f"[Module {self.name}] Loaded {len(self.devices)} device definitions")
+        except (OSError, json.JSONDecodeError) as exc:
+            runtime_globals.game_console.log(
+                f"[Module {self.name}] Failed to load devices.json: {exc}")
+
     def load_items(self):
         """Loads items from item.json if it exists in the module folder."""
         json_path = os.path.join(self.folder_path, "item.json")
@@ -236,6 +330,20 @@ class GameModule:
 
     def has_passwords(self) -> bool:
         return bool(getattr(self, "passwords", None))
+
+    def has_gcell_fragment_egg(self) -> bool:
+        """True when the module ships a G-Cell Fragment egg.
+
+        Such a module splits the death reward 15% Traited Egg / 15% G-Cell
+        Fragment instead of a flat 30% Traited Egg. Cached: this reads
+        monster.json.
+        """
+        if not hasattr(self, "_has_gcell_fragment_egg"):
+            self._has_gcell_fragment_egg = any(
+                m.get("special") and m.get("special_key") == "gcell_fragment"
+                for m in self.get_monsters_by_stage(0)
+            )
+        return self._has_gcell_fragment_egg
 
     def load_quests_json(self) -> List[QuestData]:
         """Loads quest data from quests.json if it exists in the module folder."""
@@ -476,6 +584,17 @@ class GameModule:
                  and bool(e.get("special_encounter", False)) == special_encounter),
                 None
             )
+            if match is None and special_encounter:
+                # Special encounters can live on a version the player never
+                # raises - the Xros Wars Friends sit on their own roster - so
+                # fall back to any version once the exact one comes up empty.
+                match = next(
+                    (e for e in all_enemies
+                     if int(e.get("area", -1)) == int(area)
+                     and int(e.get("round", -1)) == int(round)
+                     and bool(e.get("special_encounter", False))),
+                    None
+                )
             if match:
                 if "handicap" not in match:
                     match["handicap"] = 0
@@ -511,6 +630,76 @@ class GameModule:
                 if v is not None:
                     versions.add(v)
         return sorted(versions)
+
+    def get_friend_encounters(self) -> list:
+        """Special encounters that register a Friend when beaten.
+
+        Only modules that ship a Friend roster return anything, so callers can
+        use an empty list to mean "this module doesn't play by those rules".
+        """
+        if not hasattr(self, "_friend_encounters"):
+            # A Friend is declared on the pet side, as a monster whose
+            # availability is "Friend"; the battle side only needs the special
+            # encounter that awards it, matched by name.
+            friends = {m.get("name") for m in self.get_all_monsters()
+                       if (m.get("avaliability") or "") == "Friend"}
+            battle_path = os.path.join(self.folder_path, "battle.json")
+            out, seen = [], set()
+            for entry in (self._parse_battle_json(battle_path) or []):
+                if not entry.get("special_encounter"):
+                    continue
+                name = entry.get("name")
+                if not name or name in seen or name not in friends:
+                    continue
+                seen.add(name)
+                out.append({"name": name, "area": int(entry.get("area", 1)),
+                            "round": int(entry.get("round", 1))})
+            self._friend_encounters = out
+        return self._friend_encounters
+
+    def has_friends(self) -> bool:
+        return bool(self.get_friend_encounters())
+
+    def get_area_locks(self) -> list:
+        """Areas that stay shut until an unlock is earned.
+
+        Some devices hide their last area behind a condition rather than
+        behind progress: the Digital Monster X only opens its SP area once
+        the device has been connected to its partner version. Any unlock can
+        declare `unlocks_area`; the unlock's `version` scopes it to a single
+        gameplay version, and no version means it covers every version.
+
+        Returns a list of (area, version_or_None, unlock_name).
+        """
+        if not hasattr(self, "_area_locks"):
+            locks = []
+            for unlock in (self.unlocks if isinstance(self.unlocks, list) else []):
+                if not isinstance(unlock, dict):
+                    continue
+                area = unlock.get("unlocks_area")
+                if area:
+                    locks.append((int(area), unlock.get("version"), unlock.get("name")))
+            self._area_locks = locks
+        return self._area_locks
+
+    def is_area_unlocked(self, area: int, version=None) -> bool:
+        """True when `area` may be entered by a pet of this gameplay version."""
+        locks = self.get_area_locks()
+        if not locks:
+            return True
+        from utils.utils_unlocks import is_unlocked
+        for lock_area, lock_version, name in locks:
+            if lock_area != int(area):
+                continue
+            if lock_version is not None:
+                # A lock scoped to one version can only be judged when the
+                # version is known; the same area number is an ordinary area
+                # on the other devices, so never hide it on a guess.
+                if version is None or int(lock_version) != int(version):
+                    continue
+            if not is_unlocked(self.name, None, name):
+                return False
+        return True
 
     def area_exists(self, area: int) -> bool:
         battle_path = os.path.join(self.folder_path, "battle.json")

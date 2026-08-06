@@ -28,7 +28,7 @@ def get_modules_dir() -> str:
 def load_modules():
     """
     Loads all modules from the modules directory and registers them in runtime_globals.game_modules.
-    Also sets ruleset flags and initializes adventure mode progress if needed.
+    Also initializes adventure mode progress if needed.
 
     Uses get_modules_dir() so Android downloads (which live outside the
     APK in app_storage_path()/modules) are picked up alongside any

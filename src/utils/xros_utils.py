@@ -67,17 +67,25 @@ def get_module_friends(module_name):
 
 
 def register_friends_from_battle(module_name, enemies) -> bool:
-    """Add every Friend-flagged enemy of a battle/special encounter to the
-    module's Friend list.  Returns True when something new was added."""
+    """Add every defeated Friend to the module's Friend list.
+
+    A Friend is declared on the pet side: a monster entry whose availability
+    is "Friend". The enemy only has to share its name, which keeps the two
+    halves in step without duplicating a flag on the battle data.
+    Returns True when something new was added.
+    """
     from core import game_globals
     if not hasattr(game_globals, "friends") or game_globals.friends is None:
         game_globals.friends = {}
+    module = get_module(module_name)
+    known = {m.get("name") for m in (module.get_all_monsters() if module else [])
+             if (m.get("avaliability") or "") == "Friend"}
     added = False
     for enemy in enemies or []:
-        if enemy is None or not getattr(enemy, "friend", False):
+        if enemy is None:
             continue
         name = getattr(enemy, "name", None)
-        if not name:
+        if not name or (name not in known and not getattr(enemy, "friend", False)):
             continue
         module_list = game_globals.friends.setdefault(module_name, [])
         if name not in module_list:

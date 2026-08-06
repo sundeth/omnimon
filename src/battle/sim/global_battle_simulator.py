@@ -21,8 +21,9 @@ class GlobalBattleSimulator:
     """
 
     def __init__(self, attribute_advantage=5, damage_limit=3, force_winner=True,
-                 pvp_mode=False, verbose=False):
+                 pvp_mode=False, verbose=False, advantage_as_power=False):
         self.attribute_advantage = attribute_advantage
+        self.advantage_as_power = advantage_as_power
         self.damage_limit = damage_limit
         self.force_winner = force_winner
         self.pvp_mode = pvp_mode
@@ -46,6 +47,23 @@ class GlobalBattleSimulator:
             elif def_attr == "Da":
                 return self.attribute_advantage
         return 0
+
+    def _hitrate(self, pet, target):
+        """Chance for pet to land a hit on target, as a percentage.
+
+        By default the attribute advantage is a flat percentage added to the
+        hit rate. With advantage_as_power it is folded into the attacker's
+        Power before the ratio is taken instead, which is how the Digital
+        Monster X describes it (+32 Power rather than +N% to hit).
+        """
+        adv = self._attribute_advantage(pet.attribute, target.attribute)
+        power = pet.power
+        if self.advantage_as_power:
+            power = max(0, power + adv)
+            adv = 0
+        total = power + target.power
+        rate = ((power * 100) / total if total else 0) + adv - pet.handicap
+        return max(0, min(rate, 100))
 
     def simulate(self, device1, device2):
         # Deep copy the teams to avoid modifying the original objects
@@ -88,10 +106,7 @@ class GlobalBattleSimulator:
                 pattern = pet.attack_pattern
                 base_dmg = min(pattern[turn % len(pattern)], self.damage_limit)
                 dmg = base_dmg + pet.buff
-                adv = self._attribute_advantage(pet.attribute, target.attribute)
-                handicap = pet.handicap
-                hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
-                hitrate = max(0, min(hitrate, 100))
+                hitrate = self._hitrate(pet, target)
                 hit = random.randint(0, 99) < hitrate
                 actual_dmg = dmg if hit else 0
                 target.current_hp -= actual_dmg
@@ -122,10 +137,7 @@ class GlobalBattleSimulator:
                         pattern = pet.attack_pattern
                         base_dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
                         dmg = base_dmg + pet.buff
-                        adv = self._attribute_advantage(pet.attribute, target.attribute)
-                        handicap = pet.handicap
-                        hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
-                        hitrate = max(0, min(hitrate, 100))
+                        hitrate = self._hitrate(pet, target)
                         hit = random.randint(0, 99) < hitrate
                         actual_dmg = dmg if hit else 0
                         target.current_hp -= actual_dmg
@@ -156,10 +168,7 @@ class GlobalBattleSimulator:
                     pattern = pet.attack_pattern
                     base_dmg = min(pattern[turn % len(pattern)] + 1, self.damage_limit)
                     dmg = base_dmg + pet.buff
-                    adv = self._attribute_advantage(pet.attribute, target.attribute)
-                    handicap = pet.handicap
-                    hitrate = ((pet.power * 100) / (pet.power + target.power)) + adv - handicap
-                    hitrate = max(0, min(hitrate, 100))
+                    hitrate = self._hitrate(pet, target)
                     hit = random.randint(0, 99) < hitrate
                     actual_dmg = dmg if hit else 0
                     target.current_hp -= actual_dmg

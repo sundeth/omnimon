@@ -146,6 +146,11 @@ class TutorialTraining(SceneTraining):
             return False
         event_type, event_data = event
 
+        # Tutorial input is routed before SceneTraining, so enforce the same
+        # non-skippable READY lock here as the normal training scene.
+        if self.mode and getattr(self.mode, "phase", None) == "alert":
+            return True
+
         # Handle exit - only if allowed
         if event_type == "B":
             if self.allow_exit:

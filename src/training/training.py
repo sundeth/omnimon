@@ -27,6 +27,8 @@ from battle.combat_constants import (
     compute_attack_anim_state,
 )
 
+TRAINING_READY_SOUND = "training_ready"
+
 
 class Training:
     """
@@ -64,6 +66,10 @@ class Training:
         self.crit_attack_sprites = load_crit_attack_sprites()
         self._alert_anim_started = False
         self._impact_anim_started = False
+        self._ready_sound_triggered = False
+        self._ready_sound_started = False
+        self._ready_sound_fallback = False
+        self.alert_duration_frames = combat_constants.ALERT_DURATION_FRAMES
 
         self.pets = get_training_targets()
         self.module_attack_sprites = {}
@@ -194,13 +200,50 @@ class Training:
         self.frame_counter += 1
 
     def update_alert_phase(self):
-        if self.frame_counter == int(30 * (constants.FRAME_RATE / 30)):
-            runtime_globals.game_sound.play("happy")
-        if self.frame_counter >= combat_constants.ALERT_DURATION_FRAMES:
-            self.animated_sprite.stop()
-            self.phase = "charge"
-            self.frame_counter = 0
-            self.bar_timer = pygame.time.get_ticks()
+        if not self._ready_sound_triggered:
+            sound_duration = runtime_globals.game_sound.get_duration(TRAINING_READY_SOUND)
+            if sound_duration > 0:
+                self.alert_duration_frames = max(
+                    1,
+                    int(round(sound_duration * game_globals.configuration.frame_rate)),
+                )
+
+            channel = runtime_globals.game_sound.play(TRAINING_READY_SOUND)
+            self._ready_sound_triggered = True
+
+            # Muted audio or an unavailable mixer has no real playback start to
+            # observe. Keep the visual ready phase at the asset's duration.
+            if channel is None:
+                self._ready_sound_started = True
+                self._ready_sound_fallback = True
+                self.frame_counter = 0
+
+        if not self._ready_sound_started:
+            if runtime_globals.game_sound.is_playing(TRAINING_READY_SOUND):
+                # Mixer startup may lag behind Sound.play(). Begin both the
+                # alert counter and its visual only after playback is active.
+                self._ready_sound_started = True
+                self.frame_counter = 0
+            else:
+                self.frame_counter = 0
+                return
+
+        if (
+            not self._ready_sound_fallback
+            and not runtime_globals.game_sound.is_playing(TRAINING_READY_SOUND)
+        ):
+            self._finish_alert_phase()
+            return
+
+        if self.frame_counter >= self.alert_duration_frames:
+            self._finish_alert_phase()
+
+    def _finish_alert_phase(self):
+        runtime_globals.game_sound.stop(TRAINING_READY_SOUND)
+        self.animated_sprite.stop()
+        self.phase = "charge"
+        self.frame_counter = 0
+        self.bar_timer = pygame.time.get_ticks()
 
     def update_charge_phase(self):
         pass
@@ -359,7 +402,10 @@ class Training:
 
     def draw(self, screen: pygame.Surface):
         if self.phase == "alert":
-            self.draw_alert(screen)
+            # Do not reveal or advance READY before the delayed mixer playback
+            # has actually begun. Muted/unavailable audio uses the timed fallback.
+            if self._ready_sound_started:
+                self.draw_alert(screen)
         elif self.phase == "charge":
             self.draw_charge(screen)
         elif self.phase == "wait_attack":
@@ -470,7 +516,7 @@ class Training:
         # Use AnimatedSprite component with predefined ready animation
         if not self._alert_anim_started:
             # Start the ready animation once
-            duration = combat_constants.ALERT_DURATION_FRAMES / constants.FRAME_RATE
+            duration = self.alert_duration_frames / game_globals.configuration.frame_rate
             self.animated_sprite.play_ready(duration)
             self._alert_anim_started = True
         
@@ -503,12 +549,15 @@ class Training:
 
     def handle_event(self, event):
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and event_type == "A":
             runtime_globals.game_sound.play("menu")
             self.strength = min(getattr(self, "strength", 0) + 1, getattr(self, "bar_level", 14))
         elif self.phase in ["wait_attack", "attack_move", "impact", "result"] and event_type in ["B", "START"]:
             self.finish_training()
-        elif self.phase in ["alert", "charge"] and event_type == "B":
+        elif self.phase == "charge" and event_type == "B":
             runtime_globals.game_sound.play("cancel")
             change_scene("game")

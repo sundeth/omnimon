@@ -36,6 +36,10 @@ class CountMatchZ:
     Count Match Z minigame - arrow-based counting with attribute-based scoring.
     """
 
+    #: This minigame draws the alert phase itself, showing the arrows the
+    #: player has to match, instead of leaving it to the animated sprite.
+    HAS_READY_PHASE = True
+
     def __init__(self, ui_manager: UIManager, pet=None, animated_sprite=None) -> None:
         self.ui_manager = ui_manager
         if self.ui_manager is None:

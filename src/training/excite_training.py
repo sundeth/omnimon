@@ -20,7 +20,6 @@ class ExciteTraining(Training):
 
     def __init__(self, ui_manager: UIManager) -> None:
         super().__init__(ui_manager)
-        self._pending_stop = False  # Buffers A/LCLICK pressed during the alert→charge transition frame
         self.xaibar = XaiBar(10 * runtime_globals.UI_SCALE, runtime_globals.SCREEN_HEIGHT // 2 - (18 * runtime_globals.UI_SCALE), game_globals.xai, self.pets[0])
         self.xaibar.start()
         # Remove separate sprite assignments; use self._sprite_cache from base class
@@ -37,14 +36,6 @@ class ExciteTraining(Training):
         self.prepare_attacks()
 
     def update_charge_phase(self):
-        # A/LCLICK pressed during the last alert frame is applied here, BEFORE
-        # the arrow advances for this frame — so the recorded position still
-        # matches what the player saw on screen.
-        if self._pending_stop:
-            self._pending_stop = False
-            self._do_xaibar_stop()
-            return
-
         # After stopping, linger half a second so the landed color is visible
         if getattr(self.xaibar, 'stopped', False):
             if self.xaibar.is_finished():
@@ -221,9 +212,11 @@ class ExciteTraining(Training):
                     self.attack_waves[j].append((main_sprite, x, y))
 
     def get_attack_count(self):
+        # The Xai bar already reports 0-3, which is exactly the Digital
+        # Monster X's Bad / Good / Great / Excellent.
         strength = self.xaibar.selected_strength
         if strength < 1:
-            return 1
+            return 0
         elif strength < 3:
             return 2
         else:
@@ -232,20 +225,16 @@ class ExciteTraining(Training):
     def handle_event(self, event):
         event_type, event_data = event
 
+        if self.phase == "alert":
+            return
+
         if event_type in ["A", "LCLICK"]:
             if self.phase == "charge":
                 self._do_xaibar_stop()
-            elif self.phase == "alert":
-                # The charge bar may appear this very frame (phase switches in update(),
-                # which runs after handle_event).  Buffer the press so update_charge_phase
-                # applies it immediately at the start of the first charge frame, before
-                # the arrow moves at all.
-                self._pending_stop = True
         elif self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
             runtime_globals.game_sound.play("cancel")
             self.animated_sprite.stop()
             self.phase = "result"
-        elif self.phase in ["alert", "charge"] and event_type == "B":
-            self._pending_stop = False  # Cancel any pending stop on exit
+        elif self.phase == "charge" and event_type == "B":
             runtime_globals.game_sound.play("cancel")
             change_scene("game")

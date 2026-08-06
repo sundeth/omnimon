@@ -105,6 +105,10 @@ class CountMatch:
     Count Match minigame - displays ready and count sprites based on pet attribute.
     Handles the visual display and input for the counting phase.
     """
+
+    #: This minigame draws the alert phase itself, showing an attribute
+    #: specific ready sprite, instead of leaving it to the animated sprite.
+    HAS_READY_PHASE = True
     
     def __init__(self, ui_manager: UIManager, pet=None, animated_sprite=None):
         """Initialize the count match minigame."""

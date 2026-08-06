@@ -7,8 +7,8 @@ Sprite-based implementation. The bar art is picked from the pet:
     assets/XaiBar_<type>_<level>.png   (96x30 source art)
 
     type:  pet attribute — ""(Free)/Va -> 1, Da -> 2, Vi -> 3
-    level: pets from a "dmx"-ruleset module use their LEVEL, everyone
-           else uses EFFORT:
+    level: pets whose module shows Level as a stat use their LEVEL,
+           everyone else uses EFFORT:
                LEVEL 0-5  / EFFORT 0-8   -> 1
                LEVEL 6-9  / EFFORT 9-15  -> 2
                LEVEL 10   / EFFORT 16+   -> 3
@@ -135,7 +135,9 @@ class XaiBar:
         if pet is None:
             return 1
         module = get_module(getattr(pet, "module", None))
-        uses_level = getattr(module, "ruleset", "") == "dmx" if module else False
+        # Devices that level their Digimon scale the bar off the level;
+        # the rest use effort. Showing Level is what says a module has one.
+        uses_level = "Level" in (getattr(module, "visible_stats", None) or []) if module else False
         if uses_level:
             level = getattr(pet, "level", 1)
             if level >= 10:
@@ -216,7 +218,13 @@ class XaiBar:
         dt_ms = min(100, max(1, now - self._last_update_ms))
         self._last_update_ms = now
 
-        speed_pps = max(1, 8 - self.xai_number) * 30 * runtime_globals.UI_SCALE
+        # Expressed as how long the arrow takes to cross the bar rather than a
+        # pixel rate, so it plays the same at any resolution. A low XAI is the
+        # hard roll and still sweeps fastest; the old rate left the easy end
+        # taking about five seconds per pass, which just felt stalled.
+        travel = max(1.0, float(self.arrow_max_cx - self.arrow_min_cx))
+        crossing_s = 0.55 + (max(1, min(7, self.xai_number)) - 1) * 0.15
+        speed_pps = travel / crossing_s
         self.arrow_cx += self.arrow_dir * speed_pps * dt_ms / 1000.0
 
         if self.arrow_cx <= self.arrow_min_cx:

@@ -97,3 +97,29 @@ def is_pet_unlocked(name: str, module: str, version: int) -> bool:
         p["name"] == name and p["module"] == module and p["version"] == version
         for p in data
     )
+
+
+def get_module_known_count(module) -> int:
+    """How many of a module's pets the player has discovered.
+
+    Mirrors the counting the digidex screen does: "Unobtainable" pets are not
+    part of the roster, and "Friend" pets are discovered by battling their
+    Friend-flagged enemy rather than by raising them.
+    """
+    data = load_digidex()
+    known = {(p["name"], p["version"]) for p in data if p["module"] == module.name}
+    friends = None
+    count = 0
+    for monster in module.get_all_monsters():
+        avaliability = monster.get("avaliability") or "Normal"
+        if avaliability == "Unobtainable":
+            continue
+        if avaliability == "Friend":
+            if friends is None:
+                from utils.xros_utils import get_module_friends
+                friends = get_module_friends(module.name)
+            if monster["name"] in friends:
+                count += 1
+        elif (monster["name"], monster["version"]) in known:
+            count += 1
+    return count

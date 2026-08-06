@@ -16,6 +16,7 @@ from battle.dcom.dcom_protocol import ProtocolType
 from battle.sim.models import Digimon, BattleResult
 from battle.sim.dcom_battle_simulator import DComBattleSimulator
 from core import runtime_globals
+from battle.combat_constants import ANY_OTHER_DEVICE
 
 
 class BattleEncounterDCom(BattleEncounter):
@@ -227,7 +228,11 @@ class BattleEncounterDCom(BattleEncounter):
                 pet_module = get_module(pet_module_name)
                 if pet_module and getattr(pet_module, 'battle_protocol', '') == dcom_format:
                     index = getattr(first_pet, 'index', 0)
-                    version = getattr(first_pet, 'version', 0)
+                    # device_version is the hardware revision selected at
+                    # hatching. Keep pet.version for gameplay/evolution data;
+                    # only the outbound OEM packet uses this protocol value.
+                    version = getattr(
+                        first_pet, 'device_version', getattr(first_pet, 'version', 0))
                     # Clamp version to the valid range for each protocol; out-of-range = special, send 0
                     _version_ranges = {
                         'DM': (1, 5), 'DM20': (1, 5), 'DMX': (1, 6), 'DMC': (1, 5),
@@ -450,8 +455,26 @@ class BattleEncounterDCom(BattleEncounter):
                         name = unlock.get('name')
                         if name:
                             ver_req = unlock.get('version', None)
-                            if ver_req is not None:
-                                pet_version = getattr(self.battle_player.team1[0], 'version', 0) if self.battle_player.team1 else 0
+                            dev_req = unlock.get('device_version', None)
+                            opp_req = unlock.get('opponent_device_version', None)
+                            pet = self.battle_player.team1[0] if self.battle_player.team1 else None
+                            pet_version = getattr(pet, 'version', 0) if pet else 0
+                            # The hardware the pet was hatched on, and what the
+                            # other device announced in its battle packets.
+                            dev = getattr(pet, 'device_version', pet_version) if pet else 0
+                            opp = getattr(self.dcom_simulator, 'opponent_device_version', None)
+
+                            if dev_req is not None or opp_req is not None:
+                                # ANY_OTHER_DEVICE means "any device that is not
+                                # this one" - see battle_encounter_versus.
+                                if opp_req == ANY_OTHER_DEVICE:
+                                    opponent_ok = opp is not None and opp != dev
+                                else:
+                                    opponent_ok = opp_req is None or opp == opp_req
+                                if (dev_req is None or dev == dev_req) and opponent_ok:
+                                    unlock_item(self.module.name, 'versus', name)
+                                    runtime_globals.game_console.log(f"[DCom OEM] Unlocked versus: {name}")
+                            elif ver_req is not None:
                                 if pet_version == ver_req:
                                     unlock_item(self.module.name, 'versus', name)
                                     runtime_globals.game_console.log(f"[DCom OEM] Unlocked versus: {name}")
@@ -515,6 +538,11 @@ class BattleEncounterDCom(BattleEncounter):
         """
         Override event handling to add DCom-specific interactions.
         """
+        # DCom-specific controls run before the base handler, so lock them here
+        # as well to keep READY/alert non-skippable.
+        if self.phase == "alert":
+            return
+
         # Handle DCom dialog events if active
         if self.dcom_dialog and hasattr(self.dcom_dialog, 'handle_event'):
             if self.dcom_dialog.handle_event(event):

@@ -424,6 +424,16 @@ class SceneSettingsMenu:
             self._add_dynamic(Label(8, y + 6, "Last error:",
                                     color_override=(220, 160, 160)))
             self._add_dynamic(Label(8, y + 22, err[:36]))
+            y += 32
+
+        # How far the service process itself got.  "ok" above only means the
+        # OS accepted our start request — the service runs in its own process
+        # and can still die on its way up, which this is the only record of.
+        phase = _bg.get_last_run_phase()
+        if phase:
+            self._add_dynamic(Label(8, y + 6, "Last run reached:",
+                                    color_override=(200, 200, 160)))
+            self._add_dynamic(Label(8, y + 22, phase[-36:]))
 
         back_btn = Button(
             BASE_RESOLUTION - 68, BASE_RESOLUTION - 38, 60, 28,

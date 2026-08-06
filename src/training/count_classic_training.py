@@ -14,7 +14,6 @@ import core.constants as constants
 from models.game_module import sprite_load
 from utils.pygame_utils import blit_with_cache
 from ui.minigames.count_match_classic import CountMatchClassic
-from utils.scene_utils import change_scene
 
 
 class CountMatchClassicTraining(Training):
@@ -133,14 +132,14 @@ class CountMatchClassicTraining(Training):
     def handle_event(self, event):
         """Forward input events to the minigame."""
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and self.minigame and self.minigame.handle_event(event):
             return
         
-        if event_type == "B" and self.phase == "alert":
-            runtime_globals.game_sound.play("cancel")
-            change_scene("game")
-        elif self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
+        if self.phase in ["wait_attack", "attack_move", "impact"] and event_type in ["B", "START"]:
             # Skip to result phase
             runtime_globals.game_sound.play("cancel")
             self.animated_sprite.stop()
@@ -236,7 +235,9 @@ class CountMatchClassicTraining(Training):
         """Returns the number of attacks based on strength."""
         if self.minigame:
             self.strength = self.minigame.strength
-        if self.strength < 10:
+        if self.strength <= 10:
+            return 0
+        elif self.strength < 13:
             return 1
         elif self.strength < 14:
             return 2

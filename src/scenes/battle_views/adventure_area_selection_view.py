@@ -31,6 +31,10 @@ class AdventureAreaSelectionView:
         self.available_round = available_round
         self.area_round_limits = area_round_limits if area_round_limits is not None else {}
         self.adventure_style = getattr(module, 'adventure_style', 'Area Selection')
+
+        # Areas the module gates behind an unlock stay out of the picker until
+        # that unlock is earned, so they cannot be selected or advanced into.
+        self.area_round_limits = self._drop_locked_areas(self.area_round_limits)
         
         # UI Components
         self.background = None
@@ -46,6 +50,19 @@ class AdventureAreaSelectionView:
         
         self._setup_ui()
         
+    def _drop_locked_areas(self, limits):
+        """Remove areas still locked for every pet heading into the battle."""
+        if not limits or not hasattr(self.module, "is_area_unlocked"):
+            return limits
+        if not self.module.get_area_locks():
+            return limits
+        versions = {getattr(pet, "version", None) for pet in get_battle_targets()}
+        versions.discard(None)
+        if not versions:
+            versions = {None}
+        return {area: rounds for area, rounds in limits.items()
+                if any(self.module.is_area_unlocked(area, v) for v in versions)}
+
     def _setup_ui(self):
         """Setup the UI components."""
         ui_width = ui_height = BASE_RESOLUTION

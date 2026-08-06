@@ -417,6 +417,8 @@ class SceneTraining:
     def on_exit_training(self):
         """Handle EXIT button press."""
         if self.mode:
+            if getattr(self.mode, "phase", None) == "alert":
+                return
             runtime_globals.game_sound.play("cancel")
             self.mode.handle_event(("B", None))
         else:
@@ -427,6 +429,8 @@ class SceneTraining:
     def on_training_exit(self):
         """Handle training exit button press - send B key to current training mode."""
         if self.mode:
+            if getattr(self.mode, "phase", None) == "alert":
+                return
             self.mode.handle_event(("B", None))
 
     def create_training_exit_button(self):
@@ -513,6 +517,11 @@ class SceneTraining:
         if self.phase == "menu":
             self.handle_menu_input(event)
         elif self.mode:
+            # READY is non-skippable: do not let exit controls, buffered
+            # minigame actions, or hidden UI components consume alert input.
+            if getattr(self.mode, "phase", None) == "alert":
+                return
+
             # Only route click events to the UIManager when the click actually lands
             # on the exit button's rect.  Routing all events (including A keypresses
             # and off-target clicks) would let the focused exit button steal inputs

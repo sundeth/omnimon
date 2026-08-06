@@ -66,6 +66,66 @@ def unlock_item(module: str, unlock_type: str, name: str, label: str = None):
                         game_globals.unlocks[module].append(group_entry)
                         runtime_globals.game_message.add_slide(f"{group_label} unlocked!", (255, 255, 0), 56 * runtime_globals.UI_SCALE, runtime_globals.FONT_SIZE_SMALL)
 
+def check_encounter_unlocks(module_name: str, defeated=None):
+    """Grant the unlocks a won special encounter is worth.
+
+    Two shapes, both typed "encounter":
+      * named by a defeated enemy's ``unlock`` field - the Xros Wars Event
+        Battles work this way, one opening the Blue Flare Digitama and
+        another the Island Zone background;
+      * carrying an ``amount``, granted once that many Friends are registered
+        ("obtain every friend").
+    Modules that declare none are unaffected.
+    """
+    module_obj = runtime_globals.game_modules.get(module_name)
+    if not module_obj:
+        return
+    unlocks = [u for u in (getattr(module_obj, "unlocks", []) or [])
+               if isinstance(u, dict) and u.get("type") == "encounter"]
+    if not unlocks:
+        return
+
+    wanted = {getattr(e, "unlock", None) for e in (defeated or []) if e is not None}
+    wanted.discard(None)
+    wanted.discard("")
+
+    from utils.xros_utils import get_module_friends
+    friend_count = len(get_module_friends(module_name))
+
+    for unlock in unlocks:
+        name = unlock.get("name")
+        if not name or is_unlocked(module_name, "encounter", name):
+            continue
+        amount = unlock.get("amount")
+        if name in wanted or (amount is not None and friend_count >= amount):
+            unlock_item(module_name, "encounter", name)
+
+
+def check_digidex_unlocks(module_name: str):
+    """Grant any digidex unlock whose entry count has been reached.
+
+    The digidex screen used to be the only place this ran, so the player had to
+    open it before an unlock registered. Called after every evolution instead;
+    it returns immediately for modules that declare no digidex unlocks, so the
+    roster scan only happens where it can actually pay off.
+    """
+    module_obj = runtime_globals.game_modules.get(module_name)
+    if not module_obj:
+        return
+    unlocks = getattr(module_obj, "unlocks", []) or []
+    pending = [u for u in unlocks
+               if isinstance(u, dict) and u.get("type") == "digidex"
+               and u.get("amount") is not None
+               and not is_unlocked(module_name, "digidex", u.get("name"))]
+    if not pending:
+        return
+    from models.game_digidex import get_module_known_count
+    known = get_module_known_count(module_obj)
+    for unlock in pending:
+        if known >= unlock["amount"]:
+            unlock_item(module_name, "digidex", unlock["name"])
+
+
 def is_unlocked(module: str, unlock_type: str, name: str) -> bool:
     """
     Checks if an item is unlocked.

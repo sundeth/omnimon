@@ -83,6 +83,15 @@ class SceneEggSelection:
         self.next_button = None
         self.select_button = None
         self.back_button = None
+
+        # Device selection data and controls. A device is chosen before eggs
+        # when the selected module defines devices.json.
+        self.selected_device = None
+        self.device_grid = None
+        self.device_prev_button = None
+        self.device_next_button = None
+        self.device_select_button = None
+        self.device_back_button = None
         
         # UI Components for egg selection
         self.egg_grid = None
@@ -129,8 +138,7 @@ class SceneEggSelection:
         if preselected and preselected in runtime_globals.game_modules:
             self.available_modules = [preselected]
             self.current_module_index = 0
-            self.phase = "egg_selection"
-            self.setup_ui()
+            self.transition_to_device_or_egg_selection()
             runtime_globals.game_console.log(
                 f"[SceneEggSelection] Pre-selected module '{preselected}', "
                 "skipping category step")
@@ -169,6 +177,8 @@ class SceneEggSelection:
                 self.setup_category_ui()
             elif self.phase == "module_selection":
                 self.setup_module_selection_ui()
+            elif self.phase == "device_selection":
+                self.setup_device_selection_ui()
             elif self.phase == "egg_selection":
                 self.setup_egg_selection_ui()
             
@@ -536,6 +546,56 @@ class SceneEggSelection:
         
         runtime_globals.game_console.log("[SceneEggSelection] Module selection UI setup completed successfully")
 
+    def setup_device_selection_ui(self):
+        """Show the module's physical devices before their egg list."""
+        ui_width = ui_height = BASE_RESOLUTION
+
+        self.background = Background(ui_width, ui_height)
+        grid_area_width = 230
+        grid_area_height = 185
+        grid_area_y = 30
+        grid_area_end = grid_area_y + grid_area_height
+        self.background.set_regions([
+            (0, grid_area_y, "black"),
+            (grid_area_y, grid_area_end, "dark_bg"),
+            (grid_area_end, ui_height, "black")
+        ])
+        self.ui_manager.add_component(self.background)
+
+        selected_module_name = self.available_modules[self.current_module_index] if self.available_modules else ""
+        self.title_scene = TitleScene(0, 9, f"{selected_module_name} Devices" if selected_module_name else "Device Selection")
+        self.ui_manager.add_component(self.title_scene)
+
+        grid_width = 225
+        grid_height = 140
+        grid_x = (ui_width - grid_width) // 2
+        grid_y = grid_area_y + 5
+        self.device_grid = Grid(grid_x, grid_y, grid_width, grid_height, rows=2, columns=2)
+        self.device_grid.on_selection_change = self.on_device_selection_change
+        self.device_grid.on_page_change = self.on_device_page_change
+        self.ui_manager.add_component(self.device_grid)
+
+        button_y = grid_y + grid_height + 8
+        button_width = 40
+        button_height = 25
+        button_spacing = 10
+        info_area_width = 220
+        info_area_x = (ui_width - info_area_width) // 2
+
+        self.device_prev_button = Button(info_area_x, button_y, button_width, button_height, "<", self.on_device_prev_page)
+        self.device_next_button = Button(info_area_x + info_area_width - button_width, button_y, button_width, button_height, ">", self.on_device_next_page)
+        select_width = 60
+        select_x = (ui_width // 2) - select_width - (button_spacing // 2)
+        self.device_select_button = Button(select_x, button_y, select_width, button_height, "SELECT", self.on_device_select)
+        back_width = 60
+        back_x = (ui_width // 2) + (button_spacing // 2)
+        self.device_back_button = Button(back_x, button_y, back_width, button_height, "BACK", self.on_device_back_to_module)
+        for button in (self.device_prev_button, self.device_next_button, self.device_select_button, self.device_back_button):
+            self.ui_manager.add_component(button)
+
+        self.load_devices_for_module()
+        runtime_globals.game_console.log("[SceneEggSelection] Device selection UI setup completed successfully")
+
     def setup_egg_selection_ui(self):
         """Setup the UI components for egg selection."""
         ui_width = ui_height = BASE_RESOLUTION
@@ -739,98 +799,165 @@ class SceneEggSelection:
         runtime_globals.game_console.log(f"[SceneEggSelection] Stats for {module_name}: Digidex={stats['digidex_percentage']:.1f}%, Backgrounds={stats['backgrounds_percentage']:.1f}%, Secrets={stats['secrets_percentage']:.1f}%, Adventure={stats['adventure_percentage']:.1f}%")
         return stats
 
-    def load_eggs_for_module(self):
-        """Load and display eggs for the currently selected module."""
-        if not self.available_modules or not self.egg_grid:
-            return
-            
-        selected_module_name = self.available_modules[self.current_module_index]
-        module = get_module(selected_module_name)
-        
-        # Get all eggs (stage 0 monsters) from the module
-        eggs = module.get_monsters_by_stage(0)
-        
-        # Filter out locked special eggs
+    def _get_available_eggs(self, module):
+        """Return stage-0 eggs the player may currently hatch from ``module``."""
         available_eggs = []
-        for egg in eggs:
-            # Check if this is a special egg that requires unlocking
+        for egg in module.get_monsters_by_stage(0):
             if egg.get("special", False):
                 special_key = egg.get("special_key", "")
-                module_val = egg.get("module", selected_module_name)
-                
-                # Special case for G-Cell fragment eggs
+                module_name = egg.get("module", module.name)
                 if special_key == "gcell_fragment":
-                    fragment_key = f"{module_val}@{egg.get('version', 1)}"
-                    if hasattr(game_globals, 'gcell_fragments') and fragment_key in game_globals.gcell_fragments:
-                        # Player has the fragment, allow this egg
+                    fragment_key = f"{module_name}@{egg.get('version', 1)}"
+                    if hasattr(game_globals, "gcell_fragments") and fragment_key in game_globals.gcell_fragments:
                         available_eggs.append(egg)
-                        runtime_globals.game_console.log(f"[SceneEggSelection] G-Cell fragment egg available: {egg['name']} (fragment: {fragment_key})")
-                    else:
-                        runtime_globals.game_console.log(f"[SceneEggSelection] Skipping G-Cell fragment egg - no fragment: {egg['name']} (needs: {fragment_key})")
                     continue
-                
-                # Skip other locked special eggs
-                if special_key and not is_unlocked(module_val, None, special_key):
-                    runtime_globals.game_console.log(f"[SceneEggSelection] Skipping locked special egg: {egg['name']} (key: {special_key})")
+                if special_key and not is_unlocked(module_name, None, special_key):
                     continue
             available_eggs.append(egg)
-        
-        # Clear existing grid items
+        return available_eggs
+
+    def _get_device_eggs(self, module, device, available_eggs=None):
+        """Return this device's configured eggs that are currently available."""
+        if not isinstance(device, dict):
+            return []
+        references = device.get("eggs", [])
+        if not isinstance(references, list):
+            return []
+        available_eggs = available_eggs if available_eggs is not None else self._get_available_eggs(module)
+        matched = []
+        for egg in available_eggs:
+            for reference in references:
+                if not isinstance(reference, dict):
+                    continue
+                if reference.get("name") != egg.get("name"):
+                    continue
+                try:
+                    same_version = int(reference.get("version")) == int(egg.get("version"))
+                except (TypeError, ValueError):
+                    same_version = False
+                if same_version:
+                    matched.append(egg)
+                    break
+        return matched
+
+    def _get_selectable_devices(self, module):
+        """Return devices that are complete and currently usable for hatching.
+
+        A device without a configured screen background is unfinished artwork,
+        so it remains editor-only.  Egg matching is performed against the
+        already filtered egg list, which also hides a device whose only eggs
+        are special eggs that have not been unlocked yet.
+        """
+        available_eggs = self._get_available_eggs(module)
+        return [
+            device for device in getattr(module, "devices", [])
+            if isinstance(device, dict)
+            and str(device.get("background", "") or "").strip()
+            and self._get_device_eggs(module, device, available_eggs)
+        ]
+
+    def _compose_device_sprite(self, module, device):
+        """Build the low-resolution background + physical-device composition."""
+        sprite_name = str(device.get("sprite", "") or "").strip()
+        if not sprite_name:
+            return None
+        if not sprite_name.lower().endswith(".png"):
+            sprite_name += ".png"
+        sprite_path = os.path.join(module.folder_path, "devices", sprite_name)
+        if not os.path.exists(sprite_path):
+            return None
+        try:
+            device_sprite = image_load(sprite_path).convert_alpha()
+            composed = pygame.Surface(device_sprite.get_size(), pygame.SRCALPHA)
+            background_name = str(device.get("background", "") or "").strip()
+            if background_name:
+                background_data = next(
+                    (background for background in getattr(module, "backgrounds", [])
+                     if background.get("name") == background_name),
+                    None)
+                background_file = (
+                    f"bg_{background_name}_day.png"
+                    if background_data and background_data.get("day_night")
+                    else f"bg_{background_name}.png"
+                )
+                background_path = os.path.join(module.folder_path, "backgrounds", background_file)
+                if os.path.exists(background_path):
+                    background = image_load(background_path).convert_alpha()
+                    try:
+                        scale = max(1, min(100, int(device.get("background_scale", 100))))
+                    except (TypeError, ValueError):
+                        scale = 100
+                    if scale != 100:
+                        size = (
+                            max(1, background.get_width() * scale // 100),
+                            max(1, background.get_height() * scale // 100),
+                        )
+                        background = pygame.transform.scale(background, size)
+                    try:
+                        background_x = int(device.get("background_x", 0))
+                        background_y = int(device.get("background_y", 0))
+                    except (TypeError, ValueError):
+                        background_x = background_y = 0
+                    composed.blit(background, (background_x, background_y))
+            composed.blit(device_sprite, (0, 0))
+            return composed
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[SceneEggSelection] Failed to compose device {device.get('name', '')}: {exc}")
+            return None
+
+    def load_devices_for_module(self):
+        """Load and display selectable physical devices for the current module."""
+        if not self.available_modules or not self.device_grid:
+            return
+        module = get_module(self.available_modules[self.current_module_index])
         grid_items = []
-        
-        # Load sprites for each available egg
+        for device in self._get_selectable_devices(module):
+            grid_items.append(GridItem(
+                sprite=self._compose_device_sprite(module, device),
+                text=device.get("name", "Unnamed Device"),
+                data=device,
+            ))
+        self.device_grid.set_items(grid_items)
+        runtime_globals.game_console.log(
+            f"[SceneEggSelection] Loaded {len(grid_items)} devices for module {module.name}")
+
+    def load_eggs_for_module(self):
+        """Load the available eggs for the module or currently selected device."""
+        if not self.available_modules or not self.egg_grid:
+            return
+        selected_module_name = self.available_modules[self.current_module_index]
+        module = get_module(selected_module_name)
+        available_eggs = self._get_available_eggs(module)
+        if self.selected_device is not None:
+            available_eggs = self._get_device_eggs(module, self.selected_device, available_eggs)
+
+        grid_items = []
         for egg in available_eggs:
             try:
                 sprite = None
-                
-                # First, check for device-specific sprite in devices folder
-                devices_folder = os.path.join(module.folder_path, "devices")
-                device_sprite_path = os.path.join(devices_folder, f"{egg['name']}.png")
-                
-                if os.path.exists(device_sprite_path):
-                    # Load device-specific sprite
-                    try:
+                # Legacy modules without devices.json can retain their old
+                # egg-name device artwork. A configured device already has its
+                # own composition in the previous selection screen.
+                if self.selected_device is None:
+                    device_sprite_path = os.path.join(module.folder_path, "devices", f"{egg['name']}.png")
+                    if os.path.exists(device_sprite_path):
                         sprite = image_load(device_sprite_path).convert_alpha()
-                        runtime_globals.game_console.log(f"[SceneEggSelection] Using device sprite for egg: {egg['name']}")
-                    except Exception as device_error:
-                        runtime_globals.game_console.log(f"[SceneEggSelection] Failed to load device sprite for {egg['name']}: {device_error}")
-                        sprite = None
-                
-                # If no device sprite found or failed to load, fall back to regular pet sprites
                 if sprite is None:
                     sprites_dict = load_pet_sprites(
-                        egg["name"],
-                        module.folder_path,
-                        module.name_format,
-                        primary_sprite_format=getattr(module, 'primary_sprite_format', 'Color'),
-                        secondary_sprite_format=getattr(module, 'secondary_sprite_format', 'HD')
+                        egg["name"], module.folder_path, module.name_format,
+                        primary_sprite_format=getattr(module, "primary_sprite_format", "Color"),
+                        secondary_sprite_format=getattr(module, "secondary_sprite_format", "HD"),
                     )
-                    
-                    # Get the first frame (0.png) -- frame keys are ints
                     sprite = sprites_dict.get(0) or sprites_dict.get("0")
-                
-                # Create grid item with sprite and egg name
-                grid_item = GridItem(
-                    sprite=sprite,
-                    text=egg["name"],
-                    data=egg  # Store the full egg data
-                )
-                grid_items.append(grid_item)
-                
-            except Exception as e:
-                runtime_globals.game_console.log(f"[SceneEggSelection] Failed to load sprite for egg {egg['name']}: {e}")
-                # Create grid item without sprite
-                grid_item = GridItem(
-                    sprite=None,
-                    text=egg["name"],
-                    data=egg
-                )
-                grid_items.append(grid_item)
-        
-        # Set items in the grid
+                grid_items.append(GridItem(sprite=sprite, text=egg["name"], data=egg))
+            except Exception as exc:
+                runtime_globals.game_console.log(
+                    f"[SceneEggSelection] Failed to load sprite for egg {egg['name']}: {exc}")
+                grid_items.append(GridItem(sprite=None, text=egg["name"], data=egg))
         self.egg_grid.set_items(grid_items)
-        
-        runtime_globals.game_console.log(f"[SceneEggSelection] Loaded {len(grid_items)} eggs for module {selected_module_name}")
+        runtime_globals.game_console.log(
+            f"[SceneEggSelection] Loaded {len(grid_items)} eggs for module {selected_module_name}")
 
     def update_module_display(self):
         """Update the module display with current module information."""
@@ -858,19 +985,8 @@ class SceneEggSelection:
                 # Clear image if no logo found
                 self.module_logo_image.set_image(image_surface=None)
         
-        # Update statistics using cached values
-        all_eggs = module.get_monsters_by_stage(0)
-        # Filter out locked special eggs for accurate count
-        available_eggs = []
-        for egg in all_eggs:
-            if egg.get("special", False):
-                special_key = egg.get("special_key", "")
-                module_val = egg.get("module", module_name)
-                if special_key and not is_unlocked(module_val, None, special_key):
-                    continue
-            available_eggs.append(egg)
-        
-        egg_count = len(available_eggs)
+        # Use the same availability rules as the egg and device pickers.
+        egg_count = len(self._get_available_eggs(module))
         
         if self.eggs_label:
             self.eggs_label.set_value(str(egg_count))
@@ -954,6 +1070,19 @@ class SceneEggSelection:
                 # START key acts as select button
                 self.on_select_module()
                 return
+        elif self.phase == "device_selection":
+            if event_type == "B":
+                self.on_device_back_to_module()
+                return
+            elif event_type == "START":
+                self.on_device_select()
+                return
+            elif event_type == "L":
+                self.on_device_prev_page()
+                return
+            elif event_type == "R":
+                self.on_device_next_page()
+                return
         elif self.phase == "egg_selection":
             if event_type == "B":
                 # B key acts as back button
@@ -1033,29 +1162,16 @@ class SceneEggSelection:
         selected_module_name = self.available_modules[self.current_module_index]
         runtime_globals.game_console.log(f"[SceneEggSelection] Random module selected: {selected_module_name}")
         
-        # Step 3: Get available eggs and select a random one
+        # Step 3: Choose from a physical device when the module defines one,
+        # otherwise preserve the legacy random-egg behaviour.
         module = get_module(selected_module_name)
-        all_eggs = module.get_monsters_by_stage(0)
-        
-        # Filter out locked special eggs (same logic as load_eggs_for_module)
-        available_eggs = []
-        for egg in all_eggs:
-            if egg.get("special", False):
-                special_key = egg.get("special_key", "")
-                module_val = egg.get("module", selected_module_name)
-                
-                # Special case for G-Cell fragment eggs
-                if special_key == "gcell_fragment":
-                    fragment_key = f"{module_val}@{egg.get('version', 1)}"
-                    if hasattr(game_globals, 'gcell_fragments') and fragment_key in game_globals.gcell_fragments:
-                        # Player has the fragment, allow this egg
-                        available_eggs.append(egg)
-                    continue
-                
-                # Skip other locked special eggs
-                if special_key and not is_unlocked(module_val, None, special_key):
-                    continue
-            available_eggs.append(egg)
+        selectable_devices = self._get_selectable_devices(module)
+        self.selected_device = random.choice(selectable_devices) if selectable_devices else None
+        available_eggs = (
+            self._get_device_eggs(module, self.selected_device)
+            if self.selected_device is not None
+            else self._get_available_eggs(module)
+        )
         
         if not available_eggs:
             runtime_globals.game_console.log(f"[SceneEggSelection] No available eggs for module {selected_module_name}, aborting random selection")
@@ -1076,7 +1192,8 @@ class SceneEggSelection:
             # Find the index of our random egg in the grid items
             target_egg_index = -1
             for i, item in enumerate(self.egg_grid.items):
-                if item.data and item.data.get('name') == random_egg['name']:
+                if (item.data and item.data.get('name') == random_egg['name']
+                        and item.data.get('version') == random_egg.get('version')):
                     target_egg_index = i
                     break
             
@@ -1136,8 +1253,7 @@ class SceneEggSelection:
         if self.available_modules:
             selected_module = self.available_modules[self.current_module_index]
             runtime_globals.game_console.log(f"[SceneEggSelection] Selected module: {selected_module}")
-            # Transition to egg selection phase
-            self.transition_to_egg_selection()
+            self.transition_to_device_or_egg_selection()
     
     def on_back_to_category(self):
         """Handle back to category button press."""
@@ -1167,13 +1283,79 @@ class SceneEggSelection:
             self.ui_manager.set_focused_component(self.select_button)
 
     def transition_to_egg_selection(self):
-        """Transition from module selection to egg selection."""
+        """Transition to the egg list, keeping the selected device if any."""
         self.phase = "egg_selection"
         self.setup_ui()
         
         # Set focus on grid
         if self.egg_grid:
             self.ui_manager.set_focused_component(self.egg_grid)
+
+    def transition_to_device_or_egg_selection(self):
+        """Select the next view based on whether this module has usable devices."""
+        self.selected_device = None
+        if not self.available_modules:
+            self.transition_to_egg_selection()
+            return
+        module = get_module(self.available_modules[self.current_module_index])
+        if self._get_selectable_devices(module):
+            self.phase = "device_selection"
+            self.setup_ui()
+            if self.device_grid:
+                self.ui_manager.set_focused_component(self.device_grid)
+        else:
+            self.transition_to_egg_selection()
+
+    # Button callback methods for device selection
+    def on_device_selection_change(self, selected_item):
+        if selected_item and selected_item.data:
+            runtime_globals.game_console.log(
+                f"[SceneEggSelection] Selected device: {selected_item.data.get('name', 'Unnamed Device')}")
+
+    def on_device_page_change(self, current_page, total_pages):
+        runtime_globals.game_console.log(
+            f"[SceneEggSelection] Device page {current_page + 1} of {total_pages}")
+
+    def on_device_prev_page(self):
+        runtime_globals.game_sound.play("menu")
+        if self.device_grid:
+            self.device_grid.change_page(-1)
+
+    def on_device_next_page(self):
+        runtime_globals.game_sound.play("menu")
+        if self.device_grid:
+            self.device_grid.change_page(1)
+
+    def on_device_select(self):
+        runtime_globals.game_sound.play("menu")
+        if not self.device_grid or not self.available_modules:
+            return
+        selected_item = None
+        if 0 <= self.device_grid.selected_item_index < len(self.device_grid.items):
+            selected_item = self.device_grid.items[self.device_grid.selected_item_index]
+        if selected_item is None:
+            selected_item = self.device_grid.get_selected_item()
+        if not selected_item or not selected_item.data:
+            return
+
+        self.selected_device = selected_item.data
+        module = get_module(self.available_modules[self.current_module_index])
+        eggs = self._get_device_eggs(module, self.selected_device)
+        if len(eggs) == 1:
+            runtime_globals.game_console.log(
+                f"[SceneEggSelection] Device {self.selected_device.get('name', '')} has one egg; hatching it directly")
+            self.select_egg(eggs[0])
+            return
+
+        self.transition_to_egg_selection()
+
+    def on_device_back_to_module(self):
+        runtime_globals.game_sound.play("cancel")
+        self.selected_device = None
+        self.phase = "module_selection"
+        self.setup_ui()
+        if self.select_button:
+            self.ui_manager.set_focused_component(self.select_button)
 
     # Button callback methods for egg selection
     def on_egg_selection_change(self, selected_item):
@@ -1224,8 +1406,18 @@ class SceneEggSelection:
         """Create a new pet from the selected egg and add it to the game."""
         runtime_globals.game_console.log(f"[SceneEggSelection] Selected egg: {selected_egg['name']}")
         
+        # Copy the monster data so the module cache remains untouched. The
+        # gameplay version identifies evolutions/unlocks; device_version is a
+        # separate hardware value selected by the physical device.
+        pet_data = dict(selected_egg)
+        if self.selected_device is not None:
+            try:
+                pet_data["device_version"] = int(self.selected_device.get("device_version"))
+            except (TypeError, ValueError):
+                pet_data["device_version"] = int(selected_egg.get("version", 0))
+
         # Create new pet from egg data
-        pet = GamePet(selected_egg)
+        pet = GamePet(pet_data)
         
         # Register in digidex
         register_digidex_entry(pet.name, pet.module, pet.version)
@@ -1259,7 +1451,11 @@ class SceneEggSelection:
         unlocks = module_unlockables if isinstance(module_unlockables, list) else []
         for unlock in unlocks:
             if unlock.get("type") == "egg":
-                if "version" not in unlock or unlock.get("version") == selected_egg["version"]:
+                # No version, or an explicitly null one, means the unlock is
+                # not tied to a particular egg - that is how a module marks
+                # something as available from the start on every version.
+                required = unlock.get("version")
+                if required is None or required == selected_egg["version"]:
                     unlock_item(selected_egg["module"], "egg", unlock["name"])
         
         # (Coin rewards for egg-related unlocks are granted by unlock_item
@@ -1272,9 +1468,14 @@ class SceneEggSelection:
     def on_egg_back_to_module(self):
         """Handle back to module selection button press."""
         runtime_globals.game_sound.play("cancel")
-        self.phase = "module_selection"
+        # Returning from a device-filtered egg list goes back to that module's
+        # devices; legacy/no-device egg lists return to the module chooser.
+        returning_to_devices = self.selected_device is not None
+        self.selected_device = None
+        self.phase = "device_selection" if returning_to_devices else "module_selection"
         self.setup_ui()
         
-        # Set focus back on select button
-        if self.select_button:
+        if returning_to_devices and self.device_grid:
+            self.ui_manager.set_focused_component(self.device_grid)
+        elif self.select_button:
             self.ui_manager.set_focused_component(self.select_button)

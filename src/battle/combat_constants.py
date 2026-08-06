@@ -162,3 +162,10 @@ def update_combat_constants():
 # Usage elsewhere:
 # speed = get_attack_speed()
 # entry_speed = get_enemy_entry_speed()
+
+
+#: ``opponent_device_version`` value meaning "any device that is not the one
+#: the pet was hatched on". No real device carries a negative version, so it
+#: is safe as a sentinel, and it lets a module say "battle with any other
+#: version" without listing every pair.
+ANY_OTHER_DEVICE = -1

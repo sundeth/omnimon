@@ -135,6 +135,11 @@ def _redeem_pet(module, password, change_scene) -> bool:
 
     data = dict(data)
     data["module"] = module.name
+    # A Copymon is a doll of a Digimon from some other device, so the password
+    # says what hardware it counts as rather than inheriting the gameplay
+    # version - battle protocols key off device_version.
+    if password.get("device_version") is not None:
+        data["device_version"] = int(password["device_version"])
     pet = GamePet(data)
     # Password pets are marked as modded so they can't enter PvP battles.
     pet.edited = True

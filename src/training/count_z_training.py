@@ -13,7 +13,6 @@ from ui.minigames.count_match_z import CountMatchZ
 from battle import combat_constants
 import core.constants as constants
 from utils.pygame_utils import blit_with_cache
-from utils.scene_utils import change_scene
 
 
 class CountMatchZTraining(Training):
@@ -64,6 +63,9 @@ class CountMatchZTraining(Training):
 
     def handle_event(self, event):
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and event_type in ("Y", "SHAKE"):
             # Let the minigame handle the input
@@ -78,10 +80,6 @@ class CountMatchZTraining(Training):
             self.frame_counter = 0
         elif self.phase == "result" and event_type in ["B", "START"]:
             self.finish_training()
-        elif self.phase == "alert" and event_type == "B":
-            runtime_globals.game_sound.play("cancel")
-            change_scene("game")
-
     def calculate_results(self):
         """Calculate training results based on minigame result."""
         pets = self.pets

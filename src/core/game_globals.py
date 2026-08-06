@@ -440,6 +440,11 @@ coins = 0  # Player's coin balance
 # the digidex "Friends" view.
 friends = {}
 
+# Modules owed a Friend Event Battle. Clearing an adventure area on a module
+# that has a Friend roster queues its name here; the next event check spends
+# it on an encounter with a Friend the player has yet to register.
+friend_event_pending = []
+
 # Card collection state (see utils.card_utils):
 #   card_collection: {module_name: {card_id: {"digital": n, "physical": n}}}
 #   card_cooldowns:  {card_id: unix timestamp of last digital use}
@@ -606,6 +611,7 @@ def save() -> None:
         "purchases": purchases.to_dict(),
         "coins": coins,
         "friends": friends,
+        "friend_event_pending": friend_event_pending,
         "card_collection": card_collection,
         "card_cooldowns": card_cooldowns,
         "configuration": configuration.to_dict(),
@@ -643,7 +649,7 @@ def load() -> None:
     global pet_list, poop_list, traited, gcell_fragments, unlocks, battle_area, battle_round, last_adventure_module, xai, xai_date, background_high_res
     global game_background, background_module_name, showClock, inventory, battle_effects, redeemed_codes
     global quests, event, event_time, total_victories, purchases, coins, configuration, setup_input, setup_graphics, show_tutorial, game_mode
-    global friends, card_collection, card_cooldowns
+    global friends, friend_event_pending, card_collection, card_cooldowns
 
     if not _can_access_save_dir():
         print("[Save] Skipping load - save directory not accessible")
@@ -757,6 +763,7 @@ def load() -> None:
                 purchases = GamePurchases.from_dict(data.get("purchases", None))
                 coins = data.get("coins", 0)
                 friends = data.get("friends", {})
+                friend_event_pending = data.get("friend_event_pending", [])
                 card_collection = data.get("card_collection", {})
                 card_cooldowns = data.get("card_cooldowns", {})
                 setup_input = data.get("setup_input", True)
@@ -829,6 +836,7 @@ def load() -> None:
     purchases = GamePurchases()
     coins = 0
     friends = {}
+    friend_event_pending = []
     card_collection = {}
     card_cooldowns = {}
     # Configuration keeps its system-detected defaults

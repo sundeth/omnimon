@@ -156,27 +156,38 @@ def _init_headless_pygame():
     A display surface is required for `convert_alpha()` calls that some pet
     code paths perform (e.g. dead-pet sprite swap, Burpmon transformation).
     Without it, those calls raise pygame.error and would crash the tick loop.
+
+    Every step catches bare ``Exception`` rather than ``pygame.error``:
+    SDL has no bootstrap in a p4a service process (no SDLActivity ever ran),
+    so its failure modes here are not all well-behaved pygame errors, and
+    none of them are worth losing the pet tick over.
     """
     try:
         pygame.display.init()
-    except pygame.error as exc:
+    except Exception as exc:
         print(f"[Service] pygame.display.init failed: {exc}")
     try:
         pygame.display.set_mode((1, 1))
-    except pygame.error as exc:
+    except Exception as exc:
         print(f"[Service] pygame.display.set_mode failed: {exc}")
     # Audio: try, but ignore failure -- service must not need a real device.
     try:
         if not pygame.mixer.get_init():
             pygame.mixer.init(frequency=22050, size=-16, channels=1, buffer=512)
-    except pygame.error as exc:
+    except Exception as exc:
         print(f"[Service] pygame.mixer.init skipped: {exc}")
 
 
 # ---------------------------------------------------------------------------
-# Stop-signal handling: the main app touches this file when it wants the
-# service running, and removes it when it resumes. This lets the service
+# Stop-signal handling: the main app writes the marker before it asks the OS
+# to start us, and removes it when it resumes. This lets the service
 # self-terminate without needing a JNI round-trip from the foreground.
+#
+# The marker belongs to the APP -- we only ever read it.  Starting a service
+# process takes seconds, so the app can easily resume (and remove the marker)
+# while we are still booting; a service that re-creates its own marker in that
+# window keeps ticking pets underneath the running foreground app and both
+# processes then write the save over each other.
 # ---------------------------------------------------------------------------
 def _service_marker_path():
     """Return the absolute path to the service-active marker file.
@@ -190,6 +201,44 @@ def _service_marker_path():
     except Exception:
         # Desktop fallback -- mainly for local smoke testing.
         return os.path.join(os.getcwd(), "service_active.flag")
+
+
+# ---------------------------------------------------------------------------
+# Progress reporting.
+#
+# A service that dies natively (an SDL abort, the low-memory killer, a vendor
+# battery manager) leaves no traceback anywhere -- it just stops.  Every phase
+# below rewrites the status notification and appends to a log file in app
+# storage, so the last phase reached is still readable on the device
+# afterwards, with or without `adb logcat`.
+# ---------------------------------------------------------------------------
+def _service_log_path():
+    return os.path.join(os.path.dirname(_service_marker_path()),
+                        "service_last_run.log")
+
+
+class PhaseReporter:
+    """Records how far service startup got, durably."""
+
+    def __init__(self, notifier):
+        self.notifier = notifier
+        self.path = _service_log_path()
+        try:
+            with open(self.path, "w") as f:
+                f.write(time.strftime("[%Y-%m-%d %H:%M:%S] service process start\n"))
+        except Exception as exc:
+            print(f"[Service] Could not open run log: {exc}")
+            self.path = None
+
+    def __call__(self, message, title="Omnipet service starting"):
+        print(f"[Service] {message}")
+        if self.path:
+            try:
+                with open(self.path, "a") as f:
+                    f.write(time.strftime("[%H:%M:%S] ") + message + "\n")
+            except Exception:
+                pass
+        self.notifier.notify("service_status", title, message)
 
 
 # ---------------------------------------------------------------------------
@@ -332,6 +381,51 @@ class AndroidNotifier:
         except Exception as exc:
             print(f"[Service][Notifier] startForeground failed: {exc}")
             traceback.print_exc()
+
+
+class WakeLock:
+    """Keeps the CPU alive between ticks.
+
+    A foreground service does not stop the device entering deep sleep --
+    only a wakelock does.  While suspended ``time.sleep()`` does not run and
+    ``time.monotonic()`` (CLOCK_MONOTONIC) does not advance, so without this
+    the pets simply stop ticking whenever the screen has been off a while,
+    however healthy the service is.  Since the service is the only thing
+    that advances pets while the app is closed, that has to hold.
+
+    The cost is real: the CPU never fully sleeps while the service runs.
+    Dropping the ``acquire()`` call below is the whole opt-out -- everything
+    else keeps working, ticks just stall during deep sleep.
+    """
+
+    def __init__(self):
+        self._lock = None
+        try:
+            from jnius import autoclass  # type: ignore
+
+            PythonService = autoclass("org.kivy.android.PythonService")
+            Context = autoclass("android.content.Context")
+            PowerManager = autoclass("android.os.PowerManager")
+
+            pm = PythonService.mService.getSystemService(Context.POWER_SERVICE)
+            # Tag format is Android's own convention: "app:purpose".
+            self._lock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                                        "Omnipet::PetTick")
+            self._lock.setReferenceCounted(False)
+            self._lock.acquire()
+            print("[Service] Partial wakelock acquired")
+        except Exception as exc:
+            print(f"[Service] Wakelock unavailable, ticks will stall in "
+                  f"deep sleep: {exc}")
+            self._lock = None
+
+    def release(self):
+        try:
+            if self._lock is not None and self._lock.isHeld():
+                self._lock.release()
+                print("[Service] Wakelock released")
+        except Exception as exc:
+            print(f"[Service] Wakelock release failed: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -503,8 +597,19 @@ def main():
 
 
 def _run(notifier):
-    _init_headless_pygame()
+    phase = PhaseReporter(notifier)
 
+    # The app writes the marker before asking the OS to start us.  No marker
+    # means the app already came back to the foreground while we were booting
+    # -- it owns the pets again, so there is nothing for us to do.
+    marker = _service_marker_path()
+    if not os.path.exists(marker):
+        phase("stop marker absent -- app is in the foreground, exiting")
+        notifier.notify("service_status", "Omnipet service idle",
+                        "App resumed before the service finished starting.")
+        return
+
+    phase("importing game core")
     from core import runtime_globals, game_globals
 
     runtime_globals.IS_ANDROID = True
@@ -520,6 +625,7 @@ def _run(notifier):
     _silence_sound(runtime_globals)
 
     # No save -> nothing to do. Exit immediately as required by the brief.
+    phase("checking save")
     if not game_globals.has_game_mode_preference():
         print("[Service] No save / game mode preference -- exiting.")
         notifier.notify(
@@ -533,11 +639,20 @@ def _run(notifier):
     if game_globals.is_progress_mode():
         game_globals.load_player_id()
 
+    # Only now is a display worth paying for: a handful of pet code paths
+    # (dead-pet sprite swap, Burpmon) call convert_alpha().  Deliberately
+    # after the cheap checks so a save-less start never touches SDL, which
+    # has no bootstrap in a service process.
+    phase("initialising headless pygame")
+    _init_headless_pygame()
+
     # Modules must be loaded before pets can tick (pets call get_module()).
     # Failures propagate to main()'s crash notification.
+    phase("loading modules")
     from utils.module_utils import load_modules
     load_modules()
 
+    phase("loading save")
     game_globals.migrate_legacy_saves()
     game_globals.load()
 
@@ -565,19 +680,11 @@ def _run(notifier):
     # Seed the poop baseline so we don't notify on existing-at-start poops.
     tracker._last_poop_count = len(game_globals.poop_list)
 
-    # Make sure the marker exists (the main app should create it before
-    # starting us, but being defensive avoids an immediate exit on race).
-    marker = _service_marker_path()
-    if not os.path.exists(marker):
-        try:
-            with open(marker, "w") as f:
-                f.write(str(int(time.time())))
-        except Exception as exc:
-            print(f"[Service] Could not create marker file: {exc}")
+    wakelock = WakeLock()
 
+    phase(f"loop start, {len(game_globals.pet_list)} pet(s), "
+          f"tick={int(TICK_INTERVAL_SECONDS)}s")
     tick_count = 0
-    print(f"[Service] Loop start: {len(game_globals.pet_list)} pet(s), "
-          f"tick={TICK_INTERVAL_SECONDS}s")
 
     try:
         while True:
@@ -638,11 +745,12 @@ def _run(notifier):
     except KeyboardInterrupt:
         print("[Service] KeyboardInterrupt")
     finally:
+        wakelock.release()
         try:
             game_globals.save()
         except Exception as exc:
             print(f"[Service] final save failed: {exc}")
-        print("[Service] Stopped")
+        phase("stopped cleanly", title="Omnipet service stopped")
 
 
 if __name__ == "__main__":

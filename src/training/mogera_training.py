@@ -268,6 +268,9 @@ class MogeraTraining(Training):
     def handle_event(self, event):
         """Handle input events"""
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "counter":
             # Pass to UI manager for button clicks
@@ -408,9 +411,10 @@ class MogeraTraining(Training):
 
     def get_attack_count(self):
         """Returns the number of attacks based on strength."""
+        # Two phases: failing the Anti-G stage pays nothing, clearing it but
+        # not M.O.G.E.R.A. is a Good, clearing both is an Excellent.
+        if getattr(self, "countered_count", 0) < 5:
+            return 0
         if self.strength < 7:
             return 1
-        elif self.strength < 14:
-            return 2
-        else:
-            return 3
+        return 3

@@ -81,6 +81,29 @@ def _marker_path():
         return os.path.join(os.getcwd(), _MARKER_FILENAME)
 
 
+_RUN_LOG_FILENAME = "service_last_run.log"
+
+
+def _run_log_path():
+    return os.path.join(os.path.dirname(_marker_path()), _RUN_LOG_FILENAME)
+
+
+def get_last_run_phase() -> str:
+    """Return the last startup phase the service process reported.
+
+    ``service_main.py`` rewrites this file on every launch and appends a
+    line per phase, so when the service dies without a traceback -- an SDL
+    abort, the low-memory killer, a vendor battery manager -- the final
+    line still says how far it got.  Empty string when there is no log.
+    """
+    try:
+        with open(_run_log_path(), "r") as f:
+            lines = [line.strip() for line in f if line.strip()]
+        return lines[-1] if lines else ""
+    except Exception:
+        return ""
+
+
 def _write_marker():
     try:
         with open(_marker_path(), "w") as f:
@@ -234,9 +257,14 @@ def install_lifecycle_hooks(on_pause=None, on_resume=None):
     Android's own per-activity callbacks, which fire on *every* Android
     version regardless of SDL routing.
 
-    The provided callbacks run on the JVM main thread.  Keep them tiny
-    and thread-safe — they typically just call ``game.save()`` and
-    ``start_service()`` / ``stop_service()``.
+    The provided callbacks run on Android's UI thread, and getting there
+    from Java costs a ``PyGILState_Ensure()`` — so they must do nothing
+    but set a flag the pygame loop consumes.  A callback that saves,
+    calls JNI, or imports anything holds the UI thread for as long as it
+    takes to get the GIL, and if the pygame thread is blocked inside
+    SDL's Android event pump (see the header of ``main_android.py``) it
+    never gets it: ``onActivityResumed`` then deadlocks the very thread
+    that was about to deliver ``nativeResume``.
 
     No-op on non-Android, on failure, or on a second call (registration
     is idempotent for the lifetime of the process).

@@ -121,9 +121,10 @@ class StatsPanel(UIComponent):
         
         # Battle stats (if visible)
         if "Power" in self.visible_stats:
-            module = get_module(self.pet.module)
             power = str(self.pet.power)
-            if hasattr(module, 'ruleset') and module.ruleset == "vb":
+            # Same rule as the status scene: the pet having a star is what
+            # decides whether one is shown, not the module's ruleset.
+            if getattr(self.pet, 'star', 0) > 0:
                 power += f"({self.pet.star}★)"
             power_label = LabelValue(padding, padding + current_y, 164, line_height, "Power:", power, color_override=CYAN)
             self.stat_components.append(power_label)

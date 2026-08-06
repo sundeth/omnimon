@@ -14,6 +14,7 @@ import ui.ui_constants as ui_constants
 from ui.components.image import Image
 from ui.components.label import Label
 from ui.components.component import UIComponent
+from battle.combat_constants import ANY_OTHER_DEVICE
 
 class BattleEncounterVersus(BattleEncounter):
     def __init__(self, pet1, pet2, protocol: BattleProtocol):
@@ -293,8 +294,36 @@ class BattleEncounterVersus(BattleEncounter):
                                 # Check if at least one pet meets the version requirement
                                 pet1_version = getattr(self.pet1, 'version', 0)
                                 pet2_version = getattr(self.pet2, 'version', 0)
-                                
-                                if ver_req is not None:
+
+                                # Which physical device each pet was hatched on.
+                                # A connection requirement is about the hardware,
+                                # so device_version decides it, not the gameplay
+                                # version used for evolutions.
+                                dev1 = getattr(self.pet1, 'device_version', pet1_version)
+                                dev2 = getattr(self.pet2, 'device_version', pet2_version)
+                                dev_req = unlock.get('device_version', None)
+                                opp_req = unlock.get('opponent_device_version', None)
+
+                                # "Battle XA with XB" style pairing: one side has
+                                # to be the named device and the other its partner.
+                                # An opponent of ANY_OTHER_DEVICE means "any
+                                # device that is not this one", which is how a
+                                # device states "battle with any other version".
+                                if dev_req is not None or opp_req is not None:
+                                    def _side(own, other):
+                                        if dev_req is not None and own != dev_req:
+                                            return False
+                                        if opp_req is None:
+                                            return True
+                                        if opp_req == ANY_OTHER_DEVICE:
+                                            return other != own
+                                        return other == opp_req
+
+                                    paired = _side(dev1, dev2) or _side(dev2, dev1)
+                                    if paired:
+                                        unlock_item(pet1_module, 'versus', unlock_name)
+                                        runtime_globals.game_console.log(f"[Versus] Unlocked {unlock_name} for {pet1_module}")
+                                elif ver_req is not None:
                                     # Version requirement specified - check if either pet meets it
                                     if pet1_version == ver_req or pet2_version == ver_req:
                                         unlock_item(pet1_module, 'versus', unlock_name)

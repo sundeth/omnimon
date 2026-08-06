@@ -279,7 +279,9 @@ class SceneMainGame:
                         else:
                             runtime_globals.game_console.log(f"[Event] Skipping event check - some pets are sleeping")
                         
-                        game_globals.event_time = 60  # Reset timer for next hour
+                        # Roughly hourly, with a little slack so the check
+                        # doesn't land on the same minute every time.
+                        game_globals.event_time = random.randint(45, 75)
         elif game_globals.event is not None and self.event_stage == 0:
             if game_globals.event:
                 self.event_stage = 1  # Move to alert stage

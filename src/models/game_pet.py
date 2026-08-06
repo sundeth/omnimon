@@ -70,6 +70,13 @@ class GamePet:
         self.name = data["name"]
         self.stage = data["stage"]
         self.version = data["version"]
+        # The hardware protocol version is chosen when an egg is hatched. It
+        # intentionally survives evolutions, whose monster data has only the
+        # gameplay/evolution-line version.
+        if "device_version" in data:
+            self.device_version = int(data["device_version"])
+        elif not hasattr(self, "device_version"):
+            self.device_version = int(self.version)
         self.special = data["special"]
         self.index = data.get("index", 0)
         if self.special:
@@ -556,6 +563,11 @@ class GamePet:
         # absorbed pet of a fusion).
         register_digidex_entry(self.name, module.name, self.version, reward=reward)
 
+        # Digidex-count unlocks are checked here rather than only when the
+        # digidex screen is opened, so the player does not have to visit it.
+        from utils.utils_unlocks import check_digidex_unlocks
+        check_digidex_unlocks(module.name)
+
         # Progress Mode: one coin grant per evolution (no-op in Free Mode).
         if reward:
             try:
@@ -855,6 +867,11 @@ class GamePet:
         return accepted
 
     def set_sick(self):
+        # Already sick pets cannot fall sick again - the ailment has to be
+        # healed first. Without this an untreated pet keeps re-rolling its
+        # heal doses and racking up injuries toward death.
+        if self.sick > 0:
+            return
         self.sick = self.heal_doses
         self.injuries += 1
         self.set_state("sick")
@@ -969,7 +986,19 @@ class GamePet:
                 ("battles" in evo and not in_range(self.battles, evo["battles"])) or
                 ("win_count" in evo and not in_range(self.win, evo["win_count"])) or
                 ("win_ratio" in evo and self.battles and not in_range((self.win * 100) // self.battles, evo["win_ratio"])) or
-                ("time_range" in evo and not in_time_range(evo["time_range"]))
+                # Minimum adventure area the pet must have cleared. self.area
+                # is the furthest area it has won a battle in (finish_battle).
+                ("area" in evo and evo["area"] is not None and
+                 getattr(self, "area", 0) < evo["area"]) or
+                ("time_range" in evo and not in_time_range(evo["time_range"])) or
+                # "chance" is rolled last, so it is only spent on an entry
+                # whose other requirements are already satisfied. A failed
+                # roll falls through to the next entry, which is how the
+                # device presents a coin flip between two outcomes: give the
+                # first one a chance and leave the second without one.
+                # -1 (or absent) means the criterion is unused.
+                ("chance" in evo and evo["chance"] >= 0 and
+                 random.random() * 100 >= evo["chance"])
             ):
                 continue
 
@@ -988,10 +1017,25 @@ class GamePet:
             # Unlock evolution if present in module unlocks (new format)
             module = get_module(self.module)
             unlocks = getattr(module, "unlocks", [])
+            target_stage = None
             for unlock in unlocks:
-                if unlock.get("type") == "evolution" and "to" in unlock:
-                    if evo["to"] in unlock["to"]:
-                        unlock_item(self.module, "evolution", unlock["name"])
+                if unlock.get("type") != "evolution":
+                    continue
+                if unlock.get("to") and evo["to"] in unlock["to"]:
+                    unlock_item(self.module, "evolution", unlock["name"])
+                    continue
+                # An evolution unlock can name a stage instead of a target,
+                # for the devices that hand out a Digitama simply for getting
+                # a Digimon that far. PEN20 opens four of its eggs this way,
+                # "Unlocked by evolving into Child".
+                wanted = unlock.get("stage")
+                if wanted is None:
+                    continue
+                if target_stage is None:
+                    target_stage = (module.get_monster(evo["to"], self.version)
+                                    or {}).get("stage", 0)
+                if target_stage >= wanted:
+                    unlock_item(self.module, "evolution", unlock["name"])
 
             if self.stage == 0 and self.shake_counter >= 99 and get_module(self.module).enable_shaken_egg:
                 self.shook = True
@@ -1109,16 +1153,23 @@ class GamePet:
         """Update vital values every hour - gain if pet is healthy and well-fed"""
         if self.stage <= 0 or self.state in ("dead", "nap") or self.sick > 0 or self.hunger == 0 or self.strength == 0:
             return
-            
+
+        # only devices that show the meter earn anything, the same rule
+        # Experience follows
+        if not self.tracks_vital_values():
+            return
+
         module = get_module(self.module)
         base_gain = getattr(module, 'vital_value_base', 50)  # Default to 50 if not defined
 
         # Calculate multiplier based on activities (base + activities)
         activity_multiplier = 1 + len(self.vital_activities)
         vital_gain = base_gain * activity_multiplier
-        
-        # Add to vital_values (capped at 9999)
-        self.vital_values = min(9999, self.vital_values + vital_gain)
+
+        # The cap is per stage - a Child tops out at 2500 where an Ultimate
+        # reaches 9999 - so evolving is what raises the ceiling.
+        ceiling = self.vital_value_cap() or 9999
+        self.vital_values = min(ceiling, self.vital_values + vital_gain)
         
         runtime_globals.game_console.log(f"[Vital] {self.name} gained {vital_gain} vital values (activities: {len(self.vital_activities)}). Total: {self.vital_values}")
         
@@ -1171,38 +1222,84 @@ class GamePet:
             return True
         return False
 
+    def _grant_traited_egg(self):
+        key = f"{self.module}@{self.version}"
+        if key not in game_globals.traited:
+            game_globals.traited.append(key)
+            runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
+
+    def _grant_gcell_fragment(self):
+        """Make the module's G-Cell Fragment egg available once.
+
+        scene_eggselection consumes the entry when the egg is picked, so the
+        player has to earn it again for the next one.
+        """
+        key = f"{self.module}@{self.version}"
+        if not hasattr(game_globals, "gcell_fragments"):
+            game_globals.gcell_fragments = []
+        if key not in game_globals.gcell_fragments:
+            game_globals.gcell_fragments.append(key)
+            runtime_globals.game_console.log(
+                f"[G-Cell] {self.name} left a G-Cell Fragment for {self.module} v{self.version}!")
+
     def set_traited_egg(self):
-        ruleset = get_module(self.module).ruleset
+        """Leave a Traited Egg if this device's rule says the pet earned one.
 
-        if ruleset == "dm":
-            if self.stage in [6, 7] and random.randint(0, 10) <= 3:
-                key = f"{self.module}@{self.version}"
-                if key not in game_globals.traited:
-                    game_globals.traited.append(key)
-                    runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
-        elif ruleset == "pen":
-            win_ratio = (self.win * 100) // self.battles if self.battles > 0 else 0
-            if self.stage >= 6 and self.age >= 2:
-                if win_ratio >= 60:
-                    key = f"{self.module}@{self.version}"
-                    if key not in game_globals.traited:
-                        game_globals.traited.append(key)
-                        runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
-        elif ruleset == "dmx":
-            trait = False
-            if self._evol_minutes >= 2880:  # 48 hours
-                trait = True
+        ``traited_egg_rule`` on the module picks between the five ways the
+        devices grant one:
 
-            if self.version > 4 and self.area < 45:
-                trait = False
+          None                       never
+          Stage V Chance             stage V or higher, 30% roll
+          Win Ratio (Stage 4)        stage IV or higher and a 60% win ratio
+          Win Ratio (Stage 5)        the same from stage V
+          Evolution Timer            48 hours since the last evolution
+          Evolution Timer (Area 45)  the same, gated on the X's Area 45
+          Outlive Lifespan           still alive past its listed lifespan
+        """
+        module = get_module(self.module)
+        rule = getattr(module, "traited_egg_rule", "Stage V Chance")
 
-            if trait:
-                key = f"{self.module}@{self.version}"
-                if key not in game_globals.traited:
-                    game_globals.traited.append(key)
-                    runtime_globals.game_console.log(f"Traited Egg granted for {self.name}!")
-        elif ruleset == "vb":
-            pass # No Traited Eggs in VB
+        if rule == "None":
+            return
+
+        if rule == "Stage V Chance":
+            # "When most Stage V or higher Monsters die, they have a 30%
+            # chance of leaving a Traited Egg." Devices that also have a
+            # G-Cell Fragment egg split that chance instead: 15% traited,
+            # 15% fragment.
+            if self.stage >= 5:
+                if module.has_gcell_fragment_egg():
+                    roll = random.random()
+                    if roll < 0.15:
+                        self._grant_traited_egg()
+                    elif roll < 0.30:
+                        self._grant_gcell_fragment()
+                elif random.random() < 0.30:
+                    self._grant_traited_egg()
+            return
+
+        if rule.startswith("Win Ratio"):
+            min_stage = 4 if "Stage 4" in rule else 5
+            win_ratio = (self.win * 100) // self.battles if self.battles else 0
+            if self.stage >= min_stage and win_ratio >= 60:
+                self._grant_traited_egg()
+            return
+
+        if rule.startswith("Evolution Timer"):
+            if self._evol_minutes < 2880:  # 48 hours
+                return
+            # The Digital Monster X keeps the egg from its later versions
+            # until Area 45 has been cleared.
+            if "Area 45" in rule and self.version > 4 and self.area < 45:
+                return
+            self._grant_traited_egg()
+            return
+
+        if rule == "Outlive Lifespan":
+            # "keep your Digimon alive longer than its natural lifespan"
+            if self.time and self._evol_minutes >= self.time:
+                self._grant_traited_egg()
+            return
 
 
     def _is_blocked_by_sleep(self):
@@ -1230,17 +1327,55 @@ class GamePet:
         elif cost_type == "DP":
             self.dp = max(0, self.dp - cost_amount)
 
+        # Weight shed per battle, independent of the cost resource (0 for
+        # modules that don't use it).
+        weight_loss = getattr(module, 'battle_weight_loss', 0)
+        if weight_loss and self.stage > 1:
+            self.weight = max(self.min_weight, self.weight - weight_loss)
+            self.update_99g_effect()
+
+    def battle_block_reason(self, entering=True):
+        """Why this pet cannot battle, or None when it can.
+
+        The full set of conditions gates *entering* an area. Once a run is
+        under way the pet has already committed to it, so falling sick or
+        reaching its bedtime mid-area does not eject it - only running out of
+        the battle cost does. Pass entering=False for that check.
+        """
+        module = get_module(self.module)
+        # Conditions that knock a pet out at any point, mid-run included.
+        if self.state == "dead":
+            return "dead"
+        if not self._has_battle_resources():
+            cost_type = getattr(module, 'battle_cost_type', 'DP')
+            have = self.hunger if cost_type == "Hunger" else self.dp
+            return (f"{cost_type.lower()}={have} < "
+                    f"{getattr(module, 'battle_cost_amount', 1.0)}")
+        if not entering:
+            return None
+
+        # Conditions that only decide whether a run may be started.
+        if not getattr(module, 'care_can_battle_while_sick', False) and self.sick > 0:
+            return f"sick={self.sick}"
+        if self.stage <= 1:
+            return f"stage={self.stage}"
+        if self.power <= 0:
+            return f"power={self.power}"
+        if self.atk_main <= 0:
+            return "no atk_main"
+        if self._is_blocked_by_sleep():
+            return f"asleep (state={self.state})"
+        return None
+
     def can_battle(self):
-        module = get_module(self.module)
-        if not getattr(module, 'care_can_battle_while_sick', False) and self.sick > 0:
-            return False
-        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self._has_battle_resources() and not self._is_blocked_by_sleep()
-    
+        return self.battle_block_reason() is None
+
+    def can_continue_battle(self):
+        """Whether a pet already in an area may fight the next round."""
+        return self.battle_block_reason(entering=False) is None
+
     def can_battle_pvp(self):
-        module = get_module(self.module)
-        if not getattr(module, 'care_can_battle_while_sick', False) and self.sick > 0:
-            return False
-        return self.stage > 1 and self.power > 0 and self.state != "dead" and self.atk_main > 0 and self._has_battle_resources() and not self._is_blocked_by_sleep()
+        return self.battle_block_reason() is None
     
     def can_train(self):
         return self.stage > 0 and self.state != "dead" and self.atk_main > 0 and not self._is_blocked_by_sleep()
@@ -1261,105 +1396,130 @@ class GamePet:
             self.hp = constants.HP_LEVEL[self.stage]
         hp = self.hp
 
-        if self.level >= 2:
-            hp += 2
-        if self.level >= 5:
-            hp += 2
-        if self.level >= 6:
-            hp += 2
-        if self.level >= 10:
-            hp += 2
+        # HP+2 at levels 2, 5, 6, 8 and 10 (+10 by max level), matching the
+        # level table in the Digital Monster X manual.
+        for milestone in (2, 5, 6, 8, 10):
+            if self.level >= milestone:
+                hp += 2
         
+        # +2 HP for each quarter of the Vital Values bar that is filled, to a
+        # maximum of +6, as the Vital Bracelet manual describes. The cap is
+        # per stage, so a Child at its own maximum gets the full bonus.
+        # Devices that do not track Vital Values are unaffected: the bonus is
+        # gated on the same visible_stats entry the meter itself keys off.
+        if self.tracks_vital_values():
+            ceiling = self.vital_value_cap()
+            if ceiling:
+                quarters = int(self.vital_values * 4 // ceiling)
+                hp += 2 * max(0, min(3, quarters))
+
         # Add bonus from status_change items
         if hasattr(self, 'bonus_stats') and len(self.bonus_stats) > 0:
             hp += self.bonus_stats[0]
-        
+
         return hp
+
+    #: Vital Values are capped per stage, not globally - a Child holds 2500
+    #: where an Ultimate holds 9999. Stages below Child never accumulate any.
+    VITAL_VALUE_CAPS = {3: 2500, 4: 5000, 5: 7500, 6: 9999, 7: 9999, 8: 9999}
+
+    def tracks_vital_values(self):
+        """Whether this pet's device has a Vital Values meter at all.
+
+        Keyed on visible_stats, the same way Experience is, so a module that
+        never shows the stat is untouched by anything built on it.
+        """
+        module = get_module(self.module)
+        stats = [str(s).lower() for s in getattr(module, "visible_stats", []) or []]
+        return any("vital" in s for s in stats)
+
+    def vital_value_cap(self):
+        """The ceiling for this pet's stage, or 0 where it earns none."""
+        return self.VITAL_VALUE_CAPS.get(self.stage, 0)
     
-    def get_power(self, bonus = 0):
-        ruleset = get_module(self.module).ruleset
+    #: Power added at full Strength Hearts, per stage, per power_bonus_rule.
+    #: Taken from the Power Bonus tables in each device's manual. The Traited
+    #: Egg column is the same figure again, granted independently.
+    POWER_STAGE_TABLES = {
+        "Stage Table":            {3: 5, 4: 8, 5: 15, 6: 25, 7: 25, 8: 25},
+        "Stage Table + Shaken":   {3: 5, 4: 8, 5: 15, 6: 20, 7: 20, 8: 20},
+        "Stage Table Xros":       {3: 5, 4: 10, 5: 20},
+    }
+
+    def get_power(self, bonus=0):
+        """Battle power: the species base plus this device's bonus rule.
+
+        ``power_bonus_rule`` on the module picks the formula:
+
+          None                   base power only
+          Stage Table            full Strength Hearts pay the stage table,
+                                 and a Traited Egg pays it again
+          Stage Table + Shaken   the same, plus a flat +10 for a Shaken Egg
+          Stage Table Xros       the same on the Xros Wars three-stage table
+          Strength and Level     full Strength Hearts plus a level bonus
+          Strength Hearts        +4 per Strength Heart, +16 at full
+          Effort                 the hidden effort stat
+          Star                   base power plus 16 per star
+
+        Every table is keyed on a *full* Strength meter, which is what the
+        manuals say; this used to read ``effort``, and paid the Traited Egg
+        only when that same condition held.
+        """
+        module = get_module(self.module)
+        rule = getattr(module, "power_bonus_rule", "Stage Table")
         power = self.power + bonus
-        
+
         # Add bonus from vb status_change items
         if hasattr(self, 'bonus_stats') and len(self.bonus_stats) > 2:
             power += self.bonus_stats[2]
 
-        if ruleset == "dm":
-            multi = 1
-            if self.traited:
-                multi = 2
-
-            if self.effort >= 16:
-                if self.stage == 3:
-                    power += (5 * multi)
-                elif self.stage == 4:
-                    power += (8 * multi)
-                elif self.stage == 5:
-                    power += (15 * multi)
-                elif self.stage >= 6:
-                    power += (25 * multi)
-            return power
-        elif ruleset == "pen":
-            strength_bonus = 0
-            traited_bonus = 0
-            shaken_bonus = 0
-            
-            # Strength Hearts Bonus
-            if self.effort >= 16:
-                if self.stage == 3:
-                    strength_bonus = 5
-                elif self.stage == 4:
-                    strength_bonus = 8
-                elif self.stage == 5:
-                    strength_bonus = 15
-                elif self.stage >= 6:
-                    strength_bonus = 20
-
-            # Traited Egg Bonus
-            if self.traited:
-                if self.stage == 3:
-                    traited_bonus = 5
-                elif self.stage == 4:
-                    traited_bonus = 8
-                elif self.stage == 5:
-                    traited_bonus = 15
-                elif self.stage >= 6:
-                    traited_bonus = 20
-
-            # Shaken Egg Bonus
-            if self.shook:
-                shaken_bonus = 10
-
-            # Total Bonus Calculation
-            total_bonus = strength_bonus + traited_bonus + shaken_bonus
-
-            return power + total_bonus
-        elif ruleset == "dmx":
-            if self.effort >= 16:
-                if self.version > 4:
-                    power += 16
-                else:
-                    power += 15
-            if self.level >= 3:
-                power += 10
-            if self.level >= 6:
-                power += 10
-            if self.level >= 9:
-                power += 10
+        if rule == "None":
             return power
 
-        elif ruleset == "vb":
-            """Normalize VB ruleset power using power and star values.
+        if rule == "Star":
+            # A pet with base power 70 and 10 stars comes out at 230.
+            return int(power + (self.star or 0) * 16)
 
-            Requirement: a pet with base power 70 and 10 stars should return 230.
-            We use a simple linear mapping where each star contributes 16 points
-            on top of the base power: normalized = base_power + star * 16.
+        if rule == "Strength Hearts":
+            # "each Strength Heart adds 4 points to power, meaning you can
+            # add a total of 16 power to your Digimon" - four hearts of four.
+            # strength is the raw meter and stomach its capacity, so the
+            # bonus is scaled off how full it is rather than counted directly.
+            if self.stomach:
+                power += min(16, (16 * self.strength) // self.stomach)
+            return power
 
-            The implementation below is defensive: it coerces non-numeric
-            values to sensible defaults (0) to avoid runtime errors.
-            """
-            normalized = power + (self.star * 16)
-            return int(normalized)
+        if rule == "Strength and Level":
+            # The X manual ties this to a full strength meter, and gives +16
+            # on XA/XB against +15 on XC through XF.
+            if self.stomach and self.strength >= self.stomach:
+                device = getattr(self, "device_version", None) or self.version
+                power += 16 if device in (1, 2) else 15
+            for milestone in (3, 6, 9):
+                if self.level >= milestone:
+                    power += 10
+            return power
+
+        if rule == "Effort":
+            # The original Pendulum's effort is a hidden 0-40 battle stat the
+            # manual never puts a table to; this keeps the shape the device
+            # has always been played with here.
+            if self.effort >= 16:
+                power += self.POWER_STAGE_TABLES["Stage Table + Shaken"].get(
+                    self.stage, 0)
+            return power
+
+        table = self.POWER_STAGE_TABLES.get(rule)
+        if table is None:
+            return power
+        step = table.get(self.stage, 0)
+        if self.stomach and self.strength >= self.stomach:
+            power += step
+        if self.traited:
+            power += step
+        if rule == "Stage Table + Shaken" and self.shook:
+            power += 10
+        return power
 
     def get_attack(self):
         attack = 1 # constants.ATK_LEVEL[self.stage]
@@ -1376,25 +1536,41 @@ class GamePet:
         return attack
     
     def finish_training(self, won = False, grade=0, phase2=False):
+        """Apply one training's result.
+
+        ``grade`` is the outcome level every training mode reports, 0-3 for
+        Bad, Good, Great and Excellent — the same four levels the DM20, DMC
+        and DMX connection protocols carry, where Bad is the failed attempt.
+        The module's three tables are indexed by it directly, so a device that
+        pays nothing for a failure simply starts its list with a zero and one
+        that still credits effort does not.
+        """
         module = get_module(self.module)
+        level = max(0, min(3, int(grade)))
+        if not won:
+            level = 0
+
+        self.effort += module.training_effort_gain[level]
+        strength_gain = module.training_strength_gain[level]
+        if strength_gain < 0:
+            # -1 fills the meter outright, which is what a Megahit does on the
+            # Pendulum Ver.20th
+            self.strength = self.stomach or self.strength
+        else:
+            self.strength += strength_gain
+
         if won:
             self.set_state("happy2")
-            self.effort += module.training_effort_gain
-            if grade > 0 and module.training_strengh_multiplier > 0:
-                self.strength += int(module.training_strengh_gain_win * grade * module.training_strengh_multiplier)
-            else:
-                self.strength += module.training_strengh_gain_win
             if self.disturbance_penalty >= 2:
                 self.disturbance_penalty -= 2
-            
+
             # Add training activity for vital_values (only once)
             if "training" not in self.vital_activities:
                 self.vital_activities.append("training")
         else:
             self.set_state("angry")
-            self.strength += module.training_strengh_gain_lose
 
-        weight_loss = module.training_weight_win if won else module.training_weight_lose
+        weight_loss = module.training_weight_loss[level]
         self.weight = max(self.min_weight, self.weight - weight_loss)
         self.update_99g_effect()
 
@@ -1468,16 +1644,9 @@ class GamePet:
 
             self.enemy_kills[enemy.stage] += 1
             
-            # Check for G-Cell fragment from Godzilla enemies (15% chance) for modules that use G-Cells
-            module = get_module(self.module)
-            if getattr(module, 'use_gcells', False) and "Godzilla" in enemy.name and random.random() < 0.15:
-                fragment_key = f"{self.module}@{self.version}"
-                if not hasattr(game_globals, 'gcell_fragments'):
-                    game_globals.gcell_fragments = []
-                if fragment_key not in game_globals.gcell_fragments:
-                    game_globals.gcell_fragments.append(fragment_key)
-                    runtime_globals.game_console.log(f"[G-Cell] {self.name} obtained a G-Cell fragment for {self.module} v{self.version} from {enemy.name}!")
-            
+            # G-Cell Fragments are not won in battle: they are left behind on
+            # death, alongside the Traited Egg roll (see set_traited_egg).
+
             # Add G-Cell points for battle win if module uses G-Cells
             module = get_module(self.module)
             if getattr(module, 'use_gcells', False):
@@ -1490,8 +1659,11 @@ class GamePet:
                 if gcell_points != 0:
                     self.add_gcell_points(gcell_points)
         else:
-            if final:
-                self.set_state("lose")
+            # A loss always ends the run - there is no next round to carry on
+            # to - so the pet shows its defeat pose whether or not this was
+            # the boss. `final` only gates the win pose, which would otherwise
+            # play between rounds of an area still in progress.
+            self.set_state("lose")
             sick_chance = get_module(self.module).battle_base_sick_chance_lose
             
             # Remove G-Cell points for battle loss if module uses G-Cells
@@ -1709,6 +1881,10 @@ class GamePet:
             self.temp_evolve = []
         if not hasattr(self, "avaliability"):
             self.avaliability = "Normal"
+        if not hasattr(self, "device_version"):
+            # Saves created before the device system use the gameplay version
+            # as their safe backward-compatible protocol value.
+            self.device_version = int(getattr(self, "version", 0))
         # Xros battle state (never persisted mid-battle, but be safe)
         if not hasattr(self, "xros_evolved"):
             self.xros_evolved = None

@@ -37,7 +37,7 @@ from scenes.scene_training import SceneTraining
 from scenes.scene_debug import SceneDebug
 
 # Game Version
-runtime_globals.VERSION = "1.0.0 Beta 2"
+runtime_globals.VERSION = "1.0.0 Beta 3"
 
 # Global timing variable for system stats updates
 last_stats_update = time.time()

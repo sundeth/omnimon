@@ -29,9 +29,18 @@ def get_training_targets():
 
 def get_battle_targets():
     """
-    Returns pets eligible for battle.
+    Returns pets eligible to start a battle.
     """
     return [pet for pet in get_selected_pets() if pet.can_battle()]
+
+def get_battle_continue_targets():
+    """Pets that may fight the next round of an area already in progress.
+
+    Looser than get_battle_targets(): a pet that fell sick or hit its bedtime
+    partway through a run stays in it, and is only dropped once it runs out
+    of the battle cost.
+    """
+    return [pet for pet in get_selected_pets() if pet.can_continue_battle()]
 
 def get_battle_pvp_targets():
     """

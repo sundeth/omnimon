@@ -209,7 +209,9 @@ class ShakeTraining(Training):
 
     def get_attack_count(self):
         """Returns the number of attacks based on strength."""
-        if self.strength < 15:
+        if self.strength < 10:
+            return 0
+        elif self.strength < 15:
             return 1
         elif self.strength < 20:
             return 2
@@ -221,6 +223,9 @@ class ShakeTraining(Training):
             return
         
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and event_type in ("Y", "SHAKE"):
             # Let the minigame handle the input
@@ -230,6 +235,6 @@ class ShakeTraining(Training):
             runtime_globals.game_sound.play("cancel")
             self.animated_sprite.stop()
             self.phase = "result"
-        elif self.phase in ["alert", "charge"] and event_type == "B":
+        elif self.phase == "charge" and event_type == "B":
             runtime_globals.game_sound.play("cancel")
             change_scene("game")

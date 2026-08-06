@@ -570,7 +570,9 @@ class SceneStatus:
         if "Power" in visible_stats:
             self.power_combined.visible = True
             power = str(pet.power + getattr(pet, 'bonus_stats', [0,0,0])[2])
-            if module.ruleset == "vb":
+            # Stars are a Vital Bracelet idea, but the pet carrying one is
+            # what decides whether to show it - not the module's ruleset.
+            if getattr(pet, 'star', 0) > 0:
                 power += f"({pet.star}★)"
             self.power_combined.set_value(power)
         else:

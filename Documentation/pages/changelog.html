@@ -268,6 +268,335 @@
             <a href="https://github.com/sundeth/omnipet/" target="_blank" class="source-link">View source on GitHub</a>
         </div>
 
+        <!-- Version 1.0.0 Beta 3 -->
+        <div class="version">
+            <div class="version-header">
+                Version 1.0.0 Beta 3
+                <span class="release-date">August 6, 2026</span>
+            </div>
+            <div class="version-content">
+                <div class="download-row"><a href="https://github.com/sundeth/omnipet/releases" target="_blank">Download release</a></div>
+
+                <div class="note">
+                    Beta 3 is about accuracy. The battle protocols were rebuilt on documented constants and verified against real hardware, the device rules that used to be hardcoded per family are now module data, and a module can finally describe the <em>physical device</em> a pet was hatched on separately from its evolution line. Training, jogress, Traited Eggs and power bonuses all follow the manuals now instead of one approximation per ruleset. Android's pause and resume were rewritten from the ground up.
+                </div>
+
+                <div class="feature-category">
+                    <h3>Battle</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Battle protocol rework.</strong> Every connection protocol now reads its constants and packet layouts from a single documented source that matches the values tested against real devices. The old JSON protocol layer was removed: its field tables were never used to build packets, one file was malformed, another failed a case-sensitive lookup on Linux and Android, and a third contradicted the tested value. Where the manuals and the hardware disagree, the difference is recorded rather than silently patched.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>DCom battles on PEN_X and COLOR.</strong> Both crashed at packet generation before ever starting a fight.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Protocol test harness.</strong> A headless test suite round-trips every protocol's packets through the same validators and parsers the DCom path uses, runs all versus protocols, and checks the adventure simulator's invariants — over 500 checks.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Charge strength mapping.</strong> The strength sent into a battle is now decided by the module's chosen minigame instead of its ruleset. Pendulum Z runs a Count Match on the X ruleset and was being read as an XAI bar, sending a raw meter value where the minigame produces super hits. Every minigame now maps onto the four levels the protocols actually carry, including a proper "failed charge" at the bottom.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>XAI bar.</strong> Reworked to sprite art picked from the pet's attribute and level, at pixel-perfect integer scaling, with the arrow riding above the bar, recoloring to the color it landed on and holding half a second so the result is readable. Its speed is now expressed as how long a pass takes rather than a pixel rate, so it plays the same at every resolution — the easy end used to take about five seconds a sweep and felt stalled. A missed bar no longer counts as a Good.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Attack projectiles.</strong> Shots accelerate as they fly instead of drifting at a constant speed, on a gentler curve with flat ends — no crawl at launch, no visible whip as the shot lands.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Mid-run eligibility.</strong> A pet that falls sick or reaches its bedtime partway through an area now stays in the run instead of silently vanishing from the layout and the minigames while still being on the team. Only running out of the battle cost drops it. The retire check logs exactly why each pet was pulled.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Battle costs in connection battles.</strong> Versus now hides pets that cannot fight, and DCom battles charge the module's battle cost — its result handler had copied the PvP loop without the deduction.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Defeat pose.</strong> A pet that loses now shows its defeat animation whether or not the fight was against a boss.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Area locks.</strong> An unlock can now keep an adventure area shut until it is earned, scoped to a single version — for the devices that gate their last area behind a connection battle. Locked areas stay out of the picker and progress never moves into them.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Attribute advantage as power.</strong> Modules can choose whether the attribute advantage is added to the hit rate or folded into Power before the hit rate is worked out, which is how the Digital Monster X describes it.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>READY is no longer skippable.</strong> In battle and in training, the ready phase ignores input — leftover presses from the previous screen used to skip straight past it.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Ready sprite per minigame.</strong> Count Match Color and Count Match Z draw their own ready phase (the attribute sprite, and the arrows to match); every other minigame uses the animated ready sprite. Which is which is now declared by the minigame itself.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Devices and Eggs</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Physical device selection.</strong> A module can now describe the real devices it covers, and hatching walks through them first: each device is shown as its own artwork with its screen background composed into it, and picking one narrows the egg list to that device's eggs. A device with a single egg hatches it directly. Modules without device data keep the old flow, and random hatching picks a device too.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Device version.</strong> A pet now carries the hardware revision it was hatched on separately from its gameplay version, and it survives every evolution. Connection battles, the OEM packets and connection unlocks all key off the hardware value; evolutions and unlocks keep using the gameplay one. Existing saves fall back to their game version.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Device-pair unlocks.</strong> A versus unlock can name a device and its opponent, so "battle an XA with an XB" is one record that works in either direction, over both versus and DCom. A special opponent value means "any device other than this one", so a device can say "connect with any other version" without listing every pair.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Password pets.</strong> A password can state which hardware its pet counts as — a Copymon is a doll of a Digimon from another device, so it should not inherit the host module's version for protocol purposes.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Raising Rules</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Traited Egg and power bonus are module data.</strong> These were one hardcoded branch per device family, which stopped being able to describe the devices — the four Pendulums alone want four different power models. They are now two independent module settings: how a Traited Egg is earned (never, a stage-gated roll, a win ratio, an evolution timer, or outliving the lifespan) and where power above the species base comes from (a stage table, stage table plus Shaken, strength and level, strength hearts, effort, or stars). Every table is keyed on a full Strength meter, as the manuals say, and pays the Traited Egg column independently. Modules written before these fields migrate automatically.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Training payout tables.</strong> What one training pays in effort, strength and weight is now a four-slot table indexed by the outcome — Bad, Good, Great, Excellent — the same four levels the connection protocols carry. A device that pays nothing for a failure simply starts its list at zero. All eight training modes were re-graded to report a real failure level, following each device's own bands; the Pendulum Color count match uses its manual's grading, and Mogera pays nothing when the Anti-G stage is failed. A negative strength value fills the meter outright, which is what a Megahit does on the Pendulum Ver.20th.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Jogress cost.</strong> A module states which stat both pets must have at maximum to fuse — nothing, DP, Effort, Strength or Hunger — and it is consumed by the fusion. The hunger and strength requirement mirrors the hearts the status screen shows, so what the player sees is what is asked for.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Evolution chance and area.</strong> Routes can now carry a percentage chance, rolled only after every other requirement passes and falling through to the next route on a failure — which is how a device presents a coin flip between two outcomes. Routes can also require a minimum adventure area cleared.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Unlock by stage.</strong> An evolution unlock can name a stage rather than a specific target, for the devices that hand out a Digitama simply for raising a Digimon that far.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Digidex unlocks.</strong> Unlocks that count how many Digimon you have raised are now granted as soon as you evolve into the one that completes them. The Digidex screen used to be the only place they were checked, so you had to open it before the reward registered.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Sickness stacking.</strong> An already sick pet can no longer fall sick again. Left untreated, it used to keep re-rolling its heal doses and stacking injuries toward death.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>G-Cell Fragments.</strong> Fragments are left behind on death alongside the Traited Egg roll — a module with a Fragment egg splits the chance 15%/15% — instead of dropping from Godzilla battles.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Vital Values ceiling per stage.</strong> Child 2500, Adult 5000, Perfect 7500, Ultimate 9999, so evolving is what raises the ceiling. A full bar is worth +2 HP per quarter filled, to +6. Devices without the meter are untouched.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>HP by level.</strong> The level table now grants +2 HP at levels 2, 5, 6, 8 and 10, matching the Digital Monster X manual; level 8 was missing.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Battle weight loss.</strong> Modules can shed weight per battle on top of the battle cost, as the original Digital Monster does.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Star display.</strong> The star next to Power now shows whenever the pet has one, rather than only on Vital Bracelet modules.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Friends and Events</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Friends.</strong> A module can declare Friends on its roster and match them to special encounters. Beating one registers it, and clearing an adventure area promises an Event Battle against a Friend you have not met yet, drawn from those still missing — so no Friend is ever offered twice, and losing simply leaves it in the pool. Friends feed the DigiXros requirements and the Digidex Friends view.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Encounter unlocks.</strong> Winning a special encounter can grant an unlock named by that enemy, or one that fires once a number of Friends have been registered ("obtain every friend").
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Event timing.</strong> The idle event check is now spread over roughly 45 to 75 minutes instead of landing on the same minute every hour.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Special encounters on other versions.</strong> An encounter that lives on a version the player never raises is now found anyway, instead of coming up empty.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Training</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>READY sound.</strong> Training's ready phase now plays its own sound and lasts exactly as long as it does, waiting for the mixer to actually start before revealing anything — muted audio falls back to the asset's own length.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Ready phase input.</strong> Exit buttons, buffered minigame presses and hidden components can no longer consume or skip the ready phase, in normal training and in the tutorial.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Card Collection</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Collection in game.</strong> The card collection announced in Beta 2's editor is now playable: a collection scene, card data loaded from the module, and an NFC service that reads physical cards through PC/SC readers and PN532 modules.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Performance and Visuals</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Combat performance.</strong> Sprite transforms are cached (pet flips, enemy mirrors, critical slides), attack sprite folders load only when needed, and fonts and interface sprites are cached.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Pixel-perfect pet scaling.</strong> Pets are scaled on a fixed ladder of whole multiples, and boss sizes snap to it, so nothing is drawn at a fractional scale.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Main game power draw.</strong> The clock bar is cached and static drawing is split out of the per-frame path.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Sprite library.</strong> Another wave of monster sprite archives was added and updated across the Color, Dot and HD libraries.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Android</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Pause and resume, properly.</strong> The black-screen-on-resume problem was traced to the real cause: SDL blocks inside its Android event pump for the whole time the app is paused, without releasing Python's lock, so Android's own resume callback deadlocked against the thread that was about to deliver the resume. The app now keeps the pump non-blocking, idles instead of drawing while backgrounded, and the lifecycle callbacks do nothing but raise a flag the game loop consumes. The elaborate display re-acquire machinery that worked around the symptom is gone; a frame that fails is simply retried, and the display is only rebuilt when it clearly is not coming back.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Background service reliability.</strong> The service now holds a partial wakelock, so pets keep ticking when the device enters deep sleep — without it they simply stopped whenever the screen had been off a while. It also no longer re-creates its own stop marker, which could leave it ticking pets underneath the running app with both processes writing the save.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Service startup log.</strong> Every startup phase is written to a log in app storage and shown in the status notification, so a service killed natively — an SDL abort, the low-memory killer, a vendor battery manager — still says how far it got. The settings menu shows the last phase reached.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Service startup order.</strong> The service checks for a save and for the app having resumed before paying for anything expensive, and gives up immediately when there is nothing to do.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Crash screen.</strong> A tap dismisses it — on a phone there is no key to press, and a screen that ignores every touch is indistinguishable from a hung app.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Hardware and Builds</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>UPS-Lite V1.3 battery.</strong> Support for the MAX17040 gauge with GPIO charge sensing, falling back to the CW2015; Android reads the phone's own battery through a second path when the first is unavailable.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Raspberry Pi image builder.</strong> A script that builds a ready-to-flash GamePi image.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-technical">Technical</span>
+                            <strong>Packaging.</strong> NFC and Android bridge dependencies are declared for both the desktop and Android builds, and the build requirements document covers them.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Interface and Gameplay Fixes</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Debug time skip.</strong> Advancing the clock by an hour no longer starves the pets or buries them in poop; the jump is credited to evolution time instead.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Doubled menu sounds</strong> when using an inventory item and when navigating adventure modules.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Max Pets.</strong> Changing it now resizes and redistributes the pets immediately, with their sprites reloaded — no restart needed.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Slide messages</strong> are half the size and sit under the top menu icons.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Scene fixes.</strong> Status navigation and hover, Digidex eggs and scrolling, library exit, connect configuration in Free Mode, message slide position, and training wave pacing.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="feature-category">
+                    <h3>Module Editor</h3>
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Device tab.</strong> Edits the physical devices a module covers, saved separately from the module settings so device protocol values stay independent from evolution-line versions. Devices get their own generated documentation page.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Passwords tab.</strong> Manages redeemable passwords — an item, a pet, an unlock or a special encounter, with a cooldown, one-use or unlimited.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Temporary evolutions.</strong> Battle-only Mode Change and DigiXros forms are edited on the evolution canvas as a second, dashed connection type, with their own criteria dialog for the strength range, megahit, unlock, friend requirements and the background and animation the Xros sequence uses.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Evolution order window.</strong> Evolution order is load-bearing — the first matching route wins — so it can now be rearranged directly, with each row showing the requirement box exactly as the canvas draws it next to its target. Standard and temporary evolutions are ordered separately.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>Omninet module browser.</strong> Every module published on Omninet against what is installed locally, with per-row download. No login required to browse or download; signing in only fills the ownership column.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-new">New</span>
+                            <strong>New fields.</strong> Traited Egg rule, power bonus rule and jogress cost (replacing the ruleset, which is migrated on load), the four-slot training payout tables, battle weight loss, attribute advantage as power, pet personality and availability, the evolution chance criterion, the Friend flag on enemies, and area, device and opponent-device requirements on unlocks.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-improved">Improved</span>
+                            <strong>Validation report.</strong> New device checks (missing devices, duplicate device versions), a warning for pets and enemies missing the secondary sprite format a Dot module needs when players turn old sprites off, and corrected inaccessible-round and DMX attack-sprite checks.
+                        </li>
+                        <li>
+                            <span class="feature-tag tag-fixed">Fixed</span>
+                            <strong>Eggs default to an empty stomach</strong> when the stage is set to Egg, since they cannot eat.
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="note">
+                    <strong>Beta notes.</strong> The Arena remains planned but not yet playable. The Traited and Shaken egg bonuses to the chance of evolving to Perfect and Ultimate are still not implemented, so on the Pendulum and Pendulum Ver.20th those two bonuses do nothing yet. Saves from Beta 2 carry over: pets without a device version fall back to their game version, and modules written before the new rule fields migrate the first time they are loaded.
+                </div>
+            </div>
+        </div>
+
         <!-- Version 1.0.0 Beta 2 -->
         <div class="version">
             <div class="version-header">

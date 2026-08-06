@@ -9,7 +9,6 @@ from ui.minigames.count_match import CountMatch
 from battle import combat_constants
 import core.constants as constants
 from utils.pygame_utils import blit_with_cache
-from utils.scene_utils import change_scene
 
 class CountMatchTraining(Training):
     def __init__(self, ui_manager: UIManager):
@@ -60,6 +59,9 @@ class CountMatchTraining(Training):
 
     def handle_event(self, event):
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and event_type in ("Y", "SHAKE"):
             # Let the minigame handle the input
@@ -75,10 +77,6 @@ class CountMatchTraining(Training):
             self.frame_counter = 0
         elif self.phase == "result" and event_type in ["B", "START"]:
             self.finish_training()
-        elif self.phase == "alert" and event_type == "B":
-            runtime_globals.game_sound.play("cancel")
-            change_scene("game")
-
     def get_first_pet_attribute(self):
         pet = self.pets[0]
         attr = getattr(pet, "attribute", "")
@@ -252,19 +250,17 @@ class CountMatchTraining(Training):
 
     # ...existing code...
     def get_attack_count(self):
-        """
-        Determine attack count based on super-hit count:
-          5 hits -> 3
-          4 hits -> 2
-          3 hits -> 1
-          <3  -> 0 (defeat)
-        Supports reading hits from self.super_hits (dict) or falls back to self.victories.
+        """Outcome level 0-3 from the super-hit count.
+
+        The Pendulum Color manual's own grading: a Megahit is five hits,
+        three or four is the next band down, two is the lowest win and
+        anything under that is a failed training.
         """
         hits = self.super_hits.get(self.pets[0], 0)
         if hits >= 5:
             return 3
-        if hits == 4:
+        if hits >= 3:
             return 2
-        if hits == 3:
+        if hits >= 2:
             return 1
         return 0

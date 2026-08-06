@@ -44,6 +44,7 @@ class GameSound:
             17: "happy2",
             18: "evolution_plus",
             19: "evolution_2020",
+            20: "training_ready",
         }
 
         # Initialize pygame mixer with a small buffer to minimise playback latency.
@@ -80,7 +81,7 @@ class GameSound:
             # Build relative path from workspace root for asset_utils functions
             rel_path = os.path.join(self.base_path, filename)
             try:
-                if index < 18:
+                if index not in (18, 19):
                     sound = sound_load(rel_path)
                     self.sounds[label] = sound
                 else:
@@ -93,15 +94,19 @@ class GameSound:
 
     
 
-    def play(self, name: str) -> None:
+    def play(self, name: str):
         """
         Plays a sound by its label.
 
         Args:
             name (str): The sound label to play (e.g., 'menu', 'fail', 'evolution').
+
+        Returns:
+            The pygame Channel used for a sound effect, or None when playback
+            could not be started (including when sound is muted).
         """
         if not game_globals.configuration.sound_volume:
-            return
+            return None
         
         # Lazy load sounds on first access (ensures Android environment is set)
         if not self.sounds_loaded:
@@ -110,13 +115,41 @@ class GameSound:
         if name in self.sounds:
             if isinstance(self.sounds[name], pygame.mixer.Sound):
                 self.sounds[name].set_volume(game_globals.configuration.sound_volume / 10)
-                self.sounds[name].play()
+                return self.sounds[name].play()
             else:
                 pygame.mixer.music.load(self.sounds[name])
                 pygame.mixer.music.set_volume(game_globals.configuration.sound_volume / 10)
                 pygame.mixer.music.play()
         else:
             print(f"[!] Sound '{name}' not found.")
+        return None
+
+    def is_playing(self, name: str) -> bool:
+        """Return whether a named sound effect is actively using a mixer channel."""
+        if not self.sounds_loaded:
+            self.load_sounds()
+
+        sound = self.sounds.get(name)
+        return isinstance(sound, pygame.mixer.Sound) and sound.get_num_channels() > 0
+
+    def stop(self, name: str) -> None:
+        """Stop a named sound effect without interrupting unrelated sounds."""
+        if not self.sounds_loaded:
+            return
+
+        sound = self.sounds.get(name)
+        if isinstance(sound, pygame.mixer.Sound):
+            sound.stop()
+
+    def get_duration(self, name: str) -> float:
+        """Return a named sound effect's duration in seconds, or zero if unavailable."""
+        if not self.sounds_loaded:
+            self.load_sounds()
+
+        sound = self.sounds.get(name)
+        if isinstance(sound, pygame.mixer.Sound):
+            return sound.get_length()
+        return 0.0
 
     def stop_all(self) -> None:
         """

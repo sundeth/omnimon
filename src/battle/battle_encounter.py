@@ -26,7 +26,8 @@ from battle.game_battle import GameBattle
 from battle.sim.models import Digimon, BattleProtocol
 from models.game_module import sprite_load
 from utils.module_utils import get_module
-from utils.pet_utils import distribute_pets_evenly, get_battle_targets
+from utils.pet_utils import (distribute_pets_evenly, get_battle_targets,
+                             get_battle_continue_targets)
 from utils.pygame_utils import blit_with_cache, get_font, load_attack_sprites, load_crit_attack_sprites, module_attack_sprites, module_crit_attack_sprites, sprite_load_percent
 from utils.scene_utils import change_scene
 from utils.utils_unlocks import unlock_item
@@ -37,6 +38,25 @@ from battle import combat_constants
 from models.game_quest import QuestType
 from utils.quest_event_utils import update_quest_progress
 from services.omninet_service import omninet_service
+
+
+# Minigames that draw the alert phase themselves, as
+# ``battle_minigame -> (attribute the instance lives on, class)``. Count Match
+# Color puts up an attribute-specific ready sprite and Count Match Z the
+# arrows to match, both before the count begins; everything else leaves the
+# alert phase to the animated ready sprite. Built from the classes' own
+# HAS_READY_PHASE flag, so giving a minigame a ready phase is one change in
+# the minigame itself — Count Match Classic starts at "charge" and drops out
+# of this map on its own.
+READY_PHASE_MINIGAMES = {
+    name: (attribute, minigame_class)
+    for name, attribute, minigame_class in (
+        ("Count Match Color", "count_match", CountMatch),
+        ("Count Match Z", "count_match_z", CountMatchZ),
+        ("Count Match Classic", "count_match_classic", CountMatchClassic),
+    )
+    if getattr(minigame_class, "HAS_READY_PHASE", False)
+}
 
 #=====================================================================
 # BattleEncounter Class
@@ -123,10 +143,22 @@ class BattleEncounter:
         self._ko_sprite_boss = self._load_ko_sprite(boss_w, boss_h)
         
 
+    def _current_targets(self):
+        """The pets this encounter is fighting with right now.
+
+        Round 1 applies the full entry rule; later rounds use the looser one
+        so a pet that fell sick mid-area keeps its place instead of vanishing
+        from the layout and minigames while still being on the team.
+        """
+        return (get_battle_targets() if self.round <= 1
+                else get_battle_continue_targets())
+
     def set_initial_state(self, area=0, round=0, version=1):
         """
         Set all non-graphic variables for (re)initialization.
         """
+        # Kept so area progress can be checked against the module's area locks.
+        self.version = version
         # --- Jumper Gate: skip to boss if status_boost is active ---
         if not self.pvp_mode:
             skip_effect = self.get_battle_effect("skip_to_boss")
@@ -236,7 +268,9 @@ class BattleEncounter:
                 self.power_bonus = power_effect.get("amount", 0)
                 runtime_globals.game_console.log(f"[BattleEncounter] Power boost applied: +{self.power_bonus}")
 
-        self.battle_player = GameBattle(get_battle_targets(), self.enemies, self.hp_boost, self.attack_boost, self.module)
+        # Round 1 of an area is the entry check; later rounds use the looser
+        # rule so a pet that fell sick mid-run is not silently dropped.
+        self.battle_player = GameBattle(self._current_targets(), self.enemies, self.hp_boost, self.attack_boost, self.module)
         # PvP ordering flag: when True, enemy actions are processed before pets
         self.enemy_first = False
         
@@ -408,7 +442,7 @@ class BattleEncounter:
         if not game_globals.configuration.debug_mode:
             return
         
-        num_pets = len(get_battle_targets()) if not self.pvp_mode else len(self.battle_player.team1)
+        num_pets = len(self._current_targets()) if not self.pvp_mode else len(self.battle_player.team1)
         self.debug_battle_logs = []
         for i in range(num_pets):
             self.debug_battle_logs.append({
@@ -539,7 +573,7 @@ class BattleEncounter:
         """
         Loads enemy data for the current area and round, sets up enemy positions and health.
         """
-        selected_pets = get_battle_targets()
+        selected_pets = self._current_targets()
         version_range = self.module.get_enemy_versions(self.area, self.round, special_encounter=self.is_special_encounter)
         versions = []
         for p in selected_pets:
@@ -595,7 +629,7 @@ class BattleEncounter:
         modules_to_load = set()
         
         # Add modules from battle targets (pets)
-        for pet in get_battle_targets():
+        for pet in self._current_targets():
             modules_to_load.add(pet.module)
         
         # Add module from enemies (they use the same module as the battle area)
@@ -814,11 +848,17 @@ class BattleEncounter:
         # Reset minigames before alert phase
         self.reset_minigames()
 
-        if self.module.ruleset == "pen":
-            # For PenC, initialize count match minigame early for alert phase drawing
-            pets = get_battle_targets()
-            self.count_match = CountMatch(self.ui_manager, pets[0], self.animated_sprite)
-            self.count_match.set_phase("ready")
+        # A minigame that owns its ready phase has to exist before the alert
+        # phase draws, so build it here rather than in setup_charge.
+        ready = READY_PHASE_MINIGAMES.get(
+            getattr(self.module, 'battle_minigame', ''))
+        if ready:
+            attribute, minigame_class = ready
+            pets = self._current_targets()
+            instance = minigame_class(self.ui_manager, pets[0] if pets else None,
+                                      self.animated_sprite)
+            instance.set_phase("ready")
+            setattr(self, attribute, instance)
 
     # ------------------------------------------------------------------
     # Xros / temporary evolution flow (after intimidate, before alert)
@@ -918,7 +958,7 @@ class BattleEncounter:
                                  "Count Match Classic", "Xai Roll+Bar", "Xai Bar", "Punch", "Mogera"
         """
         minigame = getattr(self.module, 'battle_minigame', 'Dummy Bar')
-        pets = get_battle_targets()
+        pets = self._current_targets()
         
         if minigame == "None":
             # Skip charge phase, use default minigame result of 2
@@ -1012,7 +1052,7 @@ class BattleEncounter:
                 self.xai_roll.update()
                 if not self.xai_roll.rolling and not self.xai_roll.stopping:
                     self.xai_phase = 2
-                    pets = get_battle_targets()
+                    pets = self._current_targets()
                     self.xai_bar = XaiBar(
                         x=runtime_globals.SCREEN_WIDTH // 2 - int(152 * runtime_globals.UI_SCALE) // 2,
                         y=runtime_globals.SCREEN_HEIGHT // 2 - int(72 * runtime_globals.UI_SCALE) // 2 + int(48 * runtime_globals.UI_SCALE),
@@ -1029,7 +1069,10 @@ class BattleEncounter:
                 # The bar lingers for half a second after stopping so the
                 # player can see which color they landed on.
                 if getattr(self.xai_bar, 'stopped', False) and self.xai_bar.is_finished():
-                    self.strength = self.xai_bar.get_result() or 1
+                    # get_result already returns 0-3; "or 1" used to turn a
+                    # missed bar into a Good, which the protocol reads as a
+                    # better charge than it was.
+                    self.strength = self.xai_bar.get_result()
                     self.xai_phase = 3
                     self.bar_timer = pygame.time.get_ticks()
 
@@ -1124,7 +1167,7 @@ class BattleEncounter:
         """
         Get the attribute of the first pet, used for determining attack color in charge phase.
         """
-        pet = get_battle_targets()[0]
+        pet = self._current_targets()[0]
         if pet.attribute in ["", "Va"]:
             return 1
         elif pet.attribute == "Da":
@@ -1638,14 +1681,16 @@ class BattleEncounter:
 
     @staticmethod
     def _shot_speed_factor(launch_tick, now):
-        """Ease-in launch curve for attack sprites.
+        """Launch curve for attack sprites.
 
-        Shots leave the attacker at ~45% of the base speed and accelerate
-        quadratically to ~2.5x over half a second, so they read as fired
-        projectiles instead of a constant slow drift.
+        Shots still start slower than they finish, so they read as fired
+        rather than drifting, but the ramp is a smoothstep between 0.7x and
+        1.9x rather than a bare quadratic from 0.45x to 2.5x. The gentler
+        span and the flat ends mean no crawl at launch and no visible whip
+        as the shot lands.
         """
-        t = min(1.0, max(0.0, (now - launch_tick) / 500.0))
-        return 0.45 + 2.05 * t * t
+        t = min(1.0, max(0.0, (now - launch_tick) / 450.0))
+        return 0.7 + 1.2 * (t * t * (3.0 - 2.0 * t))
 
     def move_towards(self, pos, target, speed):
         dx = target[0] - pos[0]
@@ -1888,12 +1933,27 @@ class BattleEncounter:
         
         # Random encounters skip progression and return to game immediately
         if self.is_special_encounter:
+            # Beating one registers it as a Friend when the module declares a
+            # pet of that name with availability "Friend". Losing leaves it in
+            # the pool so it can be offered again.
+            if self.victory_status == "Victory":
+                try:
+                    from utils.xros_utils import register_friends_from_battle
+                    from utils.utils_unlocks import check_encounter_unlocks
+                    register_friends_from_battle(self.module.name,
+                                                 self.battle_player.team2)
+                    # Friends register first, so an unlock counting them sees
+                    # the one just won.
+                    check_encounter_unlocks(self.module.name,
+                                            self.battle_player.team2)
+                except Exception as exc:
+                    runtime_globals.game_console.log(f"[Friend] register failed: {exc}")
             runtime_globals.game_sound.play("happy" if self.victory_status == "Victory" else "fail")
             self.return_to_main_scene()
             return
 
         area_advanced = False
-        pets = get_battle_targets()
+        pets = get_battle_continue_targets()
         if self.victory_status == "Victory":
             if not self.boss:
                 if len(pets) == 0:
@@ -1954,7 +2014,24 @@ class BattleEncounter:
                 self.round = 1
                 area_advanced = True
 
-                if self.module.area_exists(self.area):
+                # Clearing an area on a module with a Friend roster promises an
+                # Event Battle against a Friend the player has not met yet.
+                if (not self.is_special_encounter
+                        and hasattr(self.module, "has_friends")
+                        and self.module.has_friends()):
+                    pending = getattr(game_globals, "friend_event_pending", None)
+                    if pending is None:
+                        pending = game_globals.friend_event_pending = []
+                    if self.module.name not in pending:
+                        pending.append(self.module.name)
+                        runtime_globals.game_console.log(
+                            f"[Friend] {self.module.name} owes a Friend encounter")
+
+                # An area the module keeps locked is not progress the player
+                # can act on yet, so don't move them into it.
+                if (self.module.area_exists(self.area)
+                        and self.module.is_area_unlocked(
+                            self.area, getattr(self, "version", None))):
                     game_globals.battle_round[self.module.name] = self.round
                     game_globals.battle_area[self.module.name] = max(self.area, game_globals.battle_area[self.module.name])
             
@@ -2069,15 +2146,18 @@ class BattleEncounter:
 
     def _check_retire_or_proceed(self):
         """Check if any team1 pets can't battle the next round; if so, show retire menu."""
-        pets = get_battle_targets()
+        pets = get_battle_continue_targets()
         if len(pets) == 0:
             # No pets can continue at all
             runtime_globals.game_sound.play("fail")
             self._start_retire_animation()
             return
         # Check if any team1 pets lost eligibility
-        retiring = [p for p in self.battle_player.team1 if not p.can_battle()]
+        retiring = [p for p in self.battle_player.team1 if not p.can_continue_battle()]
         if retiring:
+            runtime_globals.game_console.log(
+                "[BattleEncounter] Retire check — "
+                + "; ".join(f"{p.name}: {p.battle_block_reason(entering=False)}" for p in retiring))
             self._start_retire_check_phase()
         else:
             self.set_initial_state(round=self.round, area=self.area)
@@ -2270,12 +2350,15 @@ class BattleEncounter:
         """
         Draws the alert phase, showing readiness sprites using AnimatedSprite component.
         """
-        if self.module.ruleset == "pen":
+        ready = READY_PHASE_MINIGAMES.get(
+            getattr(self.module, 'battle_minigame', ''))
+        instance = getattr(self, ready[0], None) if ready else None
+        if instance is not None:
             self.animated_sprite.stop()
-            # PenC ruleset: Count match minigame shows in both alert and charge phases
-            self.count_match.set_phase("ready")
-            self.count_match.draw(surface)
-            # Don't draw the animated sprite for count match - use only minigame version
+            # The minigame shows in both the alert and the charge phase, so
+            # draw only its version here.
+            instance.set_phase("ready")
+            instance.draw(surface)
         else:
             # For other rulesets, use animated sprite ready animation. The
             # previous animation was already stopped when leaving intimidate;
@@ -3133,10 +3216,15 @@ class BattleEncounter:
             # Block input while the transformation animation plays.
             return
 
+        # READY/alert is intentionally non-skippable. This early lock also
+        # prevents B from falling through to the general quit-battle branch.
+        if self.phase == "alert":
+            return
+
         # Skip animation-only phases on B or LCLICK. A is reserved for the
         # charge minigames (dummy charge mashes A) — with A doubling as skip,
         # leftover presses from the minigame skipped the whole battle.
-        if event_type in ("B", "LCLICK") and self.phase in ("level", "entry", "intimidate", "alert", "battle"):
+        if event_type in ("B", "LCLICK") and self.phase in ("level", "entry", "intimidate", "battle"):
             # Mouse/touch grace: the dummy charge is click-driven, so ignore
             # clicks that land right after the minigame ends — otherwise the
             # last mash would instantly skip the battle animation.
@@ -3163,11 +3251,6 @@ class BattleEncounter:
                 self.animated_sprite.stop()
                 if not self._start_xros_selection():
                     self._enter_alert_phase()
-            elif self.phase == "alert":
-                self.phase = "charge"
-                self.frame_counter = 0
-                self.bar_timer = pygame.time.get_ticks()
-                self.setup_charge()
             elif self.phase == "battle":
                 runtime_globals.game_sound.play("cancel")
                 self.phase = "result"
@@ -3257,9 +3340,20 @@ class BattleEncounter:
         """
         Returns the selected strength for the mini-game, defaulting to 1 if not set.
         Maps minigame results to battle simulator strength values.
+
+        Dispatches on the module's battle_minigame, the same setting
+        setup_charge/draw_charge use. It used to key off the ruleset, which
+        drifted: PENZ runs a Count Match on the dmx ruleset and so was read
+        as an Xai bar, returning a raw strength where its minigame produces
+        super hits.
         """
-        if self.module.ruleset == "dm":
-            # DMC: Dummy charge strength 0-14
+        minigame = getattr(self.module, 'battle_minigame', 'Dummy Bar')
+
+        if minigame == "None":
+            return 2
+
+        if minigame == "Dummy Bar":
+            # Dummy charge strength 0-14
             if self.strength < 5:
                 return 0
             elif self.strength < 10:
@@ -3268,14 +3362,30 @@ class BattleEncounter:
                 return 2
             else:
                 return 3
-        elif self.module.ruleset == "dmx":
-            # DMX: XAI bar strength (varies by XAI roll)
-            return self.strength
-        elif self.module.ruleset == "pen":
-            # PenC: Count match super hits
-            return self.super_hits
-        elif self.module.ruleset == "vb":
-            # VB: Shake punch strength 0-20
+
+        if minigame in ("Count Match Color", "Count Match Z"):
+            # These two score in super hits, which the colour mapping already
+            # reports as 0-3.
+            return max(0, min(3, self.super_hits))
+
+        if minigame == "Count Match Classic":
+            # Classic is a shake meter, not a colour match - it fills the same
+            # 0-14 bar as the Dummy Bar and never sets super_hits.
+            if self.strength <= 10:
+                return 0
+            elif self.strength < 13:
+                return 1
+            elif self.strength < 14:
+                return 2
+            else:
+                return 3
+
+        if minigame in ("Xai Roll+Bar", "Xai Bar"):
+            # The Xai bar already reports 0-3
+            return max(0, min(3, self.strength))
+
+        if minigame == "Punch":
+            # Shake punch strength 0-20
             if self.strength < 10:
                 return 0
             elif self.strength < 15:
@@ -3284,6 +3394,19 @@ class BattleEncounter:
                 return 2
             else:
                 return 3
+
+        if minigame == "Mogera":
+            # No shakes at all is a failed charge, which the protocol carries
+            # as Bad; above that the two bands are the device's.
+            if self.strength <= 0:
+                return 0
+            elif self.strength < 7:
+                return 1
+            elif self.strength < 14:
+                return 2
+            else:
+                return 3
+
         return 1
 
     def simulate_global_combat(self):
@@ -3349,7 +3472,9 @@ class BattleEncounter:
         # Simulate the battle using the GlobalBattleSimulator
         sim = GlobalBattleSimulator(
             attribute_advantage=self.module.battle_atribute_advantage,
-            damage_limit=self.module.battle_damage_limit
+            damage_limit=self.module.battle_damage_limit,
+            advantage_as_power=getattr(
+                self.module, "battle_atribute_advantage_power", False)
         )
         result = sim.simulate(team1, team2)
 

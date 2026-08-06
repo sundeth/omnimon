@@ -706,7 +706,9 @@ class DComView:
         
         if oem_mode:
             index = getattr(pet, 'index', 0)
-            version = getattr(pet, 'version', 1)
+            # Send the hardware device version, not the evolution-line
+            # version. Old saves fall back to their existing game version.
+            version = getattr(pet, 'device_version', getattr(pet, 'version', 1))
             # Clamp version to the valid range for each protocol; out-of-range = special, send 0
             _version_ranges = {
                 'DM': (1, 5), 'DM20': (1, 5), 'DMX': (1, 6), 'DMC': (1, 5),

@@ -123,11 +123,14 @@ class DummyTraining(Training):
     def handle_event(self, event):
         """Forward input events to the bar component."""
         event_type, event_data = event
+
+        if self.phase == "alert":
+            return
         
         if self.phase == "charge" and self.minigame.handle_event(event):
             return
         
-        if event_type in ("START", "B") and self.phase in ("charge", "alert"):
+        if event_type in ("START", "B") and self.phase == "charge":
             runtime_globals.game_sound.play("cancel")
             change_scene("game")
         elif event_type in ("B") and self.phase != "result":
@@ -224,7 +227,9 @@ class DummyTraining(Training):
     def get_attack_count(self):
         """Returns the number of attacks based on strength."""
         self.strength = self.minigame.strength
-        if self.strength < 10:
+        if self.strength <= 10:
+            return 0
+        elif self.strength < 13:
             return 1
         elif self.strength < 14:
             return 2

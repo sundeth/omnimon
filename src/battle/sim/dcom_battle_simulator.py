@@ -425,6 +425,9 @@ class DComBattleSimulator:
             pattern_index = (pkt3[0] >> 2) & 0x1F  # Bits 2-6 of byte 0 = pattern (5 bits)
             operation = pkt3[0] & 0x03              # Bits 0-1 of byte 0 = operation (2 bits)
             version = (pkt3[1] >> 4) & 0x0F         # Upper 4 bits of byte 1
+            # Which device the other side is; unlocks that require a specific
+            # pairing ("battle XA with XB") are checked against this.
+            self.opponent_device_version = version
             
             runtime_globals.game_console.log(f"[DComBattleSimulator] Order: {order}, Pattern index: {pattern_index}, Operation: {operation}, Version: {version}")
             
@@ -507,6 +510,7 @@ class DComBattleSimulator:
             sick = (pkt1[0] >> 2) & 0x1
             attack = pkt1[0] & 0x3  # 2 bits (0-3)
             version = (pkt1[1] >> 4) & 0xF
+            self.opponent_device_version = version
             
             # Packet 2: Stage(3) Index(7) Attribute(2) EOL(4)
             pkt2 = packets[1]

@@ -115,6 +115,12 @@ class SceneMainGame:
         self.event_gift_timer = 0  # Timer for gift animation phases
         self.event_sound_played = False  # Track if alert sound was played
 
+        # A Friend just won in a special encounter comes back to the main
+        # screen to show itself off. It is a throwaway pet drawn for a second,
+        # deliberately NOT part of the party.
+        self.friend_show = None
+        self.friend_show_frames = 0
+
         # Cached event sprites to avoid loading/scaling every frame
         self.event_sprites = {
             'alert': None,
@@ -162,6 +168,9 @@ class SceneMainGame:
 
         # Update event system
         self.update_events()
+
+        # Show off a Friend just won in a special encounter
+        self.update_friend_celebration()
 
         # Check evolution start
         self.check_evolution_start()
@@ -258,27 +267,81 @@ class SceneMainGame:
                     pet.set_state("happy2")
             runtime_globals.game_console.log("[SceneMainGame] Cleaning complete.")
 
+    def update_friend_celebration(self) -> None:
+        """Show a newly won Friend for a moment, then let it go.
+
+        The Friend is already recorded in the save by the time the battle
+        hands back; this is only the little celebration — two seconds of it.
+        It is built as a throwaway GamePet so it animates like any other pet,
+        and is never added to the party.
+        """
+        pending = getattr(runtime_globals, "friend_celebration", None)
+        if pending and self.friend_show is None:
+            runtime_globals.friend_celebration = None
+            try:
+                from utils.xros_utils import _find_friend_monster
+                from models.game_pet import GamePet
+                module = get_module(pending["module"])
+                entry = _find_friend_monster(module, pending["name"])
+                if entry:
+                    data = dict(entry)
+                    data["module"] = pending["module"]
+                    pet = GamePet(data)
+                    pet.x = (runtime_globals.SCREEN_WIDTH - runtime_globals.PET_WIDTH) // 2
+                    pet.set_state("happy2")
+                    self.friend_show = pet
+                    self.friend_show_frames = int(2 * game_globals.configuration.frame_rate)
+                    runtime_globals.game_sound.play("happy")
+            except Exception as exc:
+                runtime_globals.game_console.log(f"[Friend] celebration failed: {exc}")
+
+        if self.friend_show is not None:
+            self.friend_show.update()
+            self.friend_show_frames -= 1
+            if self.friend_show_frames <= 0:
+                # Drop the sprite cache entry with it — nothing else refers to
+                # this pet, and pet_sprites is keyed by the object.
+                runtime_globals.pet_sprites.pop(self.friend_show, None)
+                self.friend_show = None
+
     def update_events(self) -> None:
         """
         Updates the event system - checks for new events every hour based on XAI and pet awakeness.
         """
-        # Stage 1: Check for new events every hour (optimized using frame counter)
+        # One tick a minute drives both event systems.
+        minute_tick = self.frame_counter % (game_globals.configuration.frame_rate * 60) == 0
+
+        # --- Friend Event Battles (earned by clearing an area) ---------------
+        # Independent of the XAI roll: the promise was made by a pet that
+        # cleared an area and simply counts down. The timer is paused while
+        # another event is on screen, so the promise is never spent on a
+        # moment when it could not be shown.
+        if minute_tick and self.event_stage == 0 and game_globals.event is None:
+            from utils.xros_utils import tick_friend_event
+            friend_event = tick_friend_event()
+            if friend_event is not None:
+                game_globals.event = friend_event
+
+        # --- XAI random events (rolled, roughly hourly) ----------------------
         if game_globals.event is None:
             if self.event_stage == 0:
-                # Count minutes using frame rate - every 60 seconds * frame rate = 1 minute
-                if self.frame_counter % (game_globals.configuration.frame_rate * 60) == 0:
+                if minute_tick:
                     game_globals.event_time -= 1
                     if game_globals.event_time <= 0:
-                        # Check if all pets are awake before triggering events
-                        all_pets_awake = all(pet.state != "nap" and pet.state != "sleep" for pet in game_globals.pet_list)
-                        
-                        if all_pets_awake:
+                        # Something has to be up and about for an event to
+                        # interrupt it; a party that is all asleep or dead is
+                        # left alone.
+                        anyone_active = any(
+                            pet.state not in ("dead", "nap")
+                            for pet in game_globals.pet_list)
+
+                        if anyone_active:
                             # Time to check for an event with XAI-based probability
                             game_globals.event = get_hourly_random_event()
-                            runtime_globals.game_console.log(f"[Event] Event check with XAI {game_globals.xai} (all pets awake)")
+                            runtime_globals.game_console.log(f"[Event] Event check with XAI {game_globals.xai}")
                         else:
-                            runtime_globals.game_console.log(f"[Event] Skipping event check - some pets are sleeping")
-                        
+                            runtime_globals.game_console.log(f"[Event] Skipping event check - no pet is awake")
+
                         # Roughly hourly, with a little slack so the check
                         # doesn't land on the same minute every time.
                         game_globals.event_time = random.randint(45, 75)
@@ -318,7 +381,13 @@ class SceneMainGame:
                 # Change to battle scene
                 runtime_globals.game_console.log(f"[Event] Starting battle event: {game_globals.event.name}")
                 # Set battle parameters based on event
-                runtime_globals.special_encounter = [game_globals.event.module, game_globals.event.area, game_globals.event.round]
+                # The event names which enemy it is about (a Friend encounter picks
+                # a specific one), so carry it through rather than letting the
+                # battle re-resolve by area alone.
+                runtime_globals.special_encounter = [game_globals.event.module,
+                                                     game_globals.event.area,
+                                                     game_globals.event.round,
+                                                     game_globals.event.name]
                 change_scene("battle")
                 # Reset event
                 game_globals.event = None
@@ -619,6 +688,10 @@ class SceneMainGame:
         # Draw food animation for eating pets
         self.draw_food_anims(surface)
 
+        # A newly won Friend, celebrating over the top of the party
+        if self.friend_show is not None:
+            self.friend_show.draw(surface)
+
         # Draw event animations and alerts
         self.draw_events(surface)
 
@@ -849,8 +922,12 @@ class SceneMainGame:
         if self.lock_inputs:
             return
 
-        # Handle mouse/touch clicks in pet area to toggle hearts view and menu clicks
-        if event_type == "LCLICK":
+        # Handle mouse/touch clicks in pet area to toggle hearts view and menu
+        # clicks. An event alert takes priority: this block used to swallow the
+        # click (toggling the hearts view) and return before the event handler
+        # below ever saw it, so an event could only be accepted with A.
+        event_active = self.event_stage > 0 and game_globals.event
+        if event_type == "LCLICK" and not event_active:
             if event_data and "pos" in event_data:
                 mouse_pos = event_data["pos"]
                 

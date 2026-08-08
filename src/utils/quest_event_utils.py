@@ -199,68 +199,21 @@ def generate_daily_quests() -> List[GameQuest]:
     return selected_instances
 
 
-def get_pending_friend_event() -> Optional[GameEvent]:
-    """The Event Battle promised by clearing an adventure area, if one is due.
-
-    Modules with a Friend roster (the Xros Wars Color) guarantee an encounter
-    after an area is cleared rather than leaving it to the XAI roll. The
-    opponent is drawn from the Friends the player has not registered yet, so
-    no Friend is ever offered twice - losing simply leaves it in the pool.
-    Returns None for every other module, which keeps their event flow as is.
-    """
-    pending = getattr(game_globals, "friend_event_pending", None) or []
-    if not pending:
-        return None
-    party_modules = {pet.module for pet in game_globals.pet_list}
-    from utils.xros_utils import get_module_friends
-
-    for module_name in list(pending):
-        if module_name not in party_modules:
-            continue
-        module = runtime_globals.game_modules.get(module_name)
-        if not module:
-            pending.remove(module_name)
-            continue
-        known = set(get_module_friends(module_name))
-        candidates = [e for e in module.get_friend_encounters()
-                      if e.get("name") not in known]
-        if not candidates:
-            # every Friend is registered; this module is done issuing them
-            pending.remove(module_name)
-            continue
-        pick = random.choice(candidates)
-        pending.remove(module_name)
-        game_globals.friend_event_pending = pending
-        runtime_globals.game_console.log(
-            f"[Event] Friend encounter due for {module_name}: {pick['name']}")
-        return GameEvent(
-            event_id=f"friend:{module_name}:{pick['name']}", name=pick["name"],
-            module=module_name, global_event=False,
-            event_type=EventType.ENEMY_BATTLE, chance_percent=100,
-            area=pick.get("area", 1), round_num=pick.get("round", 1),
-        )
-    game_globals.friend_event_pending = pending
-    return None
-
-
 def get_hourly_random_event() -> Optional[GameEvent]:
     """
     Get a random event for the current hour based on XAI algorithm.
     This should be called every hour when pets are not napping.
-    
+
+    The daily XAI roll decides how often anything happens at all; the party
+    decides what happens. Events belong to the modules the player is actually
+    raising, so a DMX pet draws DMX events. An event flagged ``global`` is the
+    exception: it can turn up with no pet of its module in the party.
+
     Returns:
         Random event instance if one triggers, None otherwise
     """
-    # Step 0: A module with a Friend roster works differently. Clearing an
-    # adventure area there promises an Event Battle against a Friend the
-    # player has not met yet, so that takes priority over the XAI roll and
-    # over any other module's ordinary event.
-    friend_event = get_pending_friend_event()
-    if friend_event is not None:
-        return friend_event
-
     # Step 1: Roll chance based on XAI (1-7 gives 10%-70% chance)
-    xai_chance = game_globals.xai * 10  # 1->10%, 2->20%, ..., 7->70%
+    xai_chance = min(70, game_globals.xai * 10)  # 1->10%, ..., 7->70%
     roll = random.randint(1, 100)
 
     if roll > xai_chance:
@@ -269,14 +222,20 @@ def get_hourly_random_event() -> Optional[GameEvent]:
     # Step 2: Get modules of pets currently in the party
     party_modules = set(pet.module for pet in game_globals.pet_list)
 
-    # Step 3: Get all modules that have events, filtered to party modules
+    # Step 3: Collect what each module may contribute. A module the player is
+    # raising offers everything it has; any other module offers only the events
+    # it flagged global.
     modules_with_events = []
     for module_name, module in runtime_globals.game_modules.items():
-        if module_name not in party_modules:
-            continue
         event_data = module.load_events_json()
-        if event_data:
-            modules_with_events.append((module_name, event_data))
+        if not event_data:
+            continue
+        if module_name not in party_modules:
+            event_data = [e for e in event_data
+                          if getattr(e, "global_event", False)]
+            if not event_data:
+                continue
+        modules_with_events.append((module_name, event_data))
     
     if not modules_with_events:
         return None

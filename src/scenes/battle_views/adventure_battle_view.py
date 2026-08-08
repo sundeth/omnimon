@@ -16,13 +16,15 @@ _MENU_PHASES = ("feeding", "retire_check")
 class AdventureBattleView:
     """Adventure battle encounter view."""
 
-    def __init__(self, ui_manager: UIManager, change_view_callback, module, area, round_num, is_special_encounter=False):
+    def __init__(self, ui_manager: UIManager, change_view_callback, module, area, round_num,
+                 is_special_encounter=False, encounter_name=None):
         self.ui_manager = ui_manager
         self.change_view = change_view_callback
         self.module = module
         self.area = area
         self.round_num = round_num
         self.is_special_encounter = is_special_encounter
+        self.encounter_name = encounter_name
 
         self.battle_encounter = None
 
@@ -43,6 +45,7 @@ class AdventureBattleView:
             self.round_num,
             1,
             is_special_encounter=self.is_special_encounter,
+            encounter_name=self.encounter_name,
         )
         runtime_globals.game_console.log("[AdventureBattleView] Battle encounter created")
 
@@ -76,7 +79,7 @@ class AdventureBattleView:
     # ------------------------------------------------------------------
 
     def _enter_feeding(self):
-        self._open_menu(["Next", "Protein"], on_select=self._on_feeding_select)
+        self._open_menu(["Next", "Food"], on_select=self._on_feeding_select)
         runtime_globals.game_console.log("[AdventureBattleView] Feeding menu opened")
 
     def _on_feeding_select(self, index):
@@ -84,7 +87,7 @@ class AdventureBattleView:
             # Protein — feed and keep menu open for another round of feeding
             self.battle_encounter.feed_protein_to_team()
             enc_ui = self.battle_encounter.ui_manager
-            self._menu.open(["Next", "Protein"], on_select=self._on_feeding_select)
+            self._menu.open(["Next", "Food"], on_select=self._on_feeding_select)
             enc_ui.set_active_menu(self._menu)
         else:
             # Next — proceed

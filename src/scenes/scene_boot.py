@@ -237,8 +237,8 @@ class SceneBoot:
         margin = int(10 * scale)
 
         title = get_font(int(20 * scale)).render("Updating Sprite Database", True, (255, 255, 255))
-        sub = get_font(int(14 * scale)).render(self._sync_current or "...", True, (220, 220, 220))
-        skip = get_font(int(12 * scale)).render("Press any button to skip", True, (200, 200, 200))
+        sub = get_font(int(16 * scale)).render(self._sync_current or "...", True, (220, 220, 220))
+        skip = get_font(int(16 * scale)).render("Press any button to skip", True, (200, 200, 200))
 
         skip_rect = skip.get_rect(midbottom=(cx, runtime_globals.SCREEN_HEIGHT - margin))
         sub_rect = sub.get_rect(midbottom=(cx, skip_rect.top - int(4 * scale)))

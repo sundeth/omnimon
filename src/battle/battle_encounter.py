@@ -38,6 +38,7 @@ from battle import combat_constants
 from models.game_quest import QuestType
 from utils.quest_event_utils import update_quest_progress
 from services.omninet_service import omninet_service
+from training.training import TRAINING_READY_SOUND
 
 
 # Minigames that draw the alert phase themselves, as
@@ -73,13 +74,19 @@ class BattleEncounter:
     # Region: Setup & State
     #========================
 
-    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False, is_special_encounter=False):
+    def __init__(self, module, area=0, round=0, version=1, pvp_mode=False, is_special_encounter=False,
+                 encounter_name=None):
         """
         Initializes the BattleEncounter, loading graphics and setting initial state.
         """
         # Load module-specific attack sprites for pets and enemies
         self.pvp_mode = pvp_mode
         self.is_special_encounter = is_special_encounter
+        # Names the exact enemy for a special encounter; a Friend event picks
+        # one specific Friend and it must be the one fought.
+        self.encounter_name = encounter_name
+        # real pet -> its battle-only evolved form, for this battle only.
+        self.xros_forms = {}
         self.module_attack_sprites = {}
         self.module_crit_attack_sprites = {}
         self.module = get_module(module)
@@ -149,9 +156,28 @@ class BattleEncounter:
         Round 1 applies the full entry rule; later rounds use the looser one
         so a pet that fell sick mid-area keeps its place instead of vanishing
         from the layout and minigames while still being on the team.
+
+        A pet in a temporary evolution is swapped for its battle-only form
+        here, and only here — the party list itself always holds the real
+        pets. Sequential rounds rebuild the team every round, so the swap has
+        to happen on every lookup rather than once.
         """
-        return (get_battle_targets() if self.round <= 1
+        pets = (get_battle_targets() if self.round <= 1
                 else get_battle_continue_targets())
+        if not self.xros_forms:
+            return pets
+        return [self.xros_forms.get(pet, pet) for pet in pets]
+
+    def _play_shot_sound(self, team_hp):
+        """Play the attack sound for a shot, if the firing team is small.
+
+        Training plays this on every shot, but a full row of pets firing at
+        once in battle turns it into noise, which is why the battle shot was
+        silent. With two or fewer still standing the shots are sparse enough
+        that the silence is what reads as wrong, so the sound comes back.
+        """
+        if sum(1 for hp in team_hp if hp > 0) <= 2:
+            runtime_globals.game_sound.play("attack")
 
     def set_initial_state(self, area=0, round=0, version=1):
         """
@@ -186,9 +212,7 @@ class BattleEncounter:
         self._enemy_flip_cache = {}
         self._special_slide_cache = {}
         self._attack_entry_cache = {}
-        # Launch tick per projectile slot, for the acceleration curve
-        self._proj_launch = {}
-        
+
         # Reset result screen cache
         self.result_surface_cache = None
         self.result_animation_started = False
@@ -588,7 +612,9 @@ class BattleEncounter:
         self._enemy_flip_cache = {}
         self._special_slide_cache = {}
 
-        self.enemies = self.module.get_enemies(self.area, self.round, versions, special_encounter=self.is_special_encounter)
+        self.enemies = self.module.get_enemies(self.area, self.round, versions,
+                                               special_encounter=self.is_special_encounter,
+                                               encounter_name=self.encounter_name)
         if self.boss:
             # If it's a boss, ensure we have only one enemy
             self.enemies = [self.enemies[0]] if self.enemies else []
@@ -845,6 +871,12 @@ class BattleEncounter:
         self.phase = "alert"
         self.frame_counter = 0
 
+        # READY sound state, same flow training uses (see Training.update_alert_phase).
+        self._ready_sound_triggered = False
+        self._ready_sound_started = False
+        self._ready_sound_fallback = False
+        self.alert_duration_frames = combat_constants.ALERT_DURATION_FRAMES
+
         # Reset minigames before alert phase
         self.reset_minigames()
 
@@ -905,19 +937,51 @@ class BattleEncounter:
             self._enter_alert_phase()
             return
 
+        # Starts the moment the choice is made and runs over the animation's
+        # opening background segment, which is exactly as long as this sound.
+        runtime_globals.game_sound.play("xros_start")
+
         try:
             # Build the animation FIRST (it captures the pre-evolution
-            # sprites), then transform the pets.
+            # sprites), then create each pet's battle-only evolved form. The
+            # party pets themselves are left exactly as they are.
             from ui.components.xros_animation import XrosAnimation
-            from utils.xros_utils import apply_temp_evolution
+            from utils.xros_utils import make_xros_pet
             self.xros_animation = XrosAnimation(selections)
             for pet, evo in selections:
-                apply_temp_evolution(pet, evo)
+                form = make_xros_pet(pet, evo)
+                if form is not None:
+                    self.xros_forms[pet] = form
+            # The team was built from the un-evolved pets; rebuild it so the
+            # forms are the ones that actually fight.
+            if self.xros_forms:
+                self.battle_player.team1 = self._current_targets()
             self.phase = "xros_anim"
             self.frame_counter = 0
         except Exception as exc:
             runtime_globals.game_console.log(f"[Xros] apply failed: {exc}")
             self._enter_alert_phase()
+
+    def _clear_xros_forms(self) -> list:
+        """End every temporary evolution; returns the pets that were in one.
+
+        Nothing is restored because nothing was changed — the forms are simply
+        dropped and the team goes back to holding the real pets.
+        """
+        if not self.xros_forms:
+            return []
+        pets = list(self.xros_forms.keys())
+        for form in self.xros_forms.values():
+            form.release()
+        self.xros_forms = {}
+        if getattr(self, "battle_player", None):
+            # Swap the forms out of the team so the result screen and anything
+            # after it sees the pets themselves.
+            self.battle_player.team1 = [
+                getattr(p, "pet", p) for p in self.battle_player.team1]
+        runtime_globals.game_console.log(
+            f"[Xros] {len(pets)} temporary evolution(s) ended")
+        return pets
 
     def update_xros_select(self):
         """Waits on player input (handled in handle_event)."""
@@ -941,15 +1005,60 @@ class BattleEncounter:
     def update_alert(self):
         """
         Update logic for the alert phase, prepares for charge phase after duration.
+
+        Adventure battles run the same READY as training: the phase lasts
+        exactly as long as the READY sound, and does not begin until playback
+        has actually started, so the sound and the sprite stay in step. Versus
+        and DCom keep the fixed-length alert — their timing is negotiated with
+        the other device and must not stretch to fit an audio asset.
         """
-        if self.frame_counter == int(combat_constants.ALERT_DURATION_FRAMES * 0.8):
-            runtime_globals.game_sound.play("happy")
-        elif self.frame_counter > combat_constants.ALERT_DURATION_FRAMES:
-            runtime_globals.game_console.log("Entering charge phase")
-            self.phase = "charge"
+        if self.pvp_mode:
+            if self.frame_counter == int(combat_constants.ALERT_DURATION_FRAMES * 0.8):
+                runtime_globals.game_sound.play("happy")
+            elif self.frame_counter > combat_constants.ALERT_DURATION_FRAMES:
+                self._finish_alert_phase()
+            return
+
+        if not self._ready_sound_triggered:
+            duration = runtime_globals.game_sound.get_duration(TRAINING_READY_SOUND)
+            if duration > 0:
+                self.alert_duration_frames = max(
+                    1, int(round(duration * game_globals.configuration.frame_rate)))
+
+            channel = runtime_globals.game_sound.play(TRAINING_READY_SOUND)
+            self._ready_sound_triggered = True
+
+            # Muted audio or an unavailable mixer has no playback start to
+            # observe; fall back to the asset's own length.
+            if channel is None:
+                self._ready_sound_started = True
+                self._ready_sound_fallback = True
+                self.frame_counter = 0
+
+        if not self._ready_sound_started:
+            # The mixer can lag behind play(); hold the phase at frame 0 until
+            # the sound is actually audible.
+            if runtime_globals.game_sound.is_playing(TRAINING_READY_SOUND):
+                self._ready_sound_started = True
             self.frame_counter = 0
-            self.bar_timer = pygame.time.get_ticks()
-            self.setup_charge()
+            return
+
+        if (not self._ready_sound_fallback
+                and not runtime_globals.game_sound.is_playing(TRAINING_READY_SOUND)):
+            self._finish_alert_phase()
+            return
+
+        if self.frame_counter >= self.alert_duration_frames:
+            self._finish_alert_phase()
+
+    def _finish_alert_phase(self):
+        """Leave READY for the charge minigame."""
+        runtime_globals.game_sound.stop(TRAINING_READY_SOUND)
+        runtime_globals.game_console.log("Entering charge phase")
+        self.phase = "charge"
+        self.frame_counter = 0
+        self.bar_timer = pygame.time.get_ticks()
+        self.setup_charge()
 
     def setup_charge(self):
         """
@@ -1053,10 +1162,16 @@ class BattleEncounter:
                 if not self.xai_roll.rolling and not self.xai_roll.stopping:
                     self.xai_phase = 2
                     pets = self._current_targets()
+                    # Read the landed face from the roll rather than relying on
+                    # the input handler having set it: the roll also stops
+                    # itself after a few seconds with no press, and that result
+                    # has to reach the bar just the same. Covers the Seven
+                    # Switch too, whose forced frame is already applied here.
+                    self.xai_number = self.xai_roll.get_result()
                     self.xai_bar = XaiBar(
                         x=runtime_globals.SCREEN_WIDTH // 2 - int(152 * runtime_globals.UI_SCALE) // 2,
                         y=runtime_globals.SCREEN_HEIGHT // 2 - int(72 * runtime_globals.UI_SCALE) // 2 + int(48 * runtime_globals.UI_SCALE),
-                        xai_number=getattr(self, 'xai_number', game_globals.xai),
+                        xai_number=self.xai_number,
                         pet=pets[0] if pets else None
                     )
                     self.xai_bar.start()
@@ -1185,14 +1300,9 @@ class BattleEncounter:
             runtime_globals.game_console.log("[BattleEncounter] PvP battle completed - no experience awarded")
             return
 
-        # Battling a Friend-flagged enemy registers it in the module's Friend
-        # list regardless of the outcome (the battle happened).
-        try:
-            from utils.xros_utils import register_friends_from_battle
-            register_friends_from_battle(self.module.name, self.battle_player.team2)
-        except Exception as exc:
-            runtime_globals.game_console.log(f"[Friend] register failed: {exc}")
-            
+        # Friends are NOT registered here: this runs whatever the outcome, and
+        # a Friend is only won by beating it. See update_result().
+
         # If defeat, no XP for anyone
         if self.victory_status == "Defeat":
             self.battle_player.xp = 0
@@ -1422,7 +1532,7 @@ class BattleEncounter:
         rotated_sprite = pygame.transform.rotate(atk_sprite, angle)
 
         self.battle_player.team1_projectiles[pet_index] = []
-        self._proj_launch[("pet", pet_index)] = pygame.time.get_ticks()
+        self._play_shot_sound(self.battle_player.team1_hp)
         s = runtime_globals.UI_SCALE
         if self.module.battle_damage_limit < 3:
             # DM20/PEN20/DM/DMC: 1 or 2 projectiles, scale2x for 2
@@ -1577,11 +1687,14 @@ class BattleEncounter:
         y = self.get_y(enemy_index, len(self.battle_player.team2)) + runtime_globals.PET_HEIGHT // 2
         x = self.get_team2_x(enemy_index) + (runtime_globals.PET_WIDTH_BOSS if self.boss else runtime_globals.PET_WIDTH) // 2
 
+        # Once per turn, not once per target: a boss firing at several pets is
+        # still a single volley.
+        self._play_shot_sound(self.battle_player.team2_hp)
+
         # For each attack entry (boss may attack multiple pets in one turn)
         for attack_entry in attack_entries:
             defender_idx = attack_entry.defender if attack_entry else 0
             self.battle_player.team2_projectiles[defender_idx] = []
-            self._proj_launch[("enemy", defender_idx)] = pygame.time.get_ticks()
             # Target position
             if defender_idx < len(self.battle_player.team1):
                 target_pet_x = self.get_team1_x(defender_idx) - (runtime_globals.PET_WIDTH // 2)
@@ -1679,19 +1792,6 @@ class BattleEncounter:
                 [base_target[0] + min_ox, base_target[1] + min_oy],
                 attack_entry]
 
-    @staticmethod
-    def _shot_speed_factor(launch_tick, now):
-        """Launch curve for attack sprites.
-
-        Shots still start slower than they finish, so they read as fired
-        rather than drifting, but the ramp is a smoothstep between 0.7x and
-        1.9x rather than a bare quadratic from 0.45x to 2.5x. The gentler
-        span and the flat ends mean no crawl at launch and no visible whip
-        as the shot lands.
-        """
-        t = min(1.0, max(0.0, (now - launch_tick) / 450.0))
-        return 0.7 + 1.2 * (t * t * (3.0 - 2.0 * t))
-
     def move_towards(self, pos, target, speed):
         dx = target[0] - pos[0]
         dy = target[1] - pos[1]
@@ -1718,13 +1818,10 @@ class BattleEncounter:
             if len(main_data) == 0:
                 continue
 
-            # Move projectiles with the launch acceleration curve
-            slot_speed = speed * self._shot_speed_factor(
-                self._proj_launch.get(("pet", i), now), now)
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, slot_speed)
+                new_pos = self.move_towards(pos, target, speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False
@@ -1783,13 +1880,10 @@ class BattleEncounter:
             if len(main_data) == 0:
                 continue
 
-            # Move projectiles with the launch acceleration curve
-            slot_speed = speed * self._shot_speed_factor(
-                self._proj_launch.get(("enemy", i), now), now)
             done = True
             for sprite_data in main_data:
                 sprite, pos, target, attack_entry = sprite_data
-                new_pos = self.move_towards(pos, target, slot_speed)
+                new_pos = self.move_towards(pos, target, speed)
                 sprite_data[1][0], sprite_data[1][1] = new_pos
                 if math.hypot(new_pos[0] - target[0], new_pos[1] - target[1]) > 2:
                     done = False
@@ -1933,15 +2027,22 @@ class BattleEncounter:
         
         # Random encounters skip progression and return to game immediately
         if self.is_special_encounter:
-            # Beating one registers it as a Friend when the module declares a
-            # pet of that name with availability "Friend". Losing leaves it in
-            # the pool so it can be offered again.
+            # Beating a Friend encounter is the only way to win the Friend:
+            # it goes into the digidex and the module's Friend list, and the
+            # main game shows it celebrating on the way back. Losing registers
+            # nothing, so it stays in the pool for another attempt.
             if self.victory_status == "Victory":
                 try:
-                    from utils.xros_utils import register_friends_from_battle
+                    from utils.xros_utils import register_friend, _find_friend_monster
                     from utils.utils_unlocks import check_encounter_unlocks
-                    register_friends_from_battle(self.module.name,
-                                                 self.battle_player.team2)
+                    for enemy in (self.battle_player.team2 or []):
+                        name = getattr(enemy, "name", None)
+                        if not name or not _find_friend_monster(self.module, name):
+                            continue
+                        if register_friend(self.module.name, name):
+                            runtime_globals.friend_celebration = {
+                                "name": name, "module": self.module.name}
+                        break
                     # Friends register first, so an unlock counting them sees
                     # the one just won.
                     check_encounter_unlocks(self.module.name,
@@ -2014,18 +2115,18 @@ class BattleEncounter:
                 self.round = 1
                 area_advanced = True
 
-                # Clearing an area on a module with a Friend roster promises an
-                # Event Battle against a Friend the player has not met yet.
-                if (not self.is_special_encounter
-                        and hasattr(self.module, "has_friends")
-                        and self.module.has_friends()):
-                    pending = getattr(game_globals, "friend_event_pending", None)
-                    if pending is None:
-                        pending = game_globals.friend_event_pending = []
-                    if self.module.name not in pending:
-                        pending.append(self.module.name)
+                # Clearing an area promises a Friend encounter to one of the
+                # pets that cleared it — but only a pet of THIS module that has
+                # a DigiXros form asking for Friends, since a pet can only ever
+                # unlock the Friends its own forms need.
+                if not self.is_special_encounter:
+                    try:
+                        from utils.xros_utils import promise_friend_event
+                        promise_friend_event(self.module.name,
+                                             self.battle_player.team1)
+                    except Exception as exc:
                         runtime_globals.game_console.log(
-                            f"[Friend] {self.module.name} owes a Friend encounter")
+                            f"[Friend] promise failed: {exc}")
 
                 # An area the module keeps locked is not progress the player
                 # can act on yet, so don't move them into it.
@@ -2350,6 +2451,11 @@ class BattleEncounter:
         """
         Draws the alert phase, showing readiness sprites using AnimatedSprite component.
         """
+        # Do not reveal READY before the sound it is timed against has actually
+        # started (adventure only — pvp keeps the fixed-length alert).
+        if not self.pvp_mode and not getattr(self, "_ready_sound_started", True):
+            return
+
         ready = READY_PHASE_MINIGAMES.get(
             getattr(self.module, 'battle_minigame', ''))
         instance = getattr(self, ready[0], None) if ready else None
@@ -2365,7 +2471,11 @@ class BattleEncounter:
             # stopping again here every frame restarted (and re-loaded) the
             # ready animation on each draw.
             if not self.animated_sprite.is_animation_playing():
-                duration = 1.5  # 1.5 second alert animation
+                # Match however long the phase is actually going to last, so
+                # the animation and the READY sound finish together.
+                duration = (getattr(self, "alert_duration_frames",
+                                    combat_constants.ALERT_DURATION_FRAMES)
+                            / max(1, game_globals.configuration.frame_rate))
                 self.animated_sprite.play_ready(duration)
 
             # Draw the animated sprite
@@ -2480,8 +2590,7 @@ class BattleEncounter:
                 )
                 reverted = []
                 if not battle_may_continue:
-                    from utils.xros_utils import revert_all_temp_evolutions
-                    reverted = revert_all_temp_evolutions(self.battle_player.team1)
+                    reverted = self._clear_xros_forms()
                 self.xros_devolve_pets = set(reverted)
                 self.xros_devolve_timer = int(1.0 * constants.FRAME_RATE) if reverted else 0
                 self.xros_devolve_sprites = None
@@ -2614,21 +2723,20 @@ class BattleEncounter:
                 prize_y = runtime_globals.SCREEN_HEIGHT - int(35 * height_scale)
                 prize_label_x = int(20 * width_scale)
                 
+                # No prize is simply nothing to report — "Prize: None" is just
+                # a line of clutter along the bottom of the result screen, so
+                # the row is left out entirely in that case.
                 if self.victory_status == "Victory" and getattr(self, "prize_item", None):
-                    prize_text = self.prize_item.name
-                    prize_value_color = ui_constants.GREEN
+                    self.result_prize_label_text = Label(prize_label_x, prize_y, "Prize:", is_title=False, color_override=white_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
+                    self.result_prize_label_text.manager = self.ui_manager
+
+                    # Create the prize value label once and cache it
+                    prize_value_x = prize_label_x + int(8 * width_scale)  # Will be adjusted after rendering "Prize:" text
+                    self.result_prize_value_label = Label(prize_value_x, prize_y, self.prize_item.name, is_title=False, color_override=ui_constants.GREEN, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
+                    self.result_prize_value_label.manager = self.ui_manager
                 else:
-                    prize_text = "None"
-                    prize_value_color = white_color
-                
-                # Create separate labels for "Prize:" and the value with title font
-                self.result_prize_label_text = Label(prize_label_x, prize_y, "Prize:", is_title=False, color_override=white_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
-                self.result_prize_label_text.manager = self.ui_manager
-                
-                # Create the prize value label once and cache it
-                prize_value_x = prize_label_x + int(8 * width_scale)  # Will be adjusted after rendering "Prize:" text
-                self.result_prize_value_label = Label(prize_value_x, prize_y, prize_text, is_title=False, color_override=prize_value_color, shadow_mode="full", custom_size=int(32*runtime_globals.UI_SCALE))
-                self.result_prize_value_label.manager = self.ui_manager
+                    self.result_prize_label_text = None
+                    self.result_prize_value_label = None
                 
                 # Pre-cache scaled pet sprites to avoid per-frame scaling
                 self.result_pet_sprites_cache = {}
@@ -2671,16 +2779,17 @@ class BattleEncounter:
                 title_x = (runtime_globals.SCREEN_WIDTH - title_surface.get_width()) // 2
                 self.result_static_text_surface.blit(title_surface, (title_x, self.result_title_label.rect.y))
                 
-                # Render prize labels at bottom
-                prize_label_surface = self.result_prize_label_text.render()
-                self.result_static_text_surface.blit(prize_label_surface, (self.result_prize_label_text.rect.x, self.result_prize_label_text.rect.y))
-                
-                # Render prize value to the right of label
-                width_scale = runtime_globals.SCREEN_WIDTH / 240
-                prize_value_x = self.result_prize_label_text.rect.x + prize_label_surface.get_width() + int(8 * width_scale)
-                self.result_prize_value_label.rect.x = prize_value_x
-                prize_value_surface = self.result_prize_value_label.render()
-                self.result_static_text_surface.blit(prize_value_surface, (prize_value_x, self.result_prize_label_text.rect.y))
+                # Render prize labels at bottom (absent when there is no prize)
+                if self.result_prize_label_text and self.result_prize_value_label:
+                    prize_label_surface = self.result_prize_label_text.render()
+                    self.result_static_text_surface.blit(prize_label_surface, (self.result_prize_label_text.rect.x, self.result_prize_label_text.rect.y))
+
+                    # Render prize value to the right of label
+                    width_scale = runtime_globals.SCREEN_WIDTH / 240
+                    prize_value_x = self.result_prize_label_text.rect.x + prize_label_surface.get_width() + int(8 * width_scale)
+                    self.result_prize_value_label.rect.x = prize_value_x
+                    prize_value_surface = self.result_prize_value_label.render()
+                    self.result_static_text_surface.blit(prize_value_surface, (prize_value_x, self.result_prize_label_text.rect.y))
                 
                 # Render all per-pet labels to the static surface
                 for i, pet_labels in enumerate(self.result_pet_labels):
@@ -3259,10 +3368,9 @@ class BattleEncounter:
             if self.phase in ("feeding", "retire_check", "retire_animation"):
                 # Handled by the view / blocked during the retire animation
                 return
-            # Quitting mid-battle (charge, result): undo any temporary
-            # evolution first.
-            from utils.xros_utils import revert_all_temp_evolutions
-            revert_all_temp_evolutions(self.battle_player.team1)
+            # Quitting mid-battle (charge, result): the temporary evolution
+            # ends with the battle.
+            self._clear_xros_forms()
             runtime_globals.game_sound.play("cancel")
             change_scene("game")
         elif self.phase in ("feeding", "retire_check"):
@@ -3322,10 +3430,9 @@ class BattleEncounter:
         """
         Ends the battle and returns to the main game scene.
         """
-        # Safety net: any temporary evolution must be gone outside battle
-        # (normally already reverted by the result screen's devolution flash).
-        from utils.xros_utils import revert_all_temp_evolutions
-        revert_all_temp_evolutions(self.battle_player.team1)
+        # Safety net: no temporary evolution outlives the battle (normally
+        # already ended by the result screen's devolution flash).
+        self._clear_xros_forms()
 
         runtime_globals.game_console.log(f"[Scene_Battle] exiting to main game")
         distribute_pets_evenly()

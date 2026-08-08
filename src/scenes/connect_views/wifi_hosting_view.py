@@ -97,15 +97,26 @@ class WifiHostingView:
         
         runtime_globals.game_console.log("[WifiHostingView] UI setup complete")
     
+    HOST_JOIN_OPTIONS = ["Host Battle", "Join Battle", "Back"]
+
     def _setup_host_join_menu(self):
         """Setup the host/join selection menu."""
         self.host_join_menu = Menu(width=BASE_RESOLUTION - 40, height=100)
+        self._open_host_join_menu()
+        self.ui_manager.add_component(self.host_join_menu)
+
+    def _open_host_join_menu(self):
+        """(Re)populate the host/join menu.
+
+        Menu.close() runs on every selection and clears the option list, so
+        coming back to this phase has to rebuild the menu — just setting it
+        visible again showed an empty box with nothing to select.
+        """
         self.host_join_menu.open(
-            options=["Host Battle", "Join Battle", "Back"],
+            options=list(self.HOST_JOIN_OPTIONS),
             on_select=self._on_host_join_select,
             auto_center=True
         )
-        self.ui_manager.add_component(self.host_join_menu)
     
     def _setup_hosting_ui(self):
         """Setup hosting phase UI."""
@@ -173,6 +184,7 @@ class WifiHostingView:
         self.phase = phase
         
         if phase == "host_join_menu":
+            self._open_host_join_menu()
             self.host_join_menu.visible = True
         elif phase == "hosting":
             self.hosting_title_label.visible = True
@@ -199,7 +211,7 @@ class WifiHostingView:
         elif index == 2:  # Back
             runtime_globals.game_sound.play("cancel")
             self._stop_networking()
-            self.change_view("main_menu")
+            self.change_view("main_menu", initial_submenu="local_battle")
     
     def _start_hosting(self):
         """Start hosting a network battle."""
@@ -305,10 +317,15 @@ class WifiHostingView:
         self._show_phase("host_join_menu")
     
     def _on_discovery_cancel(self):
-        """Cancel discovery."""
+        """Cancel discovery and leave the WiFi flow.
+
+        Giving up on finding a device means giving up on the WiFi battle, so
+        this returns to the Local Battle menu the player came in through
+        rather than to the Host/Join choice.
+        """
         runtime_globals.game_sound.play("cancel")
         self._stop_networking()
-        self._show_phase("host_join_menu")
+        self.change_view("main_menu", initial_submenu="local_battle")
     
     def _stop_networking(self):
         """Stop all network operations."""

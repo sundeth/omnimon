@@ -21,7 +21,7 @@ class DigidexTree(UIComponent):
     """
     def __init__(self, x, y, width, height, unknown_sprite, sprite_size=None):
         super().__init__(x, y, width, height)
-        self.font = get_font(int(14 * runtime_globals.UI_SCALE))
+        self.font = get_font(int(16 * runtime_globals.UI_SCALE))
         self.unknown_sprite = unknown_sprite
         self.sprite_size = sprite_size or int(48 * runtime_globals.UI_SCALE)
         self.pets = []

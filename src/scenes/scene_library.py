@@ -129,7 +129,8 @@ class SceneLibrary:
         collection_x = settings_x + button_width + button_spacing
         self.collection_button = Button(
             collection_x, button_y, button_width, button_height,
-            "CARDS", self._on_collection
+            "", self._on_collection,
+            decorators=["Library_Collection"]
         )
         self.ui_manager.add_component(self.collection_button)
 

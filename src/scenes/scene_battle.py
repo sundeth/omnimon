@@ -45,11 +45,16 @@ class SceneBattle:
         
         # Check if this is a random encounter triggered by an event
         if runtime_globals.special_encounter:
-            module_name, area, round_num = runtime_globals.special_encounter
+            # A 4th element names the specific enemy (Friend encounters);
+            # older callers pass only module/area/round.
+            enc = list(runtime_globals.special_encounter)
+            module_name, area, round_num = enc[0], enc[1], enc[2]
+            encounter_name = enc[3] if len(enc) > 3 else None
             runtime_globals.special_encounter = []
             from utils.module_utils import get_module
             module = get_module(module_name)
-            self._change_view("adventure_battle", module=module, area=area, round_num=round_num, is_special_encounter=True)
+            self._change_view("adventure_battle", module=module, area=area, round_num=round_num,
+                              is_special_encounter=True, encounter_name=encounter_name)
         else:
             self._change_view("main_menu")
         

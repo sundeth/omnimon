@@ -45,6 +45,9 @@ class GameSound:
             18: "evolution_plus",
             19: "evolution_2020",
             20: "training_ready",
+            21: "xros_start",
+            22: "xros_animation",
+            23: "xros_evolution",
         }
 
         # Initialize pygame mixer with a small buffer to minimise playback latency.

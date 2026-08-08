@@ -257,7 +257,10 @@ class GamePet:
             name_format,
             size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT),
             primary_sprite_format=primary_format,
-            secondary_sprite_format=secondary_format
+            secondary_sprite_format=secondary_format,
+            # Pet art is drawn at a whole multiple of its own size rather than
+            # squeezed into the slot: the HD library is 54x48, not 48x48.
+            pixel_perfect=True
         )
 
         # Convert to list format expected by existing code
@@ -792,6 +795,9 @@ class GamePet:
             if self in game_globals.pet_list:
                 game_globals.pet_list.remove(self)
                 del runtime_globals.pet_sprites[self]
+                # One fewer pet in the party means the rest get a bigger slot.
+                from utils.pet_utils import refresh_pet_sizes
+                refresh_pet_sizes()
 
             self.set_traited_egg()
 
@@ -929,7 +935,8 @@ class GamePet:
             module_obj.name_format,
             size=(runtime_globals.PET_WIDTH, runtime_globals.PET_HEIGHT),
             primary_sprite_format=primary_format,
-            secondary_sprite_format=secondary_format
+            secondary_sprite_format=secondary_format,
+            pixel_perfect=True
         )
         if sprites_dict:
             self.sprite_format = resolved_format
@@ -1885,9 +1892,25 @@ class GamePet:
             # Saves created before the device system use the gameplay version
             # as their safe backward-compatible protocol value.
             self.device_version = int(getattr(self, "version", 0))
-        # Xros battle state (never persisted mid-battle, but be safe)
-        if not hasattr(self, "xros_evolved"):
-            self.xros_evolved = None
+        # Repair a pet left stuck in a temporary evolution.
+        #
+        # Temporary evolutions used to be applied by overwriting the pet's own
+        # fields and keeping a backup to undo afterwards. Pets are pickled
+        # whole, so a game closed mid-battle saved the evolved stats and the
+        # pet stayed transformed for good. The form is now a separate
+        # battle-only object that cannot touch the pet at all, but a save made
+        # before that still has to be put right: restore the backup if it
+        # survived, and drop the leftover fields either way.
+        backup = getattr(self, "xros_backup", None)
+        if backup:
+            for field, value in backup.items():
+                setattr(self, field, value)
+            runtime_globals.game_console.log(
+                f"[Xros] Restored {self.name} from a stuck temporary evolution")
+        if hasattr(self, "xros_backup"):
+            del self.xros_backup
+        if hasattr(self, "xros_evolved"):
+            del self.xros_evolved
         # Migrate / repair real-time timer attributes
         now = time.monotonic()
         if not hasattr(self, '_rt_origin'):

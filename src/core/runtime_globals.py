@@ -136,6 +136,10 @@ evolution_data = []
 evolution_pet = None
 last_headtohead_pattern = random.randint(0, 5)
 special_encounter = []
+# A Friend just won in a special encounter, waiting to be celebrated on the
+# main game screen: {"name": ..., "module": ...}.  Runtime only — the Friend
+# itself is already recorded in the save; this is just the little show.
+friend_celebration = None
 
 # --- Global Managers ---
 game_sound = GameSound()
@@ -147,10 +151,13 @@ game_module_flag = {}
 game_pet_eating = {}
 
 default_items = {
+    # The id and sprite keep their original names: saved inventories reference
+    # the id, and the artwork is shipped under the old filename. Only what the
+    # player reads changed.
     "protein": GameItem(
         id="default-protein",
-        name="Protein",
-        description="Basic food. Replenishes hunger.",
+        name="Food",
+        description="Basic food. Refills hunger.",
         sprite_name="Protein.png",
         module="core",
         effect="status_change",
@@ -162,7 +169,7 @@ default_items = {
     "vitamin": GameItem(
         id="default-vitamin",
         name="Vitamin",
-        description="Basic food. Replenishes strength.",
+        description="Basic food. Refills strength.",
         sprite_name="Vitamin.png",
         module="core",
         effect="status_change",
@@ -230,15 +237,21 @@ def update_resolution_constants(width: int = None, height: int = None) -> None:
     FONT_SIZE_MEDIUM_LARGE = int(30 * UI_SCALE)
     FONT_SIZE_LARGE = int(40 * UI_SCALE)
 
-    # Prevent oversized sprites when MAX_PETS == 1. The raw slot size is then
-    # snapped to the pixel-perfect ladder (16/32/48*k) so 48x48 pet art always
-    # renders with uniform pixel blocks; the boss size gets its own snap since
-    # BOSS_MULTIPLIER (1.5x) would land between ladder steps.
+    # The slot a pet is drawn in, from how many pets are actually in the party
+    # rather than the Max Pets setting — a party of two on a device configured
+    # for six was being drawn at the six-pet size for no reason. The divisor
+    # still floors at 4 so a lone pet does not fill the screen. The result is
+    # snapped to the pixel-perfect ladder (16/32/48*k); the boss size gets its
+    # own snap since BOSS_MULTIPLIER (1.5x) lands between ladder steps.
     from utils.sprite_utils import snap_pet_sprite_size
     try:
         from core import game_globals
-        max_pets = game_globals.configuration.max_pets
-        PET_WIDTH = PET_HEIGHT = snap_pet_sprite_size(height // max(max_pets, 4))
+        party = len([p for p in game_globals.pet_list
+                     if getattr(p, "state", None) != "dead"])
+        # Before a save is loaded the party is empty; Max Pets is the best
+        # guess available then, and load() recomputes once the pets exist.
+        slots = party or game_globals.configuration.max_pets
+        PET_WIDTH = PET_HEIGHT = snap_pet_sprite_size(height // max(slots, 4))
     except Exception:
         PET_WIDTH = PET_HEIGHT = snap_pet_sprite_size(height // 2)
     try:

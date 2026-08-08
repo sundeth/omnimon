@@ -297,16 +297,6 @@ class Training:
                 self.frame_counter = int(
                     combat_constants.JUMP_START_F * (constants.FRAME_RATE / 30))
 
-    def attack_speed_factor(self):
-        """Ease-in launch curve for flying attack sprites.
-
-        frame_counter resets when a shot/wave launches, so it doubles as the
-        shot's age: start at ~45% speed and accelerate quadratically to
-        ~2.5x over half a second (same curve as battle projectiles).
-        """
-        t = min(1.0, self.frame_counter / max(1.0, 0.5 * constants.FRAME_RATE))
-        return 0.45 + 2.05 * t * t
-
     def _prep_total_frames(self):
         """Total frames in the per-wave prep window, scaled to the active FPS."""
         return int(ATTACK_PREP_BASE_FRAMES * (constants.FRAME_RATE / 30))
@@ -382,8 +372,28 @@ class Training:
         distribute_pets_evenly()
         change_scene("game")
 
+    def _any_pet_shows_trophies(self):
+        """Whether any pet in this session is on a device with a trophy meter.
+
+        Trophies are a per-device stat, declared through visible_stats the same
+        way the status screen decides what to show. Training a pet from a
+        device that has no trophies used to flash a "+1 trophy" anyway, which
+        promised a reward the player can never see.
+        """
+        if not hasattr(self, "_shows_trophies"):
+            from utils.module_utils import get_module
+            shows = False
+            for pet in self.pets:
+                module = get_module(getattr(pet, "module", None))
+                stats = getattr(module, "visible_stats", None) or []
+                if any("trophies" in str(s).lower() for s in stats):
+                    shows = True
+                    break
+            self._shows_trophies = shows
+        return self._shows_trophies
+
     def draw_trophy_notification(self, surface, quantity=1):
-        if quantity > 0:
+        if quantity > 0 and self._any_pet_shows_trophies():
             """Draw a small trophy icon with +1 in the bottom right corner"""
             from utils.asset_utils import font_load
             trophy_size = int(24 * runtime_globals.UI_SCALE)

@@ -63,6 +63,38 @@ def all_pets_hatched():
     """
     return all(pet.stage > 0 for pet in game_globals.pet_list)
 
+def refresh_pet_sizes():
+    """Resize the pets after the party has changed.
+
+    PET_WIDTH/PET_HEIGHT are derived from how many pets are in the party, so
+    hatching, losing or freezing one changes the size every pet should be
+    drawn at. Recompute the constants, drop the sprite cache so the art is
+    reloaded at the new size, and re-space the row.
+
+    Safe to call when nothing actually changed: the reload is skipped unless
+    the slot size really moved.
+    """
+    from core import runtime_globals as rg
+
+    previous = rg.PET_WIDTH, rg.PET_HEIGHT
+    # Recompute the DERIVED sizes only — pass the resolution already in force
+    # rather than letting it fall back to the saved configuration. Android
+    # renders at half the device resolution, decided in main_android before
+    # the save is read, so a no-argument call here would replace that with the
+    # config's value and shrink the whole game into a corner of the screen.
+    rg.update_resolution_constants(rg.SCREEN_WIDTH, rg.SCREEN_HEIGHT)
+    if (rg.PET_WIDTH, rg.PET_HEIGHT) == previous:
+        return
+
+    rg.pet_sprites = {}
+    for pet in game_globals.pet_list:
+        try:
+            pet.load_sprite()
+        except Exception as exc:
+            rg.game_console.log(f"[Pets] sprite reload failed for {pet.name}: {exc}")
+    distribute_pets_evenly()
+
+
 def distribute_pets_evenly():
     """
     Evenly distributes pets horizontally around the screen center.

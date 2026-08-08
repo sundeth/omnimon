@@ -566,7 +566,8 @@ class GameModule:
             runtime_globals.game_console.log(f"⚠️ Failed to parse {path}: {e}")
             return []
 
-    def get_enemies(self, area: int, round: int, versions: List[int], special_encounter: bool = False) -> List[Optional[GameEnemy]]:
+    def get_enemies(self, area: int, round: int, versions: List[int], special_encounter: bool = False,
+                    encounter_name: str = None) -> List[Optional[GameEnemy]]:
         battle_path = os.path.join(self.folder_path, "battle.json")
         all_enemies = self._parse_battle_json(battle_path)
         if not all_enemies:
@@ -584,6 +585,18 @@ class GameModule:
                  and bool(e.get("special_encounter", False)) == special_encounter),
                 None
             )
+            if special_encounter and encounter_name:
+                # The caller named the enemy (a Friend event picks one specific
+                # Friend), so that wins over the area/round lookup - two
+                # Friends can share an area and only the name tells them apart.
+                named = next(
+                    (e for e in all_enemies
+                     if e.get("name") == encounter_name
+                     and bool(e.get("special_encounter", False))),
+                    None
+                )
+                if named:
+                    match = named
             if match is None and special_encounter:
                 # Special encounters can live on a version the player never
                 # raises - the Xros Wars Friends sit on their own roster - so

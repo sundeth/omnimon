@@ -163,13 +163,16 @@ class BattleEncounterVersus(BattleEncounter):
 
         # Left label (left aligned) - now shows pet2's name
         self.left_label = Label(13, 99, text=getattr(self.pet2, 'name', ''), is_title=False, align_right=False, fixed_width=85, color_override=ui_constants.ANIM_BLACK)
-        # Force a 24px font for this label instance regardless of manager defaults
-        self.left_label.get_font = lambda font_type, custom_size=None: UIComponent.get_font(self.left_label, font_type, custom_size=24)
+        # Force a fixed size for this label instance regardless of manager
+        # defaults; scaled with the screen so it does not shrink away on a
+        # large display.
+        _versus_label_size = int(24 * runtime_globals.UI_SCALE)
+        self.left_label.get_font = lambda font_type, custom_size=None: UIComponent.get_font(self.left_label, font_type, custom_size=_versus_label_size)
         self.ui_manager.add_component(self.left_label)
 
         # Right label (right aligned) - now shows pet1's name
         self.right_label = Label(140, 130, text=getattr(self.pet1, 'name', ''), is_title=False, align_right=True, fixed_width=85, color_override=ui_constants.ANIM_BLACK)
-        self.right_label.get_font = lambda font_type, custom_size=None: UIComponent.get_font(self.right_label, font_type, custom_size=24)
+        self.right_label.get_font = lambda font_type, custom_size=None: UIComponent.get_font(self.right_label, font_type, custom_size=_versus_label_size)
         self.ui_manager.add_component(self.right_label)
 
     def _wrap_byte_value(self, value, max_value=255):

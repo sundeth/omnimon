@@ -71,6 +71,14 @@ class _PixelFont(pygame.font.Font):
 
 _font_cache = {}
 
+#: Text smaller than this is unreadable on the device screen. 16 * UI_SCALE is
+#: what a plain Label renders at (ui_constants.TEXT_FONT_SIZES), which is the
+#: size the status screen draws "Stage:" and "Age:" at — the smallest type the
+#: game is allowed to use. Enforced here because this is the one function every
+#: font in the game is built through, so no call site can undercut it.
+def min_font_size() -> int:
+    return max(1, int(16 * runtime_globals.UI_SCALE))
+
 
 def font_load(rel_path: str, size: int):
     """
@@ -79,6 +87,8 @@ def font_load(rel_path: str, size: int):
     On desktop, uses relative path as-is.
     Pass None as rel_path to use pygame's default font.
 
+    Sizes below ``min_font_size()`` are raised to it; nothing else is changed.
+
     Args:
         rel_path: Relative path to font file (e.g., 'assets/DigimonBasic.ttf') or None for default
         size: Font size in pixels
@@ -86,8 +96,11 @@ def font_load(rel_path: str, size: int):
     Returns:
         pygame.font.Font: Loaded font
     """
-    if size == None or size <= 0:
-        size = int(16 * runtime_globals.UI_SCALE)  # Default size if zero provided
+    floor = min_font_size()
+    if size is None or size <= 0:
+        size = floor  # Default size if zero provided
+    else:
+        size = max(floor, int(size))
 
     # Fonts are immutable in this codebase (nothing calls set_bold/italic),
     # so share one Font per (path, size) — constructing a Font opens the TTF

@@ -316,6 +316,11 @@ class SceneFreezerBox:
             self.save_freezer_data()
             self.freezer_pets[self.current_freezer_page].rebuild()
             self.load_current_freezer_sprites()
+
+            # Storing or withdrawing changes the party size, and the pet slot
+            # is sized from it.
+            from utils.pet_utils import refresh_pet_sizes
+            refresh_pet_sizes()
             
             # Refresh grids AFTER rebuild to ensure correct state
             if self.mode == "party":

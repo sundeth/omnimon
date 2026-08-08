@@ -417,7 +417,7 @@ class ShopList(BaseList):
             self._draw_item_background(surface, item_y, fill_color, border_color)
             
             name_font = self.get_font("text", custom_size=16 * self.manager.ui_scale)
-            small_font = self.get_font("text", custom_size=12 * self.manager.ui_scale)
+            small_font = self.get_font("text", custom_size=16 * self.manager.ui_scale)
             
             padding = self.manager.scale_value(4)
             
@@ -470,7 +470,7 @@ class ShopList(BaseList):
             self._draw_item_background(surface, item_y, fill_color, border_color)
             
             name_font = self.get_font("text", custom_size=16 * self.manager.ui_scale)
-            small_font = self.get_font("text", custom_size=12 * self.manager.ui_scale)
+            small_font = self.get_font("text", custom_size=16 * self.manager.ui_scale)
             
             padding = self.manager.scale_value(4)
             

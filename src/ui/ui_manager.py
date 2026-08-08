@@ -607,10 +607,18 @@ class UIManager:
             self.active_menu.handle_event(event)
             return True  # Always block events when menu is visible
 
+        # Tooltips dismiss on a deliberate press — a button, or a click of
+        # either mouse button. Passive pointer traffic (hover, wheel, a drag
+        # in progress) is swallowed without closing, so simply moving the
+        # mouse no longer snatches the tooltip away before it can be read.
         if self.active_tooltip:
+            if event_type in ("MOUSE_MOTION", "SCROLL",
+                              "DRAG_START", "DRAG_MOTION", "DRAG_END"):
+                return True  # Block, but keep the tooltip open
             self.hide_tooltip()
             return True
-        
+
+
         # Handle mouse motion for focus updates
         if event_type == "MOUSE_MOTION" and event_data and "pos" in event_data:
             self.update_mouse_focus(event_data["pos"])

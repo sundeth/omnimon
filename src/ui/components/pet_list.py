@@ -749,7 +749,7 @@ class PetList(UIComponent):
                 runtime_globals.game_console.log(f"[PetList] Error drawing pet sprite {pet_index}: {e}")
                 # Draw error placeholder
                 pygame.draw.rect(surface, (255, 0, 0), slot_rect.inflate(-4, -4))
-                font = self.get_font("text", custom_size=16)
+                font = self.get_font("text")
                 error_text = font.render("ERR", True, (255, 255, 255))
                 error_rect = error_text.get_rect(center=slot_rect.center)
                 blit_with_cache(surface, error_text, error_rect)

@@ -157,8 +157,12 @@ class DComDialog:
         
         # Draw content based on state
         from utils.asset_utils import font_load
-        font = font_load(None, 24)
-        small_font = font_load(None, 20)
+        from ui.ui_constants import TEXT_FONT
+        from core import runtime_globals as _rg
+        # The game's text font, scaled with the screen — these were pygame's
+        # default face at a fixed size, which shrank away on large displays.
+        font = font_load(TEXT_FONT, int(24 * _rg.UI_SCALE))
+        small_font = font_load(TEXT_FONT, int(16 * _rg.UI_SCALE))
         
         if self.state == "detecting":
             self._draw_text(surface, font, "Detecting DCom devices...", 

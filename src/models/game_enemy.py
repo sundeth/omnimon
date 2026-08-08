@@ -70,7 +70,10 @@ class GameEnemy:
             name_format,
             size=size,
             primary_sprite_format=primary_format,
-            secondary_sprite_format=secondary_format
+            secondary_sprite_format=secondary_format,
+            # Same rule as pets: a whole multiple of the art's own size, so an
+            # HD enemy is not squashed to fit a square slot.
+            pixel_perfect=True
         )
         
         # Convert to the expected format

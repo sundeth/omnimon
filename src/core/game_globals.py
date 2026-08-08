@@ -440,10 +440,15 @@ coins = 0  # Player's coin balance
 # the digidex "Friends" view.
 friends = {}
 
-# Modules owed a Friend Event Battle. Clearing an adventure area on a module
-# that has a Friend roster queues its name here; the next event check spends
-# it on an encounter with a Friend the player has yet to register.
-friend_event_pending = []
+# The Friend Event Battle promised by an area clear, or None.
+#
+#   {"pet": <pet name>, "module": <module name>, "minutes": <1-5>}
+#
+# Set when a pet that has DigiXros forms clears an area of its OWN module. The
+# main game counts the minutes down and then spends it on an encounter with one
+# of that pet's own missing Friends — a pet can never unlock another pet's
+# Friends. Only one is held at a time; a newer clear overrides an older promise.
+friend_event_pending = None
 
 # Card collection state (see utils.card_utils):
 #   card_collection: {module_name: {card_id: {"digital": n, "physical": n}}}
@@ -763,7 +768,11 @@ def load() -> None:
                 purchases = GamePurchases.from_dict(data.get("purchases", None))
                 coins = data.get("coins", 0)
                 friends = data.get("friends", {})
-                friend_event_pending = data.get("friend_event_pending", [])
+                # Saves from before the rework stored a list of module names;
+                # that promise no longer carries enough to act on, so it is
+                # dropped and the next area clear queues a fresh one.
+                _pending = data.get("friend_event_pending", None)
+                friend_event_pending = _pending if isinstance(_pending, dict) else None
                 card_collection = data.get("card_collection", {})
                 card_cooldowns = data.get("card_cooldowns", {})
                 setup_input = data.get("setup_input", True)
@@ -836,7 +845,7 @@ def load() -> None:
     purchases = GamePurchases()
     coins = 0
     friends = {}
-    friend_event_pending = []
+    friend_event_pending = None
     card_collection = {}
     card_cooldowns = {}
     # Configuration keeps its system-detected defaults

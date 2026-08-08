@@ -271,8 +271,8 @@ class SceneTutorial:
         self.steps.append((self.STEP_FOCUS_OFF, None))
         self.steps.append((self.STEP_WAIT_FRAMES, self.focus_delay_frames // 2))
         
-        self.steps.append((self.STEP_DIALOG, ["Let's feed our Botamon some Protein",
-                                               "Select Protein, you can press A to use automatically, or click the Use button"]))
+        self.steps.append((self.STEP_DIALOG, ["Let's feed our Botamon some Food",
+                                               "Select Food, you can press A to use automatically, or click the Use button"]))
         
         # Focus on first item and use button, then enable item use and unblock input
         self.steps.append((self.STEP_FOCUS_WAIT, self._focus_first_item_and_use))
@@ -1403,9 +1403,12 @@ class SceneTutorial:
         self._skip_overlay.draw(surface)
     
     def _draw_skip_hint(self, surface: pygame.Surface):
-        """Draw a small hint to skip tutorial."""
+        """Draw the hint to skip the tutorial."""
         from utils.asset_utils import font_load
-        font = font_load(None, int(12 * self.ui_scale))
+        from ui.ui_constants import TEXT_FONT
+        # The game's own text font at the ordinary size — this used to be
+        # pygame's default face at two thirds of it, and read as noise.
+        font = font_load(TEXT_FONT, int(16 * self.ui_scale))
         text = font.render("START to skip tutorial", True, (150, 150, 150))
         
         # Position at top-right

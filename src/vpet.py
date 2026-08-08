@@ -75,10 +75,21 @@ class VirtualPetGame:
                 runtime_globals.game_console.log(
                     f"[VirtualPetGame] window reconcile failed: {exc}")
 
+        # Pet size comes from how many pets are in the party, and the party is
+        # only known once the save has been read — the sprites loaded above
+        # used the pre-load estimate. Resize them now that both the party and
+        # the final window size are settled (a no-op if the estimate was right).
+        try:
+            from utils.pet_utils import refresh_pet_sizes
+            refresh_pet_sizes()
+        except Exception as exc:
+            runtime_globals.game_console.log(
+                f"[VirtualPetGame] pet resize after load failed: {exc}")
+
         # Reload input mappings after configuration is loaded
         from input.input_manager import reload_input_mappings
         reload_input_mappings(runtime_globals.game_input)
-        
+
         self.scene = SceneBoot()
         print("[Init] Omnibot initialized with SceneBoot")
         self.rotated = False
@@ -225,6 +236,17 @@ class VirtualPetGame:
                 return
 
         input_event = runtime_globals.game_input.process_event(event)
+
+        # The attention sounds are calls for the player — once they respond,
+        # whatever they pressed, the call has been answered and the sound has
+        # no reason to keep going. Silenced here because this is the one place
+        # every player input passes through, whatever the scene.
+        # (guarded on sounds_loaded so the first press doesn't trigger the
+        # lazy load just to ask whether anything is playing)
+        if input_event and runtime_globals.game_sound.sounds_loaded:
+            for _call in ("need_attention", "alarm"):
+                if runtime_globals.game_sound.is_playing(_call):
+                    runtime_globals.game_sound.stop(_call)
 
         # Pass the input event tuple to the scene if we got one
         if input_event:

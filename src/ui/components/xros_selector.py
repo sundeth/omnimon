@@ -6,10 +6,11 @@ Layout:
     [Confirm]
 
 Each box shows the pet's current choice (its normal form, or one of its
-available temporary evolutions).  A / LCLICK on the focused box cycles the
-choice forward (cyclical); LEFT/RIGHT move between the boxes and the Confirm
-button.  There is no cancel — Confirm with every box on the normal form just
-skips the transformation.
+available temporary evolutions).  LEFT/RIGHT change the focused box's choice
+— the same thing the < > arrows either side of it do — and UP/DOWN move the
+focus down the list of boxes and on to the Confirm button.  There is no
+cancel: confirming with every box on its normal form just skips the
+transformation.
 
 All sprites are pre-scaled once at construction (low-power friendly).
 """
@@ -18,6 +19,8 @@ import pygame
 
 from core import runtime_globals
 from models.animation import PetFrame
+from ui.components.button import Button
+from utils.asset_utils import image_load
 from utils.module_utils import get_module
 from utils.pygame_utils import blit_with_cache, get_font
 from utils.xros_utils import load_form_sprite
@@ -48,9 +51,12 @@ class XrosSelector:
         start_x = (sw - total_w) // 2
         box_y = (sh - box_h) // 2 - int(16 * scale)
 
-        from utils.sprite_utils import snap_pet_sprite_size
-        sprite_size = snap_pet_sprite_size(int(box_w * 0.72))
-        self.font = get_font(int(10 * scale))
+        # Pets are shown at the size they are everywhere else in the game.
+        sprite_size = runtime_globals.PET_WIDTH
+        self.font = get_font(int(16 * scale))
+
+        # Screen-filling background (scaled to cover, cropped centrally).
+        self.background = self._load_background(sw, sh)
 
         for i, (pet, options) in enumerate(candidates):
             module = get_module(pet.module)
@@ -73,6 +79,14 @@ class XrosSelector:
                 option_sprites.append(sprite)
 
             rect = pygame.Rect(start_x + i * (box_w + gap), box_y, box_w, box_h)
+            # Hit boxes for the < > arrows drawn either side of the focused
+            # box. They sit OUTSIDE the box, so without their own rects a tap
+            # on an arrow landed on nothing at all. Made generously tall and
+            # wide enough to be a real touch target rather than matching the
+            # drawn triangle exactly.
+            ah = int(8 * scale)
+            pad = int(4 * scale)
+            arrow_w = ah + pad * 2
             self.entries.append({
                 "pet": pet,
                 "options": [None] + list(options),
@@ -82,16 +96,58 @@ class XrosSelector:
                            for nm in option_names],
                 "index": 0,
                 "rect": rect,
+                "left_rect": pygame.Rect(rect.x - pad - arrow_w,
+                                         rect.centery - ah * 2,
+                                         arrow_w, ah * 4),
+                "right_rect": pygame.Rect(rect.right + pad,
+                                          rect.centery - ah * 2,
+                                          arrow_w, ah * 4),
             })
 
-        # Confirm button
-        btn_w = int(90 * scale)
-        btn_h = int(22 * scale)
-        self.confirm_rect = pygame.Rect((sw - btn_w) // 2,
-                                        box_y + box_h + int(14 * scale),
-                                        btn_w, btn_h)
-        self.confirm_label = get_font(int(12 * scale)).render(
-            "Confirm", True, (255, 255, 255))
+        # Confirm: the game's own Button, so it matches every other button
+        # rather than being a hand-drawn rectangle. Registered with the battle
+        # UI manager purely to get the theme and scaling it needs — the
+        # selector draws it itself, since the battle never draws that manager.
+        btn_w, btn_h = 74, 22
+        self.confirm_button = Button(
+            0, 0, btn_w, btn_h, "CONFIRM",
+            cut_corners={'tl': True, 'tr': False, 'bl': False, 'br': True},
+        )
+        # Attached to the manager for its theme and scale, but not registered
+        # with it: the battle never draws that manager, and registering would
+        # put the button into its focus list. Scaled here instead, the same way
+        # the battle's own result labels are.
+        ui_scale = self.ui_manager.ui_scale if self.ui_manager else 1
+        self.confirm_button.manager = self.ui_manager
+        self.confirm_button.base_rect = pygame.Rect(0, 0, btn_w, btn_h)
+        self.confirm_button.rect = pygame.Rect(
+            0, box_y + box_h + int(14 * scale), btn_w * ui_scale, btn_h * ui_scale)
+        self.confirm_button.rect.centerx = sw // 2
+        try:
+            self.confirm_button.on_manager_set()
+        except Exception:
+            pass
+        self.confirm_rect = self.confirm_button.rect
+
+    @staticmethod
+    def _load_background(sw, sh):
+        """The xros background, scaled to cover the screen."""
+        try:
+            img = image_load("assets/bg_xros_background.png").convert()
+        except Exception as exc:
+            runtime_globals.game_console.log(f"[Xros] background load failed: {exc}")
+            return None
+        iw, ih = img.get_size()
+        if not iw or not ih:
+            return None
+        # Cover: scale by the larger ratio so no edge shows, then centre-crop.
+        factor = max(sw / iw, sh / ih)
+        scaled = pygame.transform.scale(
+            img, (max(1, int(iw * factor)), max(1, int(ih * factor))))
+        canvas = pygame.Surface((sw, sh))
+        canvas.blit(scaled, ((sw - scaled.get_width()) // 2,
+                             (sh - scaled.get_height()) // 2))
+        return canvas
 
     # ------------------------------------------------------------------
     # State
@@ -104,8 +160,8 @@ class XrosSelector:
     def has_any_selection(self) -> bool:
         return any(e["index"] > 0 for e in self.entries)
 
-    def _cycle(self, entry):
-        entry["index"] = (entry["index"] + 1) % len(entry["options"])
+    def _cycle(self, entry, step=1):
+        entry["index"] = (entry["index"] + step) % len(entry["options"])
         runtime_globals.game_sound.play("menu")
 
     # ------------------------------------------------------------------
@@ -118,22 +174,21 @@ class XrosSelector:
         event_type, event_data = event
         total = len(self.entries) + 1  # boxes + confirm
 
-        if event_type == "LEFT":
-            self.focus = (self.focus - 1) % total
-            runtime_globals.game_sound.play("menu")
-            return None
-        if event_type == "RIGHT":
-            self.focus = (self.focus + 1) % total
-            runtime_globals.game_sound.play("menu")
+        # LEFT/RIGHT change the focused box's choice — the same thing its
+        # < > arrows do, which is what they look like they should do. Moving
+        # between the boxes and Confirm is UP/DOWN.
+        if event_type in ("LEFT", "RIGHT"):
+            if self.focus < len(self.entries):
+                self._cycle(self.entries[self.focus],
+                            -1 if event_type == "LEFT" else 1)
             return None
         if event_type == "DOWN":
-            self.focus = len(self.entries)
+            self.focus = min(self.focus + 1, total - 1)
             runtime_globals.game_sound.play("menu")
             return None
         if event_type == "UP":
-            if self.focus == len(self.entries):
-                self.focus = 0
-                runtime_globals.game_sound.play("menu")
+            self.focus = max(0, self.focus - 1)
+            runtime_globals.game_sound.play("menu")
             return None
 
         if event_type == "A":
@@ -151,6 +206,16 @@ class XrosSelector:
                 self.confirmed = True
                 runtime_globals.game_sound.play("menu")
                 return "confirm"
+            # The arrows only exist on the focused box, so only its arrows are
+            # clickable — left steps back through the options, right forward.
+            if self.focus < len(self.entries):
+                focused = self.entries[self.focus]
+                if focused["left_rect"].collidepoint(pos):
+                    self._cycle(focused, -1)
+                    return None
+                if focused["right_rect"].collidepoint(pos):
+                    self._cycle(focused, 1)
+                    return None
             for i, entry in enumerate(self.entries):
                 if entry["rect"].collidepoint(pos):
                     self.focus = i
@@ -170,12 +235,17 @@ class XrosSelector:
         scale = runtime_globals.UI_SCALE
         border = max(1, int(2 * scale))
 
+        if self.background is not None:
+            blit_with_cache(surface, self.background, (0, 0))
+
         for i, entry in enumerate(self.entries):
             rect = entry["rect"]
             focused = (i == self.focus)
 
-            # Box (static background = default black; theme border)
-            pygame.draw.rect(surface, (0, 0, 0), rect)
+            # Box: a dimmed panel over the background, plus the theme border.
+            panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+            panel.fill((0, 0, 0, 170))
+            blit_with_cache(surface, panel, rect.topleft)
             pygame.draw.rect(surface, highlight if focused else fg, rect, border)
 
             # Current option sprite + name
@@ -200,11 +270,11 @@ class XrosSelector:
                 pygame.draw.polygon(surface, highlight, [
                     (right_x, cy - ah), (right_x, cy + ah), (right_x + ah, cy)])
 
-        # Confirm button
-        focused = (self.focus == len(self.entries))
-        pygame.draw.rect(surface, (0, 0, 0), self.confirm_rect)
-        pygame.draw.rect(surface, highlight if focused else fg,
-                         self.confirm_rect, border)
-        lx = self.confirm_rect.x + (self.confirm_rect.width - self.confirm_label.get_width()) // 2
-        ly = self.confirm_rect.y + (self.confirm_rect.height - self.confirm_label.get_height()) // 2
-        blit_with_cache(surface, self.confirm_label, (lx, ly))
+        # Confirm: the game's own Button, drawn in its focused state so it
+        # matches the buttons in every other scene.
+        self.confirm_button.focused = (self.focus == len(self.entries))
+        try:
+            blit_with_cache(surface, self.confirm_button.render(),
+                            self.confirm_button.rect.topleft)
+        except Exception as exc:
+            runtime_globals.game_console.log(f"[Xros] confirm draw failed: {exc}")

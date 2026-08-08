@@ -1438,7 +1438,13 @@ class SceneEggSelection:
         
         # Add pet to the game
         game_globals.pet_list.append(pet)
-        
+
+        # Pet size depends on how many are in the party, so the whole row is
+        # resized when one joins.
+        from utils.pet_utils import refresh_pet_sizes
+        refresh_pet_sizes()
+
+
         # Set background if this is the first pet
         bg_name = f"ver{selected_egg['version']}"
         if not game_globals.game_background:

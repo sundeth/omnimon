@@ -983,6 +983,10 @@ class DComView:
                 if not self.dcom_xai_roll.rolling and not self.dcom_xai_roll.stopping:
                     # Transition to bar phase
                     self.dcom_xai_phase = 2
+                    # Take the landed face from the roll: it stops itself after
+                    # a few seconds with no press, and that result has to reach
+                    # the bar exactly as a pressed one does.
+                    self.dcom_xai_number = self.dcom_xai_roll.get_result()
                     from ui.minigames.xai_bar import XaiBar
                     pet = self.selected_pets[0] if self.selected_pets else None
                     self.dcom_xai_bar = XaiBar(

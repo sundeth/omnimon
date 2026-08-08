@@ -60,9 +60,12 @@ def _get_sections():
         cfg.max_pets = new_value
         # PET_WIDTH/HEIGHT derive from max_pets — recompute immediately and
         # reload the cached pet sprites so the change doesn't need a reboot.
+        # The resolution in force is passed explicitly: on Android it is half
+        # the device's and is NOT what the configuration holds, so a
+        # no-argument call would resize the whole render surface here.
         from core import runtime_globals as rg
         from core import game_globals
-        rg.update_resolution_constants()
+        rg.update_resolution_constants(rg.SCREEN_WIDTH, rg.SCREEN_HEIGHT)
         rg.pet_sprites = {}
         for pet in game_globals.pet_list:
             try:

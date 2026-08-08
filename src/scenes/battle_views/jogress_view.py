@@ -105,7 +105,12 @@ class JogressView:
         selector_y = buttons_y + button_height + 5
         selector_height = 50
         self.pet_selector = PetSelector(10, selector_y, ui_width - 20, selector_height)
-        self.pet_selector.set_pets(get_selected_pets())
+        pets = get_selected_pets()
+        self.pet_selector.set_pets(pets)
+        # Grey out the pets that could never be part of a jogress, so the
+        # player is not left selecting one and waiting for an explanation.
+        self.pet_selector.set_enabled_pets(
+            [i for i, pet in enumerate(pets) if self._pet_can_jogress(pet)])
         self.pet_selector.set_interactive(True)
         self.pet_selector.activation_callback = self._handle_pet_activation
         self.ui_manager.add_component(self.pet_selector)
@@ -229,13 +234,30 @@ class JogressView:
         module = get_module(pet.module)
         return getattr(module, "jogress_cost", "DP") if module else "DP"
 
-    def _pets_meet_jogress_cost(self, pet1, pet2):
-        """True when both pets have the cost stat at its maximum."""
-        entry = self.JOGRESS_COST_STATS.get(self._get_jogress_cost(pet1))
+    def _pet_meets_jogress_cost(self, pet):
+        """True when this pet has the module's cost stat at its maximum."""
+        entry = self.JOGRESS_COST_STATS.get(self._get_jogress_cost(pet))
         if entry is None:  # "Nothing" (or unknown value): no requirement
             return True
         attr, max_fn = entry
-        return all(getattr(p, attr, 0) >= max_fn(p) for p in (pet1, pet2))
+        return getattr(pet, attr, 0) >= max_fn(pet)
+
+    def _pets_meet_jogress_cost(self, pet1, pet2):
+        """True when both pets have the cost stat at its maximum."""
+        return all(self._pet_meets_jogress_cost(p) for p in (pet1, pet2))
+
+    def _pet_can_jogress(self, pet):
+        """Whether this pet can be picked for a jogress at all.
+
+        Two ways a pet is simply not a candidate, and both are worth showing
+        before the player selects it: it has no jogress route on its own
+        evolution list, or it has not paid the module's jogress cost. Note
+        this deliberately does not judge compatibility — that depends on the
+        partner and is what the display reports once two are chosen.
+        """
+        if not any("jogress" in evo for evo in getattr(pet, "evolve", []) or []):
+            return False
+        return self._pet_meets_jogress_cost(pet)
 
     def _apply_jogress_cost(self, pets):
         """Consume the cost: zero the stat on the evolved (surviving) pets."""
@@ -382,6 +404,10 @@ class JogressView:
                     if pet2.shook:
                         pet1.shook = True
                     game_globals.pet_list.remove(pet2)
+                    # The absorbed partner leaves the party, so the survivors
+                    # get a bigger slot.
+                    from utils.pet_utils import refresh_pet_sizes
+                    refresh_pet_sizes()
                     self._apply_jogress_cost([pet1])
                     runtime_globals.game_sound.play("evolution")
                     runtime_globals.game_console.log(f"[Jogress] {pet1.name} jogressed to {evo['to']}!")
@@ -410,6 +436,10 @@ class JogressView:
                     if pet2.shook:
                         pet1.shook = True
                     game_globals.pet_list.remove(pet2)
+                    # The absorbed partner leaves the party, so the survivors
+                    # get a bigger slot.
+                    from utils.pet_utils import refresh_pet_sizes
+                    refresh_pet_sizes()
                     self._apply_jogress_cost([pet1])
                     runtime_globals.game_sound.play("evolution")
                     runtime_globals.game_console.log(f"[Jogress] {pet1.name} jogressed to {evo['to']}!")
